@@ -3,12 +3,24 @@ module SymbolicPhysics
 import Base: +,*,^,-,/,<,>,!, string, getindex
 
 #Arrays
+module Arrays
+
 include("Arrays/Variables.jl")
 include("Arrays/Operators.jl")
 include("Arrays/Conditionals.jl")
 
+end
+
+
 #Maths
-include("Maths/Forms.jl")
-include("Maths/DifferentialOperators.jl")
+module Maths
+
+import ..Arrays
+import Base: +
+
+include("Maths/Variables.jl")
+include("Maths/Operators.jl")
+include("Maths/Explicit.jl")
+end
 
 end
