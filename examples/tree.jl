@@ -1,12 +1,11 @@
-using SymbolicPhysics.Maths
-import SymbolicPhysics.Arrays
+using SymbolicPhysics.Arrays
 
-x = Arrays.ArrayVariable("x")
+x = ArrayVariable("x")
 a = 2*x + x*x
 b = 3*x
-y = Arrays.ArrayVariable("a") * Arrays.ArrayVariable("b") #add names to Expression and this will go away as y = a+b AS IT SHOULD
+y = ArrayVariable("a") * ArrayVariable("b") #add names to Expression and this will go away as y = a+b AS IT SHOULD
 
-#----To be done automatically with 
+#----To be done automatically with to_tree--- 
 #Different nodes to represent x mean different places that depend on it, but shouldn't be a problem (a couple of nodes most importantly represents a dependecy)
 xa = DepNode("x", x)
 xb = DepNode("x", x)
@@ -21,7 +20,7 @@ addchild!(bn, xb)
 
 addchild!(yn, an)
 addchild!(yn, bn)
-#------------------------------------------
+#--------------------------------------------
 
 seq = to_sequence!(yn)
 println(string(seq))

@@ -21,10 +21,12 @@ Literals (literal constant value)
 abstract type Literal <: Atom end
 
 struct RealValue <: Literal
+	name::String
 	val::Real
 end
 string(expr::RealValue) = string(expr.val)
 eval(expr::RealValue, vals::AbstractDict) = expr.val
+RealValue(val::Real) = RealValue(string(val), val)
 
 """
 Variables
@@ -56,7 +58,10 @@ function eval(expr::ArrayVariable, vals::AbstractDict)
 		return expr
 	end
 	if !haskey(vals, "i") | !haskey(vals, "j")
-		throw(ErrorException("Can't get an array withour coordinates"))
+		throw(ErrorException("Can't get an array without coordinates"))
 	end
 	return vals[expr.name][vals["i"]+expr.depx, vals["j"]+expr.depy]
 end
+
+
+
