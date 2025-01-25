@@ -13,6 +13,13 @@ mutable struct DepNode
 end
 
 function addchild!(parent, child)
+	#Exclude repeated dependencies TODO check if necessary and most importantly if not dangerous (depends on unicity of names)
+	for c in parent.childs
+		if c.name == child.name
+			return
+		end
+	end
+
 	push!(parent.childs, child)
 	child.parent = parent
 end
@@ -37,13 +44,10 @@ end
 
 #TODO this is destructive for the dependency tree, should it be ?
 function to_sequence!(tree::DepNode)
-	root = DepNode("root", nothing)
-	addchild!(root, tree)
-
 	vars = collect(keys(shave!(tree)))
 	blocks = []
 	
-	while length(root.childs) > 0
+	while length(tree.childs) > 0
 		exprs = shave!(tree)
 		push!(blocks, Block(exprs))
 	end
@@ -51,43 +55,74 @@ function to_sequence!(tree::DepNode)
 	return Sequence(vars, blocks)
 end
 
-function to_deptree!(expr::Expression, node_names::Set{String}; parent=nothing)
+#TODO fix bug where if the name of the result is present in node_names it is recalculated from its own value
+to_deptree!(node_names::Set{String}, expr::Expression) = to_deptree!(node_names, (expr,)) #unravel to allow flexibility
+
+function to_deptree!(node_names::Set{String}, exprs::NTuple{N,Expression}) where {N}
+	root = DepNode("root", nothing)
+	
+	for expr in exprs
+		expr_to_node!(expr, node_names, root)
+	end
+
+	return root
+end	
+
+
+function expr_to_node!(expr::Expression, node_names::Set{String}, parent)
 	if expr isa ArrayVariable
-		n = DepNode(expr.name, expr)
-		if parent == nothing
-			return n
-		else
-			addchild!(parent, n)
-			
-		end
-	else
-		if parent == nothing #Root of our tree
-			n = DepNode(expr.name, nothing)
-			n.expr = go_deeper(expr, node_names, n)
-			return n	
-		else
-			n = DepNode(expr.name, nothing)
-			n.expr = go_deeper(expr, node_names, n)
-			addchild!(parent, n)
-		end
+		#This is ugly and this whole way of creating the tree is kinda terrible
+		n = DepNode(expr.name, expr[-expr.depx, -expr.depy])
+		addchild!(parent, n)	
+	else 
+		n = DepNode(expr.name, nothing)
+		n.expr = go_deeper(expr, node_names, n)
+		n.expr = n.expr[-n.expr.depx, -expr.depy]
+		addchild!(parent, n)
 	end
 end
 
+#TODO set depx/depy to 0 when creating a new node (so node isn't offset WRT itself)
+#Also WHY is there nondeterministic behavior ? -> Due to the way Sets are handled i guess, iteration on it seems to be chaotic
 function go_deeper(expr::Expression, node_names::Set{String}, parent)
 	if in(expr.name, node_names)
 		nnames = copy(node_names)
 		delete!(nnames, expr.name)	
-		to_deptree!(expr, nnames; parent)
-		return ArrayVariable(expr.name)
+		expr_to_node!(expr, nnames, parent)
+		return ArrayVariable(expr.name, expr.depx, expr.depy)
 	elseif expr isa BinaryOperator
-		return typeof(expr)(expr.name, go_deeper(expr.left, node_names, parent), go_deeper(expr.right, node_names, parent))
+		return typeof(expr)(expr.name, go_deeper(expr.left, node_names, parent), go_deeper(expr.right, node_names, parent), expr.depx, expr.depy)
 	elseif expr isa UnaryOperator
-		return typeof(expr)(expr.name, go_deeper(expr.expr, node_names, parent))
+		return typeof(expr)(expr.name, go_deeper(expr.expr, node_names, parent), expr.depx, expr.depy)
 	elseif expr isa ArrayVariable
-		to_deptree!(expr, node_names; parent)
-		return ArrayVariable(expr.name)
+		expr_to_node!(expr, node_names, parent)
+		return ArrayVariable(expr.name, expr.depx, expr.depy)
 	else
 		return expr
 	end
 end
 
+function to_graphviz(tree::DepNode)
+	s=""
+	for c in tree.childs
+		s = s*"$(tree.name) -> $(c.name)\n"
+		s = s*to_graphviz(c)
+	end
+	return s
+end
+
+function string(tree::DepNode, lev = 0)
+	#keeping track of indentation level and using it before each expression
+	
+	if tree.expr != nothing
+		s = "$("\t"^lev)$(tree.name) :\n$("\t"^(lev+1))expr : $(string(tree.expr)) @ [$(tree.expr.depx),$(tree.expr.depy)]\n$("\t"^(lev+1))childs:\n"
+	else 
+		s = "$("\t"^lev)$(tree.name) :\n$("\t"^(lev+1))childs:\n"
+	end
+
+	for c in tree.childs
+		s = s*string(c, lev+2)
+	end
+
+	return s
+end

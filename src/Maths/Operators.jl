@@ -10,7 +10,7 @@ struct Addition{D,P} <: Form{D,P}
 	left::Form{D,P}
 	right::Form{D,P}
 end
-+(left::Form{D,P}, right::Form{D,P}) where {D,P} = Addition{D,P}("("*left.name*" + "*right.name*")", left, right)
++(left::Form{D,P}, right::Form{D,P}) where {D,P} = Addition{D,P}("P_"*left.name*"_"*right.name, left, right)
 
 """
 	InteriorProduct
