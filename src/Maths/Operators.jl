@@ -5,7 +5,7 @@ export InteriorProduct
 """
 	Addition
 """
-struct Addition{D,P} <: Form{D,P}
+mutable struct Addition{D,P} <: Form{D,P}
 	name::String
 	left::Form{D,P}
 	right::Form{D,P}
@@ -15,7 +15,7 @@ end
 """
 	InteriorProduct
 """
-struct ExteriorDerivative{D,P} <: Form{D,P}
+mutable struct ExteriorDerivative{D,P} <: Form{D,P}
 	name::String
 	form::Form
 	
@@ -30,7 +30,7 @@ end
 
 TODO check primality (should it actually be implemented here or into Arrays ?
 """
-struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
+mutable struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
 	name::String
 	vect::Vect
 	form::Form

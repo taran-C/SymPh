@@ -11,6 +11,7 @@ include("Arrays/Operators.jl")
 include("Arrays/DepTree.jl")
 include("Arrays/ExecFlow.jl")
 include("Arrays/ToKernels.jl")
+include("Arrays/Mesh.jl")
 end
 
 

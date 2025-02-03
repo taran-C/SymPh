@@ -12,8 +12,13 @@ end
 
 function explicit(form::ExteriorDerivative{1, Primal})
 	expr = explicit(form.form)
+	d_x = (expr[1,0] - expr[0,0]) * Arrays.mskx
+	d_x.name = form.name * "_x"
 
-	return (Arrays.Substraction(form.name * "_x", expr[1,0], expr[0,0]), Arrays.Substraction(form.name*"_y", expr[0,1], expr[0,0]))
+	d_y = (expr[0,1] - expr[0,0]) * Arrays.msky
+	d_y.name = form.name * "_y"
+
+	return (d_x, d_y)
 end
 
 #1-Forms
@@ -30,8 +35,10 @@ end
 
 function explicit(form::ExteriorDerivative{2, Primal})
 	exprs = explicit(form.form)
+	dq = ((exprs[2][1,0]-exprs[2][0,0])-(exprs[1][0,1]-exprs[1][0,0])) * Arrays.mskv
+	dq.name = form.name
 
-	return Arrays.Substraction(form.name, exprs[2][1,0]-exprs[2][0,0], exprs[1][0,1]-exprs[1][0,0])
+	return dq
 end
 
 #2-Forms

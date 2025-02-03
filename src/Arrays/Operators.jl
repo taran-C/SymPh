@@ -14,7 +14,7 @@ eval(expr::UnaryOperator, vals::AbstractDict) = op(expr)(eval(expr.expr, vals))
 """
 Negative, represents the negation of an expression
 """
-struct Negative <: UnaryOperator
+mutable struct Negative <: UnaryOperator
 	name::String
 	expr::Expression
         depx :: Integer
@@ -59,7 +59,7 @@ eval(expr::BinaryOperator, vals::AbstractDict) = op(expr)(eval(expr.left, vals),
 """
 Addition
 """
-struct Addition <: BinaryOperator
+mutable struct Addition <: BinaryOperator
 	name::String
 	left::Expression
 	right::Expression
@@ -77,7 +77,7 @@ Addition(name, left, right) = Addition(name, left, right, 0,0)
 """
 Substraction
 """
-struct Substraction <: BinaryOperator
+mutable struct Substraction <: BinaryOperator
 	name::String
 	left::Expression
 	right::Expression
@@ -95,7 +95,7 @@ Substraction(name, left, right) = Substraction(name, left, right, 0,0)
 """
 Multiplication
 """
-struct Multiplication <: BinaryOperator
+mutable struct Multiplication <: BinaryOperator
 	name::String
 	left::Expression
 	right::Expression
@@ -115,7 +115,7 @@ Division
 
 TODO error handling
 """
-struct Division <: BinaryOperator
+mutable struct Division <: BinaryOperator
 	name::String
 	left::Expression
 	right::Expression
@@ -142,7 +142,7 @@ TernaryOperator
 
 	symbolic representation of a ? b : c
 """
-struct TernaryOperator <: Operator
+mutable struct TernaryOperator <: Operator
 	name::String
 	a::BooleanExpression
 	b::Expression
@@ -158,7 +158,7 @@ GreaterThan
 
 	tests if left > right
 """
-struct GreaterThan <: BinaryBooleanOperator
+mutable struct GreaterThan <: BinaryBooleanOperator
 	name::String
 	left::Expression
 	right::Expression
