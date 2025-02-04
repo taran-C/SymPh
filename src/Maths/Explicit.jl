@@ -1,6 +1,11 @@
 import ..Arrays
 export explicit
 
+#Vectors
+function explicit(vect::VectorVariable{P}) where {P}
+	return (Arrays.ArrayVariable(vect.name*"_X"), Arrays.ArrayVariable(vect.name*"_Y"))
+end
+
 #0-Forms
 function explicit(form::FormVariable{0, P}) where {P}
 	return Arrays.ArrayVariable(form.name)
@@ -44,4 +49,21 @@ end
 #2-Forms
 function explicit(form::FormVariable{2,P}) where {P}
 	return Arrays.ArrayVariable(form.name)
+end
+
+function explicit(form::Addition{2,P}) where {P}
+	return Arrays.Addition(form.name, explicit(form.left), explicit(form.right))
+end
+
+function explicit(form::InteriorProduct{1, Dual, Primal}) #TODO implement interpolations
+	fexpr = explicit(form.form)
+	uexpr, vexpr = explicit(form.vect)
+
+	uout = -vexpr * fexpr * Arrays.mskx
+	vout = uexpr * fexpr * Arrays.msky
+
+	uout.name = form.name*"_x"
+	vout.name = form.name*"_y"
+
+	return (uout, vout)
 end

@@ -38,5 +38,5 @@ mutable struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
 	function InteriorProduct(name::String, vect::Vect{Pv}, form::Form{D,Pf}) where {Pv,D,Pf}
 		return new{D-1, Pv, Pf}(name, vect, form)
 	end
-	InteriorProduct(vect::Vect, form::Form) = InteriorProduct("ι_"*vect.name*"("*form.name*")", vect, form)
+	InteriorProduct(vect::Vect, form::Form) = InteriorProduct("ι_"*vect.name*"_"*form.name, vect, form)
 end

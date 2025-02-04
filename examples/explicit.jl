@@ -2,18 +2,18 @@ using SymbolicPhysics.Maths
 import SymbolicPhysics.Arrays
 
 #Defining our equation
-a = FormVariable{0,Primal}("a")
-da = ExteriorDerivative(a)
-dda = ExteriorDerivative(da)
-
+U = VectorVariable{Dual}("U")
+a = FormVariable{2,Primal}("a")
+dta = ExteriorDerivative("dta", InteriorProduct(U,a))
+print(dta)
 #-----This part will be encapsulated into a function that automatically optimizes ----------
 #Transforming the Forms expression into an Expression on arrays
-exprs = explicit(dda)
+exprs = explicit(dta)
 println("Developped expression :")
 println(string(exprs))
 
 #Transforming our Expression into a dependency tree
-tree = Arrays.to_deptree!(Set{String}(["da_x", "da_y"]), exprs)
+tree = Arrays.to_deptree!(Set{String}(["ι_U_a_x","ι_U_a_y"]), exprs)
 println("Tree view")
 println(string(tree))
 println("Graphviz view of tree")
@@ -43,16 +43,17 @@ mesh = Arrays.Mesh(nx, ny, nh, msk, 10, 10)
 A = mesh.xc .+ mesh.yc
 A .*= msk
 
-DAx = zeros(nx, ny)
-DAy = zeros(nx, ny)
+U_X = deepcopy(mesh.xc)
+U_X .*= mesh.mskx
+U_Y = deepcopy(mesh.yc)
+U_Y .*= mesh.msky
 
-DDA = zeros(nx, ny)
+DTA = zeros(nx, ny)
 
-func!(;nx=nx, ny=ny, nh=nh, a=A, da_x=DAx, da_y = DAy, dda = DDA, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv)
+ι_U_a_x = zeros(nx, ny)
+ι_U_a_y = zeros(nx, ny)
 
-display(mesh.xc)
-display(mesh.yc)
+func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv)
+
 display(A)
-display(DAx)
-display(DAy)
-display(DDA)
+display(DTA)
