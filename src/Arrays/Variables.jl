@@ -24,7 +24,7 @@ struct RealValue <: Literal
 	name::String
 	val::Real
 end
-string(expr::RealValue) = string(expr.val)
+string(expr::RealValue; fpar=false) = string(expr.val)
 eval(expr::RealValue, vals::AbstractDict) = expr.val
 RealValue(val::Real) = RealValue(string(val), val)
 

@@ -31,8 +31,8 @@ println(funcstr)
 #-------------------------------------------------------------------------------------------
 
 #Testing the function
-nx = 14
-ny = 14
+nx = 16
+ny = 16
 nh = 2
 
 msk = zeros(nx, ny)
@@ -40,13 +40,11 @@ msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 
 mesh = Arrays.Mesh(nx, ny, nh, msk, 10, 10)
 
-A = mesh.xc .+ mesh.yc
-A .*= msk
+#Grid
+A = msk .* (mod.(floor.(mesh.xc ./ (6 * mesh.dx-1)), 2) + mod.(floor.(mesh.yc ./ (6 * mesh.dy-1)), 2) .- 1)
 
-U_X = deepcopy(mesh.xc)
-U_X .*= mesh.mskx
-U_Y = deepcopy(mesh.yc)
-U_Y .*= mesh.msky
+U_X = ones(nx,ny) .* mesh.mskx
+U_Y = zeros(nx,ny)
 
 DTA = zeros(nx, ny)
 

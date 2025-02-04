@@ -59,8 +59,8 @@ function explicit(form::InteriorProduct{1, Dual, Primal}) #TODO implement interp
 	fexpr = explicit(form.form)
 	uexpr, vexpr = explicit(form.vect)
 
-	uout = -vexpr * fexpr * Arrays.mskx
-	vout = uexpr * fexpr * Arrays.msky
+	uout = -vexpr * (0.5*(fexpr[0,0]+fexpr[0,-1])) * Arrays.mskx
+	vout = uexpr * (0.5*(fexpr[0,0]+fexpr[-1,0])) * Arrays.msky
 
 	uout.name = form.name*"_x"
 	vout.name = form.name*"_y"
