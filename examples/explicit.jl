@@ -1,7 +1,7 @@
 using SymbolicPhysics.Maths
 import SymbolicPhysics.Arrays
 
-using GLMakie
+#using GLMakie
 
 #Defining our equation
 U = VectorVariable{Dual}("U")
@@ -58,13 +58,13 @@ DTA = zeros(nx, ny)
 
 
 #Heatmap
-fig = Figure(size = (600, 600))
-ax = Axis(fig[1,1])
+#fig = Figure(size = (600, 600))
+#ax = Axis(fig[1,1])
 
-q = Observable(A)
-h = heatmap!(ax, q, colorrange=(-1.5,1.5))
-Colorbar(fig[1,2], h)
-display(fig)
+#q = Observable(A)
+#h = heatmap!(ax, q, colorrange=(-1.5,1.5))
+#Colorbar(fig[1,2], h)
+#display(fig)
 
 #TimeLoop
 tend = 50
@@ -72,11 +72,11 @@ dt = 0.01
 
 tstart = time()
 for t in 0:dt:tend
-	func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv, o2px = mesh.o2px, o2py = mesh.o2py)
-	#func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv, o2px = mesh.o2px, o2py = mesh.o2py)
-	A .-= dt .* DTA
-	q[] = A
-	sleep(0.00001)
+	func!(mesh ;a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y)
+	#func!(mesh ;a=A, U_X=U_X, U_Y=U_Y, dta=DTA)
+	#A .-= dt .* DTA
+	#q[] = A
+	#sleep(0.00001)
 end
 println(time()-tstart)
 

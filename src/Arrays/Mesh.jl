@@ -1,40 +1,40 @@
 struct Mesh
 	#Grid
-	nx
-	ny
+	nx::Int64
+	ny::Int64
 	
-	nh
+	nh::Int64
 
 	#Locations
-	xc
-	yc
+	xc::AbstractArray{Float64}
+	yc::AbstractArray{Float64}
 
-	xy
-	yy
+	xy#::AbstractArray{Float64}
+	yy#::AbstractArray{Float64}
 
-	xx
-	yx
+	xx#::AbstractArray{Float64}
+	yx#::AbstractArray{Float64}
 
-	xv
-	yv
+	xv#::AbstractArray{Float64}
+	yv#::AbstractArray{Float64}
 
 	#Metric TODO different edge length for primal/dual grids (and primal/dual grids at all anyway)
-	dx
-	dy
+	dx#::AbstractArray{Float64}
+	dy#::AbstractArray{Float64}
 	
-	A
+	A#::AbstractArray{Float64}
 
 	#Masks
-	mskc
+	mskc::AbstractArray{Float64}
 	
-	mskv
+	mskv::AbstractArray{Float64}
 	
-	mskx
-	msky
+	mskx::AbstractArray{Float64}
+	msky::AbstractArray{Float64}
 
 	#Orders
-	o2px #order two, primal, along x
-	o2py
+	o2px::AbstractArray{Float64} #order two, primal, along x
+	o2py::AbstractArray{Float64}
 	
 	function Mesh(nx, ny, nh, msk, Lx = 1, Ly = 1)
 		#Locations
@@ -93,14 +93,15 @@ function compute_msks(msk)
 	return mskx, msky, mskv
 end
 
-dx = ArrayVariable("dx")
-dy = ArrayVariable("dy")
-A = ArrayVariable("A")
+#The mesh. is terrible in this
+dx = ArrayVariable("mesh.dx")
+dy = ArrayVariable("mesh.dy")
+A = ArrayVariable("mesh.A")
 
-msk = ArrayVariable("msk")
-mskv = ArrayVariable("mskv")
-mskx = ArrayVariable("mskx")
-msky = ArrayVariable("msky")
+msk = ArrayVariable("mesh.msk")
+mskv = ArrayVariable("mesh.mskv")
+mskx = ArrayVariable("mesh.mskx")
+msky = ArrayVariable("mesh.msky")
 
-o2px = ArrayVariable("o2px")
-o2py = ArrayVariable("o2py")
+o2px = ArrayVariable("mesh.o2px")
+o2py = ArrayVariable("mesh.o2py")

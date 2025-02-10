@@ -1,0 +1,6 @@
+- Actually generate typed kernels with automatic argument passing
+- Automatic optimization
+- Automatically allocate functions
+- GPU
+- Weno Interpolation
+- Special ArrayExpression object representing function calls that need sync (poisson problem)

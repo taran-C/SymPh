@@ -44,7 +44,8 @@ end
 
 #TODO this is destructive for the dependency tree, should it be ?
 function to_sequence!(tree::DepNode)
-	vars = collect(keys(shave!(tree)))
+	#Elements of mesh are not variables but are forwarded
+	vars = setdiff(collect(keys(shave!(tree))), "mesh." .* string.(fieldnames(Mesh)))
 	blocks = []
 	
 	while length(tree.childs) > 0
