@@ -1,6 +1,8 @@
 using SymbolicPhysics.Maths
 import SymbolicPhysics.Arrays
 
+using GLMakie
+
 #Defining our equation
 U = VectorVariable{Dual}("U")
 a = FormVariable{2,Primal}("a")
@@ -31,27 +33,47 @@ println(funcstr)
 #-------------------------------------------------------------------------------------------
 
 #Testing the function
-nx = 16
-ny = 16
+nx = 100
+ny = 100
 nh = 2
 
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 
+Lx, Ly = (10,10)
 mesh = Arrays.Mesh(nx, ny, nh, msk, 10, 10)
 
 #Grid
 A = msk .* (mod.(floor.(mesh.xc ./ (6 * mesh.dx-1)), 2) + mod.(floor.(mesh.yc ./ (6 * mesh.dy-1)), 2) .- 1)
 
-U_X = ones(nx,ny) .* mesh.mskx
-U_Y = zeros(nx,ny)
+U_X = cos.(pi * (mesh.xc ./Lx .- 0.5)) .* sin.(pi * (mesh.yc ./Ly .- 0.5)) .* mesh.mskx
+U_Y = -cos.(pi * (mesh.yc ./Ly .- 0.5)) .* sin.(pi * (mesh.xc ./Lx .- 0.5)) .* mesh.msky
 
 DTA = zeros(nx, ny)
 
 ι_U_a_x = zeros(nx, ny)
 ι_U_a_y = zeros(nx, ny)
 
-func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv)
 
-display(A)
-display(DTA)
+#Heatmap
+fig = Figure(size = (1600, 800))
+ax = Axis(fig[1,1])
+
+q = Observable(A)
+h = heatmap!(ax, q, colorrange=(-1.5,1.5))
+Colorbar(fig[1,2], h)
+display(fig)
+
+#TimeLoop
+tend = 100
+dt = 0.01
+for t in 0:dt:tend
+	func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv)
+	A .-= dt .* DTA
+	q[] = A
+	sleep(0.01)
+end
+
+
+#display(A)
+#display(DTA)

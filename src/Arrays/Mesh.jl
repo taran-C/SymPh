@@ -63,7 +63,7 @@ end
 
 
 function compute_msks(msk)
-	nx, ny = shape(msk)
+	nx, ny = size(msk)
 
 	mskx = zeros(nx, ny)
 	msky = zeros(nx, ny)
