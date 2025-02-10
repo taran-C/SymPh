@@ -15,7 +15,8 @@ println("Developped expression :")
 println(string(exprs))
 
 #Transforming our Expression into a dependency tree
-tree = Arrays.to_deptree!(Set{String}(["ι_U_a_x","ι_U_a_y"]), exprs)
+#tree = Arrays.to_deptree!(Set{String}(["ι_U_a_x","ι_U_a_y"]), exprs)
+tree = Arrays.to_deptree!(Set{String}([]), exprs)
 println("Tree view")
 println(string(tree))
 println("Graphviz view of tree")
@@ -56,24 +57,27 @@ DTA = zeros(nx, ny)
 
 
 #Heatmap
-fig = Figure(size = (1600, 800))
-ax = Axis(fig[1,1])
+#fig = Figure(size = (1600, 800))
+#ax = Axis(fig[1,1])
 
-q = Observable(A)
-h = heatmap!(ax, q, colorrange=(-1.5,1.5))
-Colorbar(fig[1,2], h)
-display(fig)
+#q = Observable(A)
+#h = heatmap!(ax, q, colorrange=(-1.5,1.5))
+#Colorbar(fig[1,2], h)
+#display(fig)
 
 #TimeLoop
-tend = 100
+tend = 200
 dt = 0.01
-for t in 0:dt:tend
-	func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv)
-	A .-= dt .* DTA
-	q[] = A
-	sleep(0.01)
-end
 
+tstart = time()
+for t in 0:dt:tend
+	#func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv)
+	func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv)
+	A .-= dt .* DTA
+	#q[] = A
+	#sleep(0.00001)
+end
+println(time()-tstart)
 
 #display(A)
 #display(DTA)
