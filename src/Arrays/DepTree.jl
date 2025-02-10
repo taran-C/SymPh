@@ -94,6 +94,8 @@ function go_deeper(expr::Expression, node_names::Set{String}, parent)
 		return typeof(expr)(expr.name, go_deeper(expr.left, node_names, parent), go_deeper(expr.right, node_names, parent), expr.depx, expr.depy)
 	elseif expr isa UnaryOperator
 		return typeof(expr)(expr.name, go_deeper(expr.expr, node_names, parent), expr.depx, expr.depy)
+	elseif expr isa TernaryOperator
+		return TernaryOperator(expr.name, go_deeper(expr.a, node_names, parent), go_deeper(expr.b, node_names, parent), go_deeper(expr.c, node_names, parent), expr.depx, expr.depy)
 	elseif expr isa ArrayVariable
 		expr_to_node!(expr, node_names, parent)
 		return ArrayVariable(expr.name, expr.depx, expr.depy)

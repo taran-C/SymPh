@@ -55,12 +55,22 @@ function explicit(form::Addition{2,P}) where {P}
 	return Arrays.Addition(form.name, explicit(form.left), explicit(form.right))
 end
 
-function explicit(form::InteriorProduct{1, Dual, Primal}) #TODO implement interpolations
+function explicit(form::InteriorProduct{1, Dual, Primal}) 
 	fexpr = explicit(form.form)
 	uexpr, vexpr = explicit(form.vect)
 
-	uout = -vexpr * (0.5*(fexpr[0,0]+fexpr[0,-1])) * Arrays.mskx
-	vout = uexpr * (0.5*(fexpr[0,0]+fexpr[-1,0])) * Arrays.msky
+	interp = "upwind"
+
+	if interp == "upwind"
+		fintx = Arrays.upwind(uexpr, fexpr, Arrays.o2px, "left", "x")
+		finty = Arrays.upwind(vexpr, fexpr, Arrays.o2py, "left", "y")
+	elseif interp == "2ptavg"
+		fintx = 0.5 * (fexpr[0,0] + fexpr[-1,0])
+		finty = 0.5 * (fexpr[0,0] + fexpr[0,-1])
+	end
+
+	uout = -vexpr * finty * Arrays.mskx
+	vout = uexpr * fintx * Arrays.msky
 
 	uout.name = form.name*"_x"
 	vout.name = form.name*"_y"

@@ -8,7 +8,7 @@ Unary Operators
 """
 abstract type UnaryOperator <: Operator end
 getindex(expr::UnaryOperator, depx, depy) = typeof(expr)(expr.name, expr.expr, expr.depx+depx, expr.depy+depy)
-string(expr::UnaryOperator; fpar=false) = fpar ? "($(symbol(expr))$(string(expr.expr[expr.depx, expr.depy])))" : "$(symbol(expr))$(string(expr.expr[expr.depx, expr.depy]))"
+string(expr::UnaryOperator) = "($(symbol(expr))$(string(expr.expr[expr.depx, expr.depy])))"
 eval(expr::UnaryOperator, vals::AbstractDict) = op(expr)(eval(expr.expr, vals))
 
 """
@@ -31,29 +31,7 @@ Binary Operators
 """
 abstract type BinaryOperator <: Operator end
 getindex(expr::BinaryOperator, depx, depy) = typeof(expr)(expr.name, expr.left, expr.right, expr.depx+depx, expr.depy+depy)
-function string(expr::BinaryOperator; fpar=false)
-	if fpar==false
-		ret = ""
-
-		if prec(expr.left)<prec(expr)
-			ret = string(ret, "($(string(expr.left[expr.depx, expr.depy])))")
-		else
-			ret = string(ret, string(expr.left[expr.depx, expr.depy]))
-		end
-		
-		ret = string(ret, " $(symbol(expr)) ")
-		
-		if prec(expr.right)<prec(expr)
-			ret = string(ret, "($(string(expr.right[expr.depx, expr.depy])))")
-		else
-			ret = string(ret, string(expr.right[expr.depx, expr.depy]))
-		end
-		
-		return ret
-	else
-		return "($(string(expr.left[expr.depx, expr.depy]; fpar = true)))$(symbol(expr))($(string(expr.right[expr.depx, expr.depy]; fpar = true)))"
-	end	
-end
+string(expr::BinaryOperator) = "($(string(expr.left[expr.depx, expr.depy])))$(symbol(expr))($(string(expr.right[expr.depx, expr.depy])))"
 eval(expr::BinaryOperator, vals::AbstractDict) = op(expr)(eval(expr.left, vals), eval(expr.right, vals))
 
 """
@@ -127,8 +105,8 @@ op(expr::Division) = /
 prec(expr::Division) = 3
 Division(name, left, right) = Division(name, left, right, 0,0)
 /(left::Expression, right::Expression) = Division("d_"*left.name*"_"*right.name, left, right)
-/(left::Expression, right::Real) = Division(left, RealValue(right))
-/(left::Real, right::Expression) = Division(RealValue(left), right)
+/(left::Expression, right::Real) = left / RealValue(right)
+/(left::Real, right::Expression) = RealValue(left) / right
 
 
 abstract type BinaryBooleanOperator <: BinaryOperator end
@@ -147,10 +125,16 @@ mutable struct TernaryOperator <: Operator
 	a::BooleanExpression
 	b::Expression
 	c::Expression
+	depx::Integer
+	depy::Integer
 end
 #TODO check with true if else cause i can't seem to find a way to override the ternary operator ?
 eval(expr::TernaryOperator, vals::AbstractDict) = eval(expr.a, vals) ? eval(expr.b, vals) : eval(expr.c, vals)
-string(expr::TernaryOperator) = "($(string(expr.a))) ? ($(string(expr.b))) : ($(string(expr.c)))"
+string(expr::TernaryOperator) = "($(string(expr.a[expr.depx, expr.depy]))) ? ($(string(expr.b[expr.depx, expr.depy]))) : ($(string(expr.c[expr.depx, expr.depy])))"
+prec(expr::TernaryOperator) = 10
+getindex(expr::TernaryOperator, depx, depy) = TernaryOperator(expr.name, expr.a, expr.b, expr.c, expr.depx+depx, expr.depy+depy)
+TernaryOperator(name, a, b, c) = TernaryOperator(name, a, b, c, 0, 0)
+TernaryOperator(a, b, c) = TernaryOperator("TA_" * a.name * "_" * b.name * "_" * c.name, a, b, c)
 
 #Conditionals
 """
@@ -162,11 +146,14 @@ mutable struct GreaterThan <: BinaryBooleanOperator
 	name::String
 	left::Expression
 	right::Expression
+	depx::Integer
+	depy::Integer
 end
 symbol(expr::GreaterThan) = ">"
 op(expr::GreaterThan) = >
 prec(expr::GreaterThan) = 10
+GreaterThan(name, left, right) = GreaterThan(name, left, right, 0, 0)
 >(left::Expression, right::Expression) = GreaterThan(left.name*"_"*right.name*"_gt", left, right)
->(left::Expression, right::Real) = GreaterThan(left, RealValue(right))
->(left::Real, right::Expression) = GreaterThan(RealValue(left), right)
+>(left::Expression, right::Real) = left > RealValue(right)
+>(left::Real, right::Expression) = RealValue(left) > right
 

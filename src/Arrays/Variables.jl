@@ -24,7 +24,7 @@ struct RealValue <: Literal
 	name::String
 	val::Real
 end
-string(expr::RealValue; fpar=false) = string(expr.val)
+string(expr::RealValue) = string(expr.val)
 eval(expr::RealValue, vals::AbstractDict) = expr.val
 RealValue(val::Real) = RealValue(string(val), val)
 
@@ -50,7 +50,7 @@ struct ArrayVariable <: Variable
         depx :: Integer
         depy :: Integer
 end
-string(expr::ArrayVariable; fpar = false) = "$(expr.name)[$(expr.depx)+i,$(expr.depy)+j]"
+string(expr::ArrayVariable) = "$(expr.name)[$(expr.depx)+i,$(expr.depy)+j]"
 ArrayVariable(name :: String) = ArrayVariable(name, 0, 0)
 getindex(A::ArrayVariable, depx, depy) = ArrayVariable(A.name, A.depx+depx, A.depy+depy)
 function eval(expr::ArrayVariable, vals::AbstractDict)

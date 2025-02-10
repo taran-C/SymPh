@@ -7,6 +7,7 @@ using GLMakie
 U = VectorVariable{Dual}("U")
 a = FormVariable{2,Primal}("a")
 dta = ExteriorDerivative("dta", InteriorProduct(U,a))
+
 print(dta)
 #-----This part will be encapsulated into a function that automatically optimizes ----------
 #Transforming the Forms expression into an Expression on arrays
@@ -15,8 +16,8 @@ println("Developped expression :")
 println(string(exprs))
 
 #Transforming our Expression into a dependency tree
-#tree = Arrays.to_deptree!(Set{String}(["ι_U_a_x","ι_U_a_y"]), exprs)
-tree = Arrays.to_deptree!(Set{String}([]), exprs)
+tree = Arrays.to_deptree!(Set{String}(["ι_U_a_x","ι_U_a_y"]), exprs)
+#tree = Arrays.to_deptree!(Set{String}([]), exprs)
 println("Tree view")
 println(string(tree))
 println("Graphviz view of tree")
@@ -45,7 +46,7 @@ Lx, Ly = (10,10)
 mesh = Arrays.Mesh(nx, ny, nh, msk, 10, 10)
 
 #Grid
-A = msk .* (mod.(floor.(mesh.xc ./ (6 * mesh.dx-1)), 2) + mod.(floor.(mesh.yc ./ (6 * mesh.dy-1)), 2) .- 1)
+A = mesh.mskv .* (mod.(floor.(mesh.xc ./ (6 * mesh.dx-1)), 2) + mod.(floor.(mesh.yc ./ (6 * mesh.dy-1)), 2) .- 1)
 
 U_X = cos.(pi * (mesh.xc ./Lx .- 0.5)) .* sin.(pi * (mesh.yc ./Ly .- 0.5)) .* mesh.mskx
 U_Y = -cos.(pi * (mesh.yc ./Ly .- 0.5)) .* sin.(pi * (mesh.xc ./Lx .- 0.5)) .* mesh.msky
@@ -57,25 +58,25 @@ DTA = zeros(nx, ny)
 
 
 #Heatmap
-#fig = Figure(size = (1600, 800))
-#ax = Axis(fig[1,1])
+fig = Figure(size = (600, 600))
+ax = Axis(fig[1,1])
 
-#q = Observable(A)
-#h = heatmap!(ax, q, colorrange=(-1.5,1.5))
-#Colorbar(fig[1,2], h)
-#display(fig)
+q = Observable(A)
+h = heatmap!(ax, q, colorrange=(-1.5,1.5))
+Colorbar(fig[1,2], h)
+display(fig)
 
 #TimeLoop
-tend = 200
+tend = 50
 dt = 0.01
 
 tstart = time()
 for t in 0:dt:tend
-	#func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv)
-	func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv)
+	func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv, o2px = mesh.o2px, o2py = mesh.o2py)
+	#func!(;nx=nx, ny=ny, nh=nh, a=A, U_X=U_X, U_Y=U_Y, dta=DTA, mskx = mesh.mskx, msky = mesh.msky, mskv = mesh.mskv, o2px = mesh.o2px, o2py = mesh.o2py)
 	A .-= dt .* DTA
-	#q[] = A
-	#sleep(0.00001)
+	q[] = A
+	sleep(0.00001)
 end
 println(time()-tstart)
 

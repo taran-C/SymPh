@@ -13,7 +13,7 @@ function to_kernel(seq::Sequence)
 		str = str * "\tfor i in 1+nh:nx-nh, j in 1+nh:ny-nh\n"
 		
 		for key in keys(b.exprs)
-			str = str * "\t\t" *key * "[i,j] = $(string(b.exprs[key]; fpar=true))\n"
+			str = str * "\t\t" *key * "[i,j] = $(string(b.exprs[key]))\n"
 		end
 		str = str * "\tend\n\n"
 	end

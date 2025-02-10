@@ -33,7 +33,8 @@ struct Mesh
 	msky
 
 	#Orders
-	
+	o2px #order two, primal, along x
+	o2py
 	
 	function Mesh(nx, ny, nh, msk, Lx = 1, Ly = 1)
 		#Locations
@@ -42,11 +43,14 @@ struct Mesh
 		#Masks
 		mskx, msky, mskv = compute_msks(msk)
 		
+		o2px, o2py = compute_orders(msk)
+
 		#Creating the mesh
 		return new(nx, ny, nh,
 			   xc, yc, 1, 1, 1, 1, 1, 1,
 			   1, 1, 1, 
-			   msk, mskv, mskx, msky)
+			   msk, mskv, mskx, msky,
+			   o2px, o2py)
 	end
 end
 
@@ -61,6 +65,17 @@ function compute_locations(nx, ny, nh, Lx, Ly)
 	return xc, yc
 end
 
+function compute_orders(msk)
+	nx,ny = size(msk)
+
+	o2px = zeros(nx,ny)
+	o2py = zeros(nx,ny)
+
+	get_order_left(msk, 1, o2px)
+	get_order_left(msk, nx, o2py)
+
+	return o2px, o2py
+end
 
 function compute_msks(msk)
 	nx, ny = size(msk)
@@ -86,3 +101,6 @@ msk = ArrayVariable("msk")
 mskv = ArrayVariable("mskv")
 mskx = ArrayVariable("mskx")
 msky = ArrayVariable("msky")
+
+o2px = ArrayVariable("o2px")
+o2py = ArrayVariable("o2py")
