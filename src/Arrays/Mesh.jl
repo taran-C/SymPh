@@ -105,3 +105,5 @@ msky = ArrayVariable("mesh.msky")
 
 o2px = ArrayVariable("mesh.o2px")
 o2py = ArrayVariable("mesh.o2py")
+o2dx = ArrayVariable("mesh.o2dx")
+o2dy = ArrayVariable("mesh.o2dy")

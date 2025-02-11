@@ -38,10 +38,8 @@ end
 """
 Interpolations TODO add weno and configurable interpolations
 """
-interpx(a::Expression) = 0.5*(a[1,0]+a[0,0])
-interpy(a::Expression) = 0.5*(a[0,1]+a[0,0])
-interpdiag(a::Expression) = interpx(interpy(a))
 
+#Upwind interpolation
 up3(qmm::Expression, qm::Expression, qp::Expression) = (5*qm+2*qp-qmm)/6
 up5(qmmm::Expression, qmm::Expression, qm::Expression, qp::Expression, qpp::Expression) = (2*qmmm - 13*qmm + 47*qm + 27*qp - 3*qpp)/60
 
@@ -100,3 +98,7 @@ upwind(U::Expression, a::Expression, o::Expression, lr::String, dir::String) = T
 #Averages :
 export avg4pt
 avg4pt(U::Expression, dx, dy) = 0.25 * (U[0,0] + U[dx,0] + U[0,dy] + U[dx,dy])
+
+interpx(a::Expression) = 0.5*(a[1,0]+a[0,0])
+interpy(a::Expression) = 0.5*(a[0,1]+a[0,0])
+interpdiag(a::Expression) = interpx(interpy(a))

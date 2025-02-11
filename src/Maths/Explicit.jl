@@ -1,20 +1,79 @@
 import ..Arrays
 export explicit
 
+#TODO change this to a param (or something) object
+interp = "upwind"
+
 #Vectors
 function explicit(vect::VectorVariable{P}) where {P}
 	return (Arrays.ArrayVariable(vect.name*"_X"), Arrays.ArrayVariable(vect.name*"_Y"))
 end
 
-#0-Forms
+#FormVariables
 function explicit(form::FormVariable{0, P}) where {P}
 	return Arrays.ArrayVariable(form.name)
 end
 
+function explicit(form::FormVariable{1, P}) where {P}
+	return (Arrays.ArrayVariable(form.name*"_x"), Arrays.ArrayVariable(form.name*"_y"))
+end
+
+function explicit(form::FormVariable{2,P}) where {P}
+	return Arrays.ArrayVariable(form.name)
+end
+
+#Addition
 function explicit(form::Addition{0,P}) where {P}
 	return Arrays.Addition(form.name, explicit(form.left), explicit(form.right))
 end
 
+function explicit(form::Addition{1,P}) where {P}
+	ls = explicit(form.left)
+	rs = explicit(form.right)
+
+	return (Arrays.Addition(form.name*"_x", ls[1], rs[1]), Arrays.Addition(form.name*"_y", ls[2], rs[2]))
+end
+
+function explicit(form::Addition{2,P}) where {P}
+	return Arrays.Addition(form.name, explicit(form.left), explicit(form.right))
+end
+
+#Substraction
+function explicit(form::Substraction{0,P}) where {P}
+	return Arrays.Addition(form.name, explicit(form.left), explicit(form.right))
+end
+
+function explicit(form::Substraction{1,P}) where {P}
+	ls = explicit(form.left)
+	rs = explicit(form.right)
+
+	return (Arrays.Substraction(form.name*"_x", ls[1], rs[1]), Arrays.Substraction(form.name*"_y", ls[2], rs[2]))
+end
+
+function explicit(form::Substraction{2,P}) where {P}
+	return Arrays.Substraction(form.name, explicit(form.left), explicit(form.right))
+end
+
+#Negative
+function explicit(form::Negative{0,P}) where {P}
+	return Arrays.Negative(form.name, explicit(form.form))
+end
+
+function explicit(form::Negative{1,P}) where {P}
+	fexpr = explicit(form.form)
+	return (Arrays.Negative(form.name*"_x", fexpr[1]), Arrays.Negative(form.name*"_y", fexpr[2]))
+end
+
+function explicit(form::Negative{2,P}) where {P}
+	return Arrays.Negative(form.name, explicit(form.form))
+end
+
+#RealProducts
+function explicit(form::RealProdForm{0,D}) where {D}
+	return form.real * explicit(form.form)
+end
+
+#ExteriorDerivative
 function explicit(form::ExteriorDerivative{1, Primal})
 	expr = explicit(form.form)
 	d_x = (expr[1,0] - expr[0,0]) * Arrays.mskx
@@ -26,16 +85,15 @@ function explicit(form::ExteriorDerivative{1, Primal})
 	return (d_x, d_y)
 end
 
-#1-Forms
-function explicit(form::FormVariable{1, P}) where {P}
-	return (Arrays.ArrayVariable(form.name*"_x"), Arrays.ArrayVariable(form.name*"_y"))
-end
+function explicit(form::ExteriorDerivative{1, Dual})
+	expr = explicit(form.form)
+	d_x = (expr[0,0] - expr[-1,0]) * Arrays.mskx
+	d_x.name = form.name * "_x"
 
-function explicit(form::Addition{1,P}) where {P}
-	ls = explicit(form.left)
-	rs = explicit(form.right)
+	d_y = (expr[0,0] - expr[0,-1]) * Arrays.msky
+	d_y.name = form.name * "_y"
 
-	return (Arrays.Addition(form.name*"_x", ls[1], rs[1]), Arrays.Addition(form.name*"_y", ls[2], rs[2]))
+	return (d_x, d_y)
 end
 
 function explicit(form::ExteriorDerivative{2, Primal})
@@ -46,20 +104,40 @@ function explicit(form::ExteriorDerivative{2, Primal})
 	return dq
 end
 
-#2-Forms
-function explicit(form::FormVariable{2,P}) where {P}
-	return Arrays.ArrayVariable(form.name)
+function explicit(form::ExteriorDerivative{2, Dual})
+	exprs = explicit(form.form)
+	dq = ((exprs[2][0,0]-exprs[2][-1,0])-(exprs[1][0,0]-exprs[1][0,-1])) * Arrays.mskv
+	dq.name = form.name
+
+	return dq
 end
 
-function explicit(form::Addition{2,P}) where {P}
-	return Arrays.Addition(form.name, explicit(form.left), explicit(form.right))
+#InteriorProduct
+#TODO Not tested !!
+function explicit(form::InteriorProduct{0, Dual, Dual})
+	fx, fy = explicit(form.form)
+	U, V = explicit(form.vect)
+
+	fu = fx * uexpr
+	fv = fy * vexpr
+	
+	if interp == "upwind"
+		Uint = Arrays.upwind(U[0,0] + U[1,0], fu, Arrays.o2px, "left", "x")
+		Vint = Arrays.upwind(V[0,0] + V[0,1], fv, Arrays.o2py, "left", "y")
+	elseif interp == "2ptavg"
+		Uint = 0.5 * (fu[0,0] + fu[-1,0])
+		Vint = 0.5 * (fv[0,0] + fv[0,-1])
+	end
+	
+	qout = (Uint + Vint) * Arrays.msk
+
+	return 
 end
 
 function explicit(form::InteriorProduct{1, Dual, Primal}) 
 	fexpr = explicit(form.form)
 	uexpr, vexpr = explicit(form.vect)
 
-	interp = "upwind"
 
 	if interp == "upwind"
 		fintx = Arrays.upwind(uexpr, fexpr, Arrays.o2px, "left", "x")
@@ -76,4 +154,42 @@ function explicit(form::InteriorProduct{1, Dual, Primal})
 	vout.name = form.name*"_y"
 
 	return (uout, vout)
+end
+
+function explicit(form::InteriorProduct{1, Dual, Dual})
+	fexpr = explicit(form.form)
+	uexpr, vexpr = explicit(form.vect)
+
+	udec = Arrays.avg4pt(uexpr, 1, -1)
+	vdec = Arrays.avg4pt(vexpr, -1, 1)
+	
+	if interp == "upwind"
+		xout = -vdec * Arrays.upwind(vexpr, fexpr, Arrays.o2dy, "right", "y")
+		yout = udec * Arrays.upwind(uexpr, fexpr, Arrays.o2dx, "right", "x")
+	else
+		@assert false "TODO"
+	end
+
+	return (xout, yout)
+end
+
+#Sharp
+function explicit(vec::Sharp{D}) where D #TODO separate Primal and dual areas (could be very different, especially for non square grids)
+	xexpr, yexpr = explicit(vec.form)
+
+	return (xexpr/Arrays.dx, yexpr/Arrays.dy)
+end
+
+#Hodge
+function explicit(form::Hodge{0, Dual})
+	fexpr = explicit(form.form)
+
+	return fexpr / Arrays.A
+end
+
+#InnerProduct
+function explicit(form::InnerProduct{2, Primal})
+	ax, ay = explicit(form.left)
+	bx, by = explicit(form.right)
+	return 0.5*(ax*bx + ax[1,0]*bx[1,0] + ay*by + ay[0,1]*by[0,1]) * Arrays.mskv
 end

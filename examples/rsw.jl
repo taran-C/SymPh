@@ -1,22 +1,39 @@
 using SymbolicPhysics.Maths
 import SymbolicPhysics.Arrays
 
-using GLMakie
+#using GLMakie
 
 #Defining our equation
-U = VectorVariable{Dual}("U")
-a = FormVariable{2,Primal}("a")
-dta = ExteriorDerivative("dta", InteriorProduct(U,a))
+h = FormVariable{2, Primal}("h") #Height * A (h* technically)
+u = FormVariable{1, Dual}("u") #Transported velocity
 
-print(dta)
+U = Sharp("U", u) # U = u#
+k = 0.5 * Hodge(InnerProduct(u,u)) #k = 0.5 * hodge(innerproduct(u,u))
+k.name = "k"
+p = Hodge("p", h) # p = *(g(h*+b*))
+zeta = ExteriorDerivative("zeta", u) # ζ* = du
+f = FormVariable{2, Dual}("f") #Coriolis
+
+#Time der
+du = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
+du.name = "du"
+
+dh = ExteriorDerivative("dh", InteriorProduct(U, h)) #dh = Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
+
+#Checking the typings
+@assert InnerProduct(u,u) isa Form{2, Primal}
+@assert U isa Vect{Dual}
+@assert k isa Form{0, Dual}
+@assert p isa Form{0, Dual}
+
 #-----This part will be encapsulated into a function that automatically optimizes ----------
 #Transforming the Forms expression into an Expression on arrays
-exprs = explicit(dta)
+exprs = explicit.([du, dh])
 println("Developped expression :")
 println(string(exprs))
 
 #Transforming our Expression into a dependency tree
-tree = Arrays.to_deptree!(Set{String}(["ι_U_a_x","ι_U_a_y"]), exprs)
+tree = Arrays.to_deptree!(Set{String}([]), exprs)
 #tree = Arrays.to_deptree!(Set{String}([]), exprs)
 println("Tree view")
 println(string(tree))
@@ -61,11 +78,6 @@ DTA = zeros(nx, ny)
 fig = Figure(size = (600, 600))
 ax = Axis(fig[1,1])
 
-q = Observable(A)
-h = heatmap!(ax, q, colorrange=(-1.5,1.5))
-Colorbar(fig[1,2], h)
-display(fig)
-
 #TimeLoop
 tend = 50
 dt = 0.01
@@ -75,8 +87,6 @@ for t in 0:dt:tend
 	func!(mesh ;a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y)
 	#func!(mesh ;a=A, U_X=U_X, U_Y=U_Y, dta=DTA)
 	A .-= dt .* DTA
-	q[] = A
-	sleep(0.00001)
 end
 println(time()-tstart)
 

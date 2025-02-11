@@ -1,6 +1,7 @@
 export Primal, Dual
 export Form, FormVariable
 export VectorVariable
+export Vect
 
 """
 	Primality
