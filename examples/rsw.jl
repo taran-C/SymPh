@@ -3,14 +3,14 @@ using SymbolicPhysics.Maths
 import SymbolicPhysics.Arrays
 
 #Defining our equation
-h = FormVariable{2, Primal}("h") #Height * A (h* technically)
-u = FormVariable{1, Dual}("u") #Transported velocity
+@Let h = FormVariable{2, Primal}() #Height * A (h* technically)
+@Let u = FormVariable{1, Dual}() #Transported velocity
 
 @Let U = Sharp(u) # U = u#
 @Let k = 0.5 * Hodge(InnerProduct(u,u)) #k = 0.5 * hodge(innerproduct(u,u))
 @Let p = Hodge(h) # p = *(g(h*+b*))
 @Let zeta = ExteriorDerivative(u) # ζ* = du
-f = FormVariable{2, Dual}("f") #Coriolis
+@Let f = FormVariable{2, Dual}() #Coriolis
 
 #Time der
 @Let du = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
