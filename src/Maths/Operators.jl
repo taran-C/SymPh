@@ -14,7 +14,8 @@ mutable struct Addition{D,P} <: Form{D,P}
 	left::Form{D,P}
 	right::Form{D,P}
 end
-+(left::Form{D,P}, right::Form{D,P}) where {D,P} = Addition{D,P}("P_"*left.name*"_"*right.name, left, right)
++(name::String, left::Form, right::Form) = Addition(name, left, right)
++(left::Form, right::Form) = Addition("P_"*left.name*"_"*right.name, left, right)
 
 """
 	Substraction
@@ -24,6 +25,7 @@ mutable struct Substraction{D,P} <: Form{D,P}
 	left::Form{D,P}
 	right::Form{D,P}
 end
+-(name::String, left::Form, right::Form) = Substraction(name, left, right)
 -(left::Form{D,P}, right::Form{D,P}) where {D,P} = Substraction{D,P}("P_"*left.name*"_"*right.name, left, right)
 
 """
@@ -33,6 +35,7 @@ mutable struct Negative{D,P} <: Form{D,P}
 	name::String
 	form::Form{D,P}
 end
+-(name::String, form::Form) = Negative(name, form)
 -(form::Form) = Negative("N_"*form.name, form)
 
 """
@@ -114,5 +117,7 @@ mutable struct RealProdForm{D, P} <: Form{D, P}
 	real::Real
 	form::Form{D, P}
 end
+*(name::String, real::Real, form::Form) = RealProdForm(name, real, form)
+*(name::String, form::Form, real::Real) = RealProdForm(name, real, form)
 *(real::Real,  form::Form) = RealProdForm("T_"*string(real)*"_"*form.name, real, form)
 *(form::Form, real::Real) = RealProdForm("T_"*string(real)*"_"*form.name, real, form)

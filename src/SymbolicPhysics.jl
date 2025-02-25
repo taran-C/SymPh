@@ -2,6 +2,8 @@ module SymbolicPhysics
 
 import Base: +,*,^,-,/,<,>,!, string, getindex
 
+include("Misc.jl")
+
 #Arrays
 module Arrays
 import Base: +,*,^,-,/,<,>,!, string, getindex
@@ -26,5 +28,6 @@ include("Maths/Variables.jl")
 include("Maths/Operators.jl")
 include("Maths/Explicit.jl")
 end
+
 
 end

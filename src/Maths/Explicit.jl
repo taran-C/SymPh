@@ -6,7 +6,7 @@ interp = "upwind"
 
 #Vectors
 function explicit(vect::VectorVariable{P}) where {P}
-	return (Arrays.ArrayVariable(vect.name*"_X"), Arrays.ArrayVariable(vect.name*"_Y"))
+	return [Arrays.ArrayVariable(vect.name*"_X"), Arrays.ArrayVariable(vect.name*"_Y")]
 end
 
 #FormVariables
@@ -15,7 +15,7 @@ function explicit(form::FormVariable{0, P}) where {P}
 end
 
 function explicit(form::FormVariable{1, P}) where {P}
-	return (Arrays.ArrayVariable(form.name*"_x"), Arrays.ArrayVariable(form.name*"_y"))
+	return [Arrays.ArrayVariable(form.name*"_x"), Arrays.ArrayVariable(form.name*"_y")]
 end
 
 function explicit(form::FormVariable{2,P}) where {P}
@@ -31,7 +31,7 @@ function explicit(form::Addition{1,P}) where {P}
 	ls = explicit(form.left)
 	rs = explicit(form.right)
 
-	return (Arrays.Addition(form.name*"_x", ls[1], rs[1]), Arrays.Addition(form.name*"_y", ls[2], rs[2]))
+	return [Arrays.Addition(form.name*"_x", ls[1], rs[1]), Arrays.Addition(form.name*"_y", ls[2], rs[2])]
 end
 
 function explicit(form::Addition{2,P}) where {P}
@@ -47,7 +47,7 @@ function explicit(form::Substraction{1,P}) where {P}
 	ls = explicit(form.left)
 	rs = explicit(form.right)
 
-	return (Arrays.Substraction(form.name*"_x", ls[1], rs[1]), Arrays.Substraction(form.name*"_y", ls[2], rs[2]))
+	return [Arrays.Substraction(form.name*"_x", ls[1], rs[1]), Arrays.Substraction(form.name*"_y", ls[2], rs[2])]
 end
 
 function explicit(form::Substraction{2,P}) where {P}
@@ -61,7 +61,7 @@ end
 
 function explicit(form::Negative{1,P}) where {P}
 	fexpr = explicit(form.form)
-	return (Arrays.Negative(form.name*"_x", fexpr[1]), Arrays.Negative(form.name*"_y", fexpr[2]))
+	return [Arrays.Negative(form.name*"_x", fexpr[1]), Arrays.Negative(form.name*"_y", fexpr[2])]
 end
 
 function explicit(form::Negative{2,P}) where {P}
@@ -82,7 +82,7 @@ function explicit(form::ExteriorDerivative{1, Primal})
 	d_y = (expr[0,1] - expr[0,0]) * Arrays.msky
 	d_y.name = form.name * "_y"
 
-	return (d_x, d_y)
+	return [d_x, d_y]
 end
 
 function explicit(form::ExteriorDerivative{1, Dual})
@@ -93,7 +93,7 @@ function explicit(form::ExteriorDerivative{1, Dual})
 	d_y = (expr[0,0] - expr[0,-1]) * Arrays.msky
 	d_y.name = form.name * "_y"
 
-	return (d_x, d_y)
+	return [d_x, d_y]
 end
 
 function explicit(form::ExteriorDerivative{2, Primal})
@@ -153,7 +153,7 @@ function explicit(form::InteriorProduct{1, Dual, Primal})
 	uout.name = form.name*"_x"
 	vout.name = form.name*"_y"
 
-	return (uout, vout)
+	return [uout, vout]
 end
 
 function explicit(form::InteriorProduct{1, Dual, Dual})
@@ -170,14 +170,14 @@ function explicit(form::InteriorProduct{1, Dual, Dual})
 		@assert false "TODO"
 	end
 
-	return (xout, yout)
+	return [xout, yout]
 end
 
 #Sharp
 function explicit(vec::Sharp{D}) where D #TODO separate Primal and dual areas (could be very different, especially for non square grids)
 	xexpr, yexpr = explicit(vec.form)
 
-	return (xexpr/Arrays.dx, yexpr/Arrays.dy)
+	return [xexpr/Arrays.dx, yexpr/Arrays.dy]
 end
 
 #Hodge

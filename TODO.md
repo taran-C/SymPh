@@ -13,3 +13,4 @@
 - Automatically allocate diag arrays
 - Code organization + exports
 - Ensure valid+unique names
+- Macro for defining/naming variables #Done !! Still some work to do on scopes though

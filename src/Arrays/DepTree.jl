@@ -59,7 +59,7 @@ end
 #TODO fix bug where if the name of the result is present in node_names it is recalculated from its own value
 to_deptree!(node_names::Set{String}, expr::Expression) = to_deptree!(node_names, (expr,)) #unravel to allow flexibility
 
-function to_deptree!(node_names::Set{String}, exprs::NTuple{N,Expression}) where {N}
+function to_deptree!(node_names::Set{String}, exprs)
 	root = DepNode("root", nothing)
 	
 	for expr in exprs
@@ -68,7 +68,6 @@ function to_deptree!(node_names::Set{String}, exprs::NTuple{N,Expression}) where
 
 	return root
 end	
-
 
 function expr_to_node!(expr::Expression, node_names::Set{String}, parent)
 	if expr isa ArrayVariable

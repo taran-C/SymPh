@@ -1,24 +1,20 @@
+import SymbolicPhysics: @Let
 using SymbolicPhysics.Maths
 import SymbolicPhysics.Arrays
-
-#using GLMakie
 
 #Defining our equation
 h = FormVariable{2, Primal}("h") #Height * A (h* technically)
 u = FormVariable{1, Dual}("u") #Transported velocity
 
-U = Sharp("U", u) # U = u#
-k = 0.5 * Hodge(InnerProduct(u,u)) #k = 0.5 * hodge(innerproduct(u,u))
-k.name = "k"
-p = Hodge("p", h) # p = *(g(h*+b*))
-zeta = ExteriorDerivative("zeta", u) # ζ* = du
+@Let U = Sharp(u) # U = u#
+@Let k = 0.5 * Hodge(InnerProduct(u,u)) #k = 0.5 * hodge(innerproduct(u,u))
+@Let p = Hodge(h) # p = *(g(h*+b*))
+@Let zeta = ExteriorDerivative(u) # ζ* = du
 f = FormVariable{2, Dual}("f") #Coriolis
 
 #Time der
-du = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
-du.name = "du"
-
-dh = ExteriorDerivative("dh", InteriorProduct(U, h)) #dh = Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
+@Let du = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
+@Let dh = ExteriorDerivative(InteriorProduct(U, h)) #dh = Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Checking the typings
 @assert InnerProduct(u,u) isa Form{2, Primal}
@@ -28,22 +24,21 @@ dh = ExteriorDerivative("dh", InteriorProduct(U, h)) #dh = Lx(U, h), Lie Derivat
 
 #-----This part will be encapsulated into a function that automatically optimizes ----------
 #Transforming the Forms expression into an Expression on arrays
-exprs = explicit.([du, dh])
-println("Developped expression :")
-println(string(exprs))
+exprs = [explicit(du); explicit(dh)]
+#println("Developped expression :")
+#println(string(exprs))
 
 #Transforming our Expression into a dependency tree
 tree = Arrays.to_deptree!(Set{String}([]), exprs)
-#tree = Arrays.to_deptree!(Set{String}([]), exprs)
-println("Tree view")
-println(string(tree))
-println("Graphviz view of tree")
-println(Arrays.to_graphviz(tree))
+#println("Tree view")
+#println(string(tree))
+#println("Graphviz view of tree")
+#println(Arrays.to_graphviz(tree))
 
 #Transforming our dependency tree into a sequence of expressions to compute
 seq = Arrays.to_sequence!(tree)
-println("Corresponding Sequence :")
-println(string(seq)*"\n")
+#println("Corresponding Sequence :")
+#println(string(seq)*"\n")
 
 #Generating the final function
 func!, funcstr = Arrays.to_kernel(seq)
@@ -75,8 +70,13 @@ DTA = zeros(nx, ny)
 
 
 #Heatmap
-fig = Figure(size = (600, 600))
-ax = Axis(fig[1,1])
+plot = false
+
+if plot :
+	using GLMakie
+	fig = Figure(size = (600, 600))
+	ax = Axis(fig[1,1])
+	q = Observable(A)
 
 #TimeLoop
 tend = 50
