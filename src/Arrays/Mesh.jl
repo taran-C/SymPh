@@ -53,7 +53,7 @@ struct Mesh
 		msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d = compute_msks(msk)
 	
 		#Orders
-		o2px, o2py, o2dx, o2dy = compute_orders(msk, msk2d)
+		o2px, o2py, o2dx, o2dy = compute_orders(msk2p, msk2d)
 
 		#Creating the mesh
 		return new(nx, ny, nh,
@@ -75,28 +75,30 @@ function compute_locations(nx, ny, nh, Lx, Ly)
 	return xc, yc
 end
 
+#TODO primal and dual metric
 function compute_metric(nx, ny, nh, Lx, Ly, msk)
-	dx = msk .* Lx ./ (nx-2*nh)
-	dy = msk .* Ly ./ (ny-2*nh)
+	dx = ones(nx,ny) .* Lx ./ (nx-2*nh)
+	dy = ones(nx,ny) .* Ly ./ (ny-2*nh)
 	A = dx .* dy
 
 	return dx, dy, A
 end
 
-function compute_orders(msk, mskv)
-	nx,ny = size(msk)
+function compute_orders(msk2p, msk2d)
+	nx,ny = size(msk2p)
 
 	o2px = zeros(nx,ny)
 	o2py = zeros(nx,ny)
 	o2dx = zeros(nx,ny)
 	o2dy = zeros(nx,ny)
 
-	get_order_right(msk, 1, o2px)
-	get_order_right(msk, nx, o2py)
+	#Primal
+	get_order_left(msk2p, 1, o2px)
+	get_order_left(msk2p, nx, o2py)
 
-	#TODO different masks for dual grid
-	get_order_left(mskv, 1, o2dx)
-	get_order_left(mskv, nx, o2dy)
+	#Dual
+	get_order_right(msk2d, 1, o2dx)
+	get_order_right(msk2d, nx, o2dy)
 
 	return o2px, o2py, o2dx, o2dy
 end

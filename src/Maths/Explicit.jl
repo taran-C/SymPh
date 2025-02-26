@@ -73,6 +73,16 @@ function explicit(form::RealProdForm{0,D}) where {D}
 	return form.real * explicit(form.form)
 end
 
+function explicit(form::RealProdForm{1,D}) where {D}
+	exprs = explicit(form.form)
+
+	return [form.real * exprs[1], form.real * exprs[2]]
+end
+
+function explicit(form::RealProdForm{2,D}) where {D}
+	return form.real * explicit(form.form)
+end
+
 #ExteriorDerivative
 function explicit(form::ExteriorDerivative{1, Primal})
 	expr = explicit(form.form)
@@ -166,6 +176,9 @@ function explicit(form::InteriorProduct{1, Dual, Dual})
 	if interp == "upwind"
 		xout = -vdec * Arrays.upwind(vexpr, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
 		yout = udec * Arrays.upwind(uexpr, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
+	elseif interp == "2ptavg"
+		xout = -vdec * 0.5 * (fexpr[0,0]+fexpr[0,1]) * Arrays.msk1dx
+		yout = udec * 0.5 * (fexpr[0,0]+fexpr[1,0]) * Arrays.msk1dy
 	else
 		@assert false "TODO"
 	end
