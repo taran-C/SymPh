@@ -76,10 +76,10 @@ end
 #ExteriorDerivative
 function explicit(form::ExteriorDerivative{1, Primal})
 	expr = explicit(form.form)
-	d_x = (expr[1,0] - expr[0,0]) * Arrays.mskx
+	d_x = (expr[1,0] - expr[0,0]) * Arrays.msk1px
 	d_x.name = form.name * "_x"
 
-	d_y = (expr[0,1] - expr[0,0]) * Arrays.msky
+	d_y = (expr[0,1] - expr[0,0]) * Arrays.msk1py
 	d_y.name = form.name * "_y"
 
 	return [d_x, d_y]
@@ -87,10 +87,10 @@ end
 
 function explicit(form::ExteriorDerivative{1, Dual})
 	expr = explicit(form.form)
-	d_x = (expr[0,0] - expr[-1,0]) * Arrays.mskx
+	d_x = (expr[0,0] - expr[-1,0]) * Arrays.msk1dx
 	d_x.name = form.name * "_x"
 
-	d_y = (expr[0,0] - expr[0,-1]) * Arrays.msky
+	d_y = (expr[0,0] - expr[0,-1]) * Arrays.msk1dy
 	d_y.name = form.name * "_y"
 
 	return [d_x, d_y]
@@ -98,7 +98,7 @@ end
 
 function explicit(form::ExteriorDerivative{2, Primal})
 	exprs = explicit(form.form)
-	dq = ((exprs[2][1,0]-exprs[2][0,0])-(exprs[1][0,1]-exprs[1][0,0])) * Arrays.mskv
+	dq = ((exprs[2][1,0]-exprs[2][0,0])-(exprs[1][0,1]-exprs[1][0,0])) * Arrays.msk2p
 	dq.name = form.name
 
 	return dq
@@ -106,7 +106,7 @@ end
 
 function explicit(form::ExteriorDerivative{2, Dual})
 	exprs = explicit(form.form)
-	dq = ((exprs[2][0,0]-exprs[2][-1,0])-(exprs[1][0,0]-exprs[1][0,-1])) * Arrays.mskv
+	dq = ((exprs[2][0,0]-exprs[2][-1,0])-(exprs[1][0,0]-exprs[1][0,-1])) * Arrays.msk2d
 	dq.name = form.name
 
 	return dq
@@ -129,7 +129,7 @@ function explicit(form::InteriorProduct{0, Dual, Dual})
 		Vint = 0.5 * (fv[0,0] + fv[0,-1])
 	end
 	
-	qout = (Uint + Vint) * Arrays.msk
+	qout = (Uint + Vint) * Arrays.msk0d
 
 	return 
 end
@@ -147,8 +147,8 @@ function explicit(form::InteriorProduct{1, Dual, Primal})
 		finty = 0.5 * (fexpr[0,0] + fexpr[0,-1])
 	end
 
-	uout = -vexpr * finty * Arrays.mskx
-	vout = uexpr * fintx * Arrays.msky
+	uout = -vexpr * finty * Arrays.msk1px
+	vout = uexpr * fintx * Arrays.msk1py
 
 	uout.name = form.name*"_x"
 	vout.name = form.name*"_y"
@@ -164,8 +164,8 @@ function explicit(form::InteriorProduct{1, Dual, Dual})
 	vdec = Arrays.avg4pt(vexpr, -1, 1)
 	
 	if interp == "upwind"
-		xout = -vdec * Arrays.upwind(vexpr, fexpr, Arrays.o2dy, "right", "y")
-		yout = udec * Arrays.upwind(uexpr, fexpr, Arrays.o2dx, "right", "x")
+		xout = -vdec * Arrays.upwind(vexpr, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
+		yout = udec * Arrays.upwind(uexpr, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
 	else
 		@assert false "TODO"
 	end
@@ -191,5 +191,5 @@ end
 function explicit(form::InnerProduct{2, Primal})
 	ax, ay = explicit(form.left)
 	bx, by = explicit(form.right)
-	return 0.5*(ax*bx + ax[1,0]*bx[1,0] + ay*by + ay[0,1]*by[0,1]) * Arrays.mskv
+	return 0.5*(ax*bx + ax[1,0]*bx[1,0] + ay*by + ay[0,1]*by[0,1]) * Arrays.msk2p
 end

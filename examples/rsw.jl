@@ -12,9 +12,9 @@ import SymbolicPhysics.Arrays
 @Let zeta = ExteriorDerivative(u) # ζ* = du
 @Let f = FormVariable{2, Dual}() #Coriolis
 
-#Time der
+#Time derivative
 @Let du = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
-@Let dh = ExteriorDerivative(InteriorProduct(U, h)) #dh = Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
+@Let dh = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Checking the typings
 @assert InnerProduct(u,u) isa Form{2, Primal}
@@ -41,12 +41,14 @@ seq = Arrays.to_sequence!(tree)
 #println(string(seq)*"\n")
 
 #Generating the final function
-func!, funcstr = Arrays.to_kernel(seq)
-println("Generated code :")
-println(funcstr)
+rsw!, rswstr = Arrays.to_kernel(seq)
+#println("Generated code :")
+#println(funcstr)
 #-------------------------------------------------------------------------------------------
 
 #Testing the function
+
+#Defining the Mesh
 nx = 100
 ny = 100
 nh = 2
@@ -54,41 +56,98 @@ nh = 2
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 
-Lx, Ly = (10,10)
-mesh = Arrays.Mesh(nx, ny, nh, msk, 10, 10)
+Lx, Ly = (1,1)
+mesh = Arrays.Mesh(nx, ny, nh, msk, Lx, Ly)
 
-#Grid
-A = mesh.mskv .* (mod.(floor.(mesh.xc ./ (6 * mesh.dx-1)), 2) + mod.(floor.(mesh.yc ./ (6 * mesh.dy-1)), 2) .- 1)
+#Initial Conditions
+h0 = 0.95
+H = 1
+sigma = 0.01
+d = 1.4*sigma 
+gaussian(x,y,sigma) = exp(-(x^2 + y^2)/(2*sigma^2))
+h = zeros((nx,ny))
+for i in nh+1:nx-nh, j in nh+1:ny-nh
+	x = mesh.xc[i,j]
+	y = mesh.yc[i,j]
 
-U_X = cos.(pi * (mesh.xc ./Lx .- 0.5)) .* sin.(pi * (mesh.yc ./Ly .- 0.5)) .* mesh.mskx
-U_Y = -cos.(pi * (mesh.yc ./Ly .- 0.5)) .* sin.(pi * (mesh.xc ./Lx .- 0.5)) .* mesh.msky
+	h[i,j] = (H + h0 * gaussian(x-0.5, y-0.5, sigma)) * mesh.A[i,j]
+end
 
-DTA = zeros(nx, ny)
+f = 5 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
 
-ι_U_a_x = zeros(nx, ny)
-ι_U_a_y = zeros(nx, ny)
+u_x = zeros((nx, ny))
+u_y = zeros((nx, ny))
+
+dh1 = zeros((nx, ny))
+dh2 = zeros((nx, ny))
+dh3 = zeros((nx, ny))
+du_x1 = zeros((nx, ny))
+du_x2 = zeros((nx, ny))
+du_x3 = zeros((nx, ny))
+du_y1 = zeros((nx, ny))
+du_y2 = zeros((nx, ny))
+du_y3 = zeros((nx, ny))
 
 
-#Heatmap
-plot = false
+#Plotting
+plot = true
 
-if plot :
+if plot
 	using GLMakie
-	fig = Figure(size = (600, 600))
-	ax = Axis(fig[1,1])
-	q = Observable(A)
+	global fig = Figure(size = (600, 600))
+	global ax = Axis(fig[1,1])
+	global q = Observable(h)
+	global hm = heatmap!(ax, q, colorrange = (0.0001, 0.0002))
+	display(fig)
+end
+
+#Integrator TODO put somewhere else or use an externalized one
+function rk3step!(dt, mesh, f, h, u_x, u_y, 
+		dh1, dh2, dh3,
+		du_x1, du_x2, du_x3,
+		du_y1, du_y2, du_y3)
+	
+	rsw!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, dh=dh1, du_x=du_x1, du_y=du_y1)
+	h .+= dt .* dh1
+	u_x .+= dt .* du_x1
+	u_y .+= dt .* du_y1
+
+	rsw!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, dh=dh2, du_x=du_x2, du_y=du_y2)
+	h .+= dt .* (-3/4 .* dh1 + 1/4 .* dh2)
+	u_x .+= dt .* (-3/4 .* du_x1 + 1/4 .* du_x2)
+	u_y .+= dt .* (-3/4 .* du_y1 + 1/4 .* du_y2)
+
+	rsw!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, dh=dh3, du_x=du_x3, du_y=du_y3)
+	h .+= dt .* (-1/12 .* dh1 + 1/4 .* dh2)
+	u_x .+= dt .* (-1/12 .* du_x1 - 1/12 .* du_x2 + 2/3 .* du_x3)
+	u_y .+= dt .* (-1/12 .* du_y1 - 1/12 .* du_y2 + 2/3 .* du_y3)
+end
 
 #TimeLoop
-tend = 50
-dt = 0.01
+tend = 10
+maxite = 10
+ite = 0
+dt = 0.9 * minimum(mesh.dx[nh+1:nx-nh, nh+1:ny-nh])
 
 tstart = time()
 for t in 0:dt:tend
-	func!(mesh ;a=A, U_X=U_X, U_Y=U_Y, dta=DTA, ι_U_a_x = ι_U_a_x, ι_U_a_y = ι_U_a_y)
-	#func!(mesh ;a=A, U_X=U_X, U_Y=U_Y, dta=DTA)
-	A .-= dt .* DTA
+	global ite += 1
+	if ite >= maxite
+		break
+	end
+
+	#Actual progress
+	rk3step!(dt, mesh, f, h, u_x, u_y,
+		 dh1, dh2, dh3,
+		 du_x1, du_x2, du_x3,
+		 du_y1, du_y2, du_y3)
+
+	if ite % 1 == 0
+		println("ite : $(ite)/$(maxite), t : $(t)/$(tend)")
+		if plot
+			q[] = h
+		end
+		sleep(0.5)
+	end
 end
 println(time()-tstart)
-
-#display(A)
-#display(DTA)
