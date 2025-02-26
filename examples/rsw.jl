@@ -60,14 +60,14 @@ Lx, Ly = (1,1)
 mesh = Arrays.Mesh(nx, ny, nh, msk, Lx, Ly)
 
 #Initial Conditions
-h0 = 0.15
-H = 1
+h0 = 0.05
+H = 10
 sigma = 0.05
-d = 1.4*sigma 
 gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
+
 h = zeros((nx,ny))
 
-config = "vortex"
+config = "dipole"
 
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
@@ -80,7 +80,7 @@ for i in nh+1:nx-nh, j in nh+1:ny-nh
 	end
 end
 
-f = 5 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
+f =  ones((nx,ny)) .* mesh.A .* mesh.msk2d
 
 u_x = zeros((nx, ny))
 u_y = zeros((nx, ny))
@@ -121,7 +121,7 @@ end
 
 #Plotting
 plot = true
-var_to_plot = h
+var_to_plot = zeta
 
 if plot
 	using GLMakie
@@ -133,10 +133,10 @@ if plot
 end
 
 #TimeLoop
-tend = 10
+tend = 100
 maxite = 3000
 ite = 0
-dt = 0.15 * minimum(mesh.dx[nh+1:nx-nh, nh+1:ny-nh])
+dt = 1.9 * minimum(mesh.dx[nh+1:nx-nh, nh+1:ny-nh])
 
 tstart = time()
 for t in 0:dt:tend
