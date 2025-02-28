@@ -24,4 +24,6 @@ docs/site/
 Manifest.toml
 
 *.png
+*.gif
+*.mp4
 *.swp

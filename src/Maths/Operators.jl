@@ -39,6 +39,19 @@ end
 -(form::Form) = Negative("N_"*form.name, form)
 
 """
+	Division
+	TODO What is that actually in terms of FORMS ?
+	Simple division by a scalar field proxied by a 0-form ?
+"""
+mutable struct Division{D,P} <: Form{D,P}
+	name::String
+	left::Form{D,P}
+	right::Form
+end
+/(name::String, left::Form, right::Form) = Division(name, left, right)
+
+
+"""
 	ExteriorDerivative
 """
 mutable struct ExteriorDerivative{D,P} <: Form{D,P}

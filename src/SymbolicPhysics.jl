@@ -22,7 +22,7 @@ end
 module Maths
 
 import ..Arrays
-import Base: +,-,*
+import Base: +,-,*,/
 
 include("Maths/Variables.jl")
 include("Maths/Operators.jl")

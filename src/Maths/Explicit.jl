@@ -68,19 +68,42 @@ function explicit(form::Negative{2,P}) where {P}
 	return Arrays.Negative(form.name, explicit(form.form))
 end
 
+#Division
+function explicit(form::Division{2,Dual})
+	left = explicit(form.left)
+	right = explicit(form.right)
+
+	res = left / Arrays.avg4pt(right, -1, -1) * Arrays.msk2d
+	res.name = form.name
+
+	return res
+end
+
 #RealProducts
 function explicit(form::RealProdForm{0,D}) where {D}
-	return form.real * explicit(form.form)
+	res = form.real * explicit(form.form)
+	res.name = form.name
+
+	return res
 end
 
 function explicit(form::RealProdForm{1,D}) where {D}
 	exprs = explicit(form.form)
 
-	return [form.real * exprs[1], form.real * exprs[2]]
+	l = form.real * exprs[1]
+	r = form.real * exprs[2]
+
+	l.name = form.name*"_x"
+	r.name = form.name*"_y"
+
+	return [l, r]
 end
 
 function explicit(form::RealProdForm{2,D}) where {D}
-	return form.real * explicit(form.form)
+	res = form.real * explicit(form.form)
+	res.name = form.name
+
+	return res
 end
 
 #ExteriorDerivative
