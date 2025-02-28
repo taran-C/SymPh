@@ -6,7 +6,7 @@ include("Misc.jl")
 
 #Arrays
 module Arrays
-import Base: +,*,^,-,/,<,>,!, string, getindex
+import Base: +,*,^,-,/,<,>,!, string, getindex, abs
 
 include("Arrays/Variables.jl")
 include("Arrays/Operators.jl")
@@ -27,6 +27,7 @@ import Base: +,-,*,/
 include("Maths/Variables.jl")
 include("Maths/Operators.jl")
 include("Maths/Explicit.jl")
+include("Maths/ToKernel.jl")
 end
 
 

@@ -2,7 +2,8 @@ import ..Arrays
 export explicit
 
 #TODO change this to a param (or something) object
-interp = "upwind"
+interp = Arrays.weno
+#interp = Arrays.upwind
 
 #Vectors
 function explicit(vect::VectorVariable{P}) where {P}
@@ -154,13 +155,13 @@ function explicit(form::InteriorProduct{0, Dual, Dual})
 	fu = fx * uexpr
 	fv = fy * vexpr
 	
-	if interp == "upwind"
-		Uint = Arrays.upwind(U[0,0] + U[1,0], fu, Arrays.o2px, "left", "x")
-		Vint = Arrays.upwind(V[0,0] + V[0,1], fv, Arrays.o2py, "left", "y")
-	elseif interp == "2ptavg"
-		Uint = 0.5 * (fu[0,0] + fu[-1,0])
-		Vint = 0.5 * (fv[0,0] + fv[0,-1])
-	end
+	Uint = interp(U[0,0] + U[1,0], fu, Arrays.o2px, "left", "x")
+	Vint = interp(V[0,0] + V[0,1], fv, Arrays.o2py, "left", "y")
+	
+	#elseif interp == "2ptavg"
+	#	Uint = 0.5 * (fu[0,0] + fu[-1,0])
+	#	Vint = 0.5 * (fv[0,0] + fv[0,-1])
+	#end
 	
 	qout = (Uint + Vint) * Arrays.msk0d
 
@@ -171,14 +172,13 @@ function explicit(form::InteriorProduct{1, Dual, Primal})
 	fexpr = explicit(form.form)
 	uexpr, vexpr = explicit(form.vect)
 
-
-	if interp == "upwind"
-		fintx = Arrays.upwind(uexpr, fexpr, Arrays.o2px, "left", "x")
-		finty = Arrays.upwind(vexpr, fexpr, Arrays.o2py, "left", "y")
-	elseif interp == "2ptavg"
-		fintx = 0.5 * (fexpr[0,0] + fexpr[-1,0])
-		finty = 0.5 * (fexpr[0,0] + fexpr[0,-1])
-	end
+	fintx = interp(uexpr, fexpr, Arrays.o2px, "left", "x")
+	finty = interp(vexpr, fexpr, Arrays.o2py, "left", "y")
+	
+		#elseif interp == "2ptavg"
+	#	fintx = 0.5 * (fexpr[0,0] + fexpr[-1,0])
+	#	finty = 0.5 * (fexpr[0,0] + fexpr[0,-1])
+	#end
 
 	uout = -vexpr * finty * Arrays.msk1px
 	vout = uexpr * fintx * Arrays.msk1py
@@ -196,15 +196,13 @@ function explicit(form::InteriorProduct{1, Dual, Dual})
 	udec = Arrays.avg4pt(uexpr, 1, -1)
 	vdec = Arrays.avg4pt(vexpr, -1, 1)
 	
-	if interp == "upwind"
-		xout = -vdec * Arrays.upwind(vexpr, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
-		yout = udec * Arrays.upwind(uexpr, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
-	elseif interp == "2ptavg"
-		xout = -vdec * 0.5 * (fexpr[0,0]+fexpr[0,1]) * Arrays.msk1dx
-		yout = udec * 0.5 * (fexpr[0,0]+fexpr[1,0]) * Arrays.msk1dy
-	else
-		@assert false "TODO"
-	end
+	xout = -vdec * interp(vexpr, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
+	yout = udec * interp(uexpr, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
+	
+	#elseif interp == "2ptavg"
+	#	xout = -vdec * 0.5 * (fexpr[0,0]+fexpr[0,1]) * Arrays.msk1dx
+	#	yout = udec * 0.5 * (fexpr[0,0]+fexpr[1,0]) * Arrays.msk1dy
+	#end
 
 	return [xout, yout]
 end

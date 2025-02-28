@@ -17,37 +17,14 @@ import SymbolicPhysics.Arrays
 @Let du = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
 @Let dh = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
-#Checking the typings
-
-#-----This part will be encapsulated into a function that automatically optimizes ----------
-#Transforming the Forms expression into an Expression on arrays
-exprs = [explicit(du); explicit(dh); explicit(pv)]
-#println("Developped expression :")
-#println(string(exprs))
-
-#Transforming our Expression into a dependency tree
-tree = Arrays.to_deptree!(Set{String}(["zeta"]), exprs)
-#println("Tree view")
-#println(string(tree))
-#println("Graphviz view of tree")
-#println(Arrays.to_graphviz(tree))
-
-#Transforming our dependency tree into a sequence of expressions to compute
-seq = Arrays.to_sequence!(tree)
-#println("Corresponding Sequence :")
-#println(string(seq)*"\n")
-
-#Generating the final function
-rsw!, rswstr = Arrays.to_kernel(seq)
-#println("Generated code :")
-#println(rswstr)
-#-------------------------------------------------------------------------------------------
+#Generating the RHS
+rhs! = to_kernel(du, dh, pv)
 
 #Testing the function
 
 #Defining the Mesh
-nx = 75
-ny = 75
+nx = 100
+ny = 100
 nh = 3
 
 msk = zeros(nx, ny)
@@ -57,7 +34,7 @@ Lx, Ly = (1,1)
 mesh = Arrays.Mesh(nx, ny, nh, msk, Lx, Ly)
 
 #Initial Conditions
-h0 = 0.15
+h0 = 0.05
 H = 1
 sigma = 0.05
 gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
@@ -79,7 +56,7 @@ for i in nh+1:nx-nh, j in nh+1:ny-nh
 	end
 end
 
-f =  15 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
+f =  5 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
 
 u_x = zeros((nx, ny))
 u_y = zeros((nx, ny))
@@ -103,17 +80,17 @@ function rk3step!(dt, mesh, f, h, u_x, u_y, zeta, pv,
 		du_x1, du_x2, du_x3,
 		du_y1, du_y2, du_y3)
 	
-	rsw!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, zeta=zeta, pv=pv, dh=dh1, du_x=du_x1, du_y=du_y1)
+	rhs!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, zeta=zeta, pv=pv, dh=dh1, du_x=du_x1, du_y=du_y1)
 	h .+= dt .* dh1
 	u_x .+= dt .* du_x1
 	u_y .+= dt .* du_y1
 
-	rsw!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, zeta=zeta, pv=pv, dh=dh2, du_x=du_x2, du_y=du_y2)
+	rhs!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, zeta=zeta, pv=pv, dh=dh2, du_x=du_x2, du_y=du_y2)
 	h .+= dt .* (-3/4 .* dh1 + 1/4 .* dh2)
 	u_x .+= dt .* (-3/4 .* du_x1 + 1/4 .* du_x2)
 	u_y .+= dt .* (-3/4 .* du_y1 + 1/4 .* du_y2)
 
-	rsw!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, zeta=zeta, pv=pv, dh=dh3, du_x=du_x3, du_y=du_y3)
+	rhs!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, zeta=zeta, pv=pv, dh=dh3, du_x=du_x3, du_y=du_y3)
 	h .+= dt .* (-1/12 .* dh1 - 1/12 .* dh2 + 2/3 .* dh3)
 	u_x .+= dt .* (-1/12 .* du_x1 - 1/12 .* du_x2 + 2/3 .* du_x3)
 	u_y .+= dt .* (-1/12 .* du_y1 - 1/12 .* du_y2 + 2/3 .* du_y3)
@@ -124,21 +101,21 @@ save_every = 20
 
 #Plotting
 plot = true
-var_to_plot = pv
+var_to_plot = zeta
 
 if plot
 	using Plots
-	global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh])
+	global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; show = true)
 	global anim = Animation()
 	frame(anim, hm)
 end
 
-#NCDF
+#NetCDF
 #TODO
 
 #TimeLoop
 tend = 1000
-maxite = 10000
+maxite = 1000
 ite = 0
 
 #todo "borrowed" from fluids2d, check further
@@ -164,7 +141,6 @@ for ite in 1:maxite
 	global dt = min(cfl/maxU, dtmax)
 
 	print("ite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(t; digits = 2))/$(tend)            \r")	
-	
 	if plot & ite%save_every==0
 		global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh])
 		frame(anim, hm)

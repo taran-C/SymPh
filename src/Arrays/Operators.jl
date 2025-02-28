@@ -8,7 +8,7 @@ Unary Operators
 """
 abstract type UnaryOperator <: Operator end
 getindex(expr::UnaryOperator, depx, depy) = typeof(expr)(expr.name, expr.expr, expr.depx+depx, expr.depy+depy)
-string(expr::UnaryOperator) = "($(symbol(expr))$(string(expr.expr[expr.depx, expr.depy])))"
+string(expr::UnaryOperator) = "($(symbol(expr))($(string(expr.expr[expr.depx, expr.depy]))))"
 eval(expr::UnaryOperator, vals::AbstractDict) = op(expr)(eval(expr.expr, vals))
 
 """
@@ -25,6 +25,21 @@ op(expr::Negative) = -
 prec(expr::Negative) = 2
 Negative(name, expr) = Negative(name, expr, 0, 0)
 -(expr::Expression) = Negative(expr.name*"_neg", expr)
+
+"""
+AbsoluteValue
+"""
+mutable struct AbsoluteValue <: UnaryOperator
+	name::String
+	expr::Expression
+	depx::Integer
+	depy::Integer
+end
+symbol(expr::AbsoluteValue) = "abs"
+op(expr::AbsoluteValue) = abs
+prec(expr::AbsoluteValue) = 10
+AbsoluteValue(name, expr) = AbsoluteValue(name, expr, 0, 0)
+abs(expr::Expression) = AbsoluteValue("abs_"*expr.name, expr)
 
 """
 Binary Operators
@@ -49,8 +64,8 @@ op(expr::Addition) = +
 prec(expr::Addition) = 1
 Addition(name, left, right) = Addition(name, left, right, 0,0)
 +(left::Expression, right::Expression) = Addition("p_"*left.name*"_"*right.name, left, right)
-+(left::Expression, right::Real) = Addition(left, RealValue(right))
-+(left::Real, right::Expression) = Addition(RealValue(left), right)
++(left::Expression, right::Real) = left + RealValue(right)
++(left::Real, right::Expression) = RealValue(left) + right
 
 """
 Substraction
@@ -108,6 +123,23 @@ Division(name, left, right) = Division(name, left, right, 0,0)
 /(left::Expression, right::Real) = left / RealValue(right)
 /(left::Real, right::Expression) = RealValue(left) / right
 
+"""
+Exponentiation
+"""
+mutable struct Exponentiation <: BinaryOperator
+	name::String
+	left::Expression
+	right::Expression
+	depx::Integer
+	depy::Integer
+end
+symbol(expr::Exponentiation) = "^"
+op(expr::Exponentiation) = ^
+prec(expr::Exponentiation) = 10
+Exponentiation(name, left, right) = Exponentiation(name, left, right, 0,0)
+^(left::Expression, right::Expression) = Exponentiation("pow_"*left.name*"_"*right.name, left, right)
+^(left::Expression, right::Real) = left ^ RealValue(right)
+^(left::Real, right::Expression) = RealValue(left) ^ right
 
 abstract type BinaryBooleanOperator <: BinaryOperator end
 abstract type UnaryBooleanOperator <: UnaryOperator end
