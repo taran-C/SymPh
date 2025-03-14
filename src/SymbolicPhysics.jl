@@ -3,6 +3,7 @@ module SymbolicPhysics
 import Base: +,*,^,-,/,<,>,!, string, getindex
 
 include("Misc.jl")
+include("State.jl")
 
 #Arrays
 module Arrays

@@ -2,8 +2,8 @@ import ..Arrays
 export explicit
 
 #TODO change this to a param (or something) object
-interp = Arrays.weno
-#interp = Arrays.upwind
+#interp = Arrays.weno
+interp = Arrays.upwind
 
 #Vectors
 function explicit(vect::VectorVariable{P}) where {P}

@@ -1,4 +1,4 @@
-import SymbolicPhysics: @Let
+import SymbolicPhysics: @Let, State
 using SymbolicPhysics.Maths
 import SymbolicPhysics.Arrays
 
@@ -34,14 +34,16 @@ Lx, Ly = (1,1)
 mesh = Arrays.Mesh(nx, ny, nh, msk, Lx, Ly)
 
 #Initial Conditions
+state = State(mesh)
+
 h0 = 0.05
 H = 1
 sigma = 0.05
 gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 
-h = zeros((nx,ny))
+h = state.h
 
-config = "dipole"
+config = "vortex"
 
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
@@ -56,23 +58,7 @@ for i in nh+1:nx-nh, j in nh+1:ny-nh
 	end
 end
 
-f =  5 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
-
-u_x = zeros((nx, ny))
-u_y = zeros((nx, ny))
-
-zeta = zeros((nx,ny))
-pv = zeros((nx,ny))
-
-dh1 = zeros((nx, ny))
-dh2 = zeros((nx, ny))
-dh3 = zeros((nx, ny))
-du_x1 = zeros((nx, ny))
-du_x2 = zeros((nx, ny))
-du_x3 = zeros((nx, ny))
-du_y1 = zeros((nx, ny))
-du_y2 = zeros((nx, ny))
-du_y3 = zeros((nx, ny))
+state.f .=  5 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
 
 #Integrator TODO put somewhere else or use an externalized one
 function rk3step!(dt, mesh, f, h, u_x, u_y, zeta, pv,
@@ -101,11 +87,13 @@ save_every = 20
 
 #Plotting
 plot = true
-var_to_plot = zeta
+var_to_plot = state.zeta
+plot_args = (aspect_ratio=:equal, clims = (-1e-7, 1e-7))
+
 
 if plot
 	using Plots
-	global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; show = true)
+	global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; show = true, plot_args...)
 	global anim = Animation()
 	frame(anim, hm)
 end
@@ -114,8 +102,8 @@ end
 #TODO
 
 #TimeLoop
-tend = 1000
-maxite = 1000
+tend = 50
+maxite = 500
 ite = 0
 
 #todo "borrowed" from fluids2d, check further
@@ -131,18 +119,18 @@ for ite in 1:maxite
 	end
 
 	#Actual progress
-	rk3step!(dt, mesh, f, h, u_x, u_y, zeta, pv,
-		 dh1, dh2, dh3,
-		 du_x1, du_x2, du_x3,
-		 du_y1, du_y2, du_y3)
+	rk3step!(dt, mesh, state.f, state.h, state.u_x, state.u_y, state.zeta, state.pv,
+		 state.dh1, state.dh2, state.dh3,
+		 state.du_x1, state.du_x2, state.du_x3,
+		 state.du_y1, state.du_y2, state.du_y3)
 
 	global t+=dt
-	maxU = maximum(abs.(u_x)/mesh.A[1,1])+maximum(abs.(u_y)/mesh.A[1,1])+1e-10
+	maxU = maximum(abs.(state.u_x)/mesh.A[1,1])+maximum(abs.(state.u_y)/mesh.A[1,1])+1e-10
 	global dt = min(cfl/maxU, dtmax)
-
+	
 	print("ite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(t; digits = 2))/$(tend)            \r")	
 	if plot & ite%save_every==0
-		global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh])
+		global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; plot_args...)
 		frame(anim, hm)
 	end
 end
