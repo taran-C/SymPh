@@ -24,8 +24,8 @@ rhs! = to_kernel(du, dh, pv)
 #Testing the function
 
 #Defining the Mesh
-nx = 100
-ny = 100
+nx = 200
+ny = 200
 nh = 3
 
 msk = zeros(nx, ny)
@@ -44,7 +44,7 @@ gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 
 h = state.h
 
-config = "vortex"
+config = "dipole"
 
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
@@ -84,7 +84,7 @@ function rk3step!(dt, mesh, f, h, u_x, u_y, zeta, pv,
 end
 
 #Saving/Viz
-save_every = 20
+save_every = 10
 
 #Plotting
 plot = false
@@ -105,20 +105,26 @@ ncfname = "history.nc"
 writevars = (:zeta, :pv, :u_x, :u_y)
 
 if write
-	using NetCDF
-        if isfile(ncfname)
+	using NCDatasets
+
+	if isfile(ncfname)
             rm(ncfname)
         end
 
+	global ds = NCDataset(ncfname, "c")
+
+	defDim(ds,"x",mesh.nx)
+	defDim(ds,"y",mesh.ny)
+	defDim(ds,"time",Inf)
+
         for sym in writevars
-		NetCDF.nccreate(ncfname, string(sym), "t", -1, "x", mesh.nx, "y", mesh.ny)
+		defVar(ds, string(sym), Float64, ("x", "y", "time"))
         end
-	ncinfo(ncfname)
 end
 
 #TimeLoop
 tend = 50
-maxite = 500
+maxite = 5000
 ite = 0
 
 #todo "borrowed" from fluids2d, check further
@@ -126,6 +132,7 @@ cfl = 0.9
 dtmax = 0.15
 dt = dtmax
 t = 0
+wi = 1 #write index
 
 tstart = time()
 for ite in 1:maxite
@@ -151,14 +158,18 @@ for ite in 1:maxite
 		end
 		if write
 			for sym in writevars
-				ncwrite(getproperty(state, sym), ncfname, string(sym); start = [ite, 1, 1], count = [1, mesh.nx, mesh.ny])
+				ds[string(sym)][:,:, wi] = getproperty(state, sym)
 			end
+			global wi += 1
 		end
 	end
 end
 
 if plot
 	mp4(anim, "out.mp4"; fps = 60)
+end
+if write
+	close(ds)
 end
 
 println("")
