@@ -2,6 +2,7 @@ import SymbolicPhysics: @Let, State
 using SymbolicPhysics.Maths
 import SymbolicPhysics.Arrays
 
+
 #Defining our equation
 @Let h = FormVariable{2, Primal}() #Height * A (h* technically)
 @Let u = FormVariable{1, Dual}() #Transported velocity
@@ -86,7 +87,7 @@ end
 save_every = 20
 
 #Plotting
-plot = true
+plot = false
 var_to_plot = state.zeta
 plot_args = (aspect_ratio=:equal, clims = (-1e-7, 1e-7))
 
@@ -99,7 +100,21 @@ if plot
 end
 
 #NetCDF
-#TODO
+write = true
+ncfname = "history.nc"
+writevars = (:zeta, :pv, :u_x, :u_y)
+
+if write
+	using NetCDF
+        if isfile(ncfname)
+            rm(ncfname)
+        end
+
+        for sym in writevars
+		NetCDF.nccreate(ncfname, string(sym), "t", -1, "x", mesh.nx, "y", mesh.ny)
+        end
+	ncinfo(ncfname)
+end
 
 #TimeLoop
 tend = 50
@@ -129,9 +144,16 @@ for ite in 1:maxite
 	global dt = min(cfl/maxU, dtmax)
 	
 	print("ite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(t; digits = 2))/$(tend)            \r")	
-	if plot & ite%save_every==0
-		global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; plot_args...)
-		frame(anim, hm)
+	if (ite%save_every==0)
+		if plot
+			global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; plot_args...)
+			frame(anim, hm)
+		end
+		if write
+			for sym in writevars
+				ncwrite(getproperty(state, sym), ncfname, string(sym); start = [ite, 1, 1], count = [1, mesh.nx, mesh.ny])
+			end
+		end
 	end
 end
 
