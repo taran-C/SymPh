@@ -24,8 +24,8 @@ rhs! = to_kernel(du, dh, pv)
 #Testing the function
 
 #Defining the Mesh
-nx = 200
-ny = 200
+nx = 35
+ny = 35
 nh = 3
 
 msk = zeros(nx, ny)
@@ -59,7 +59,7 @@ for i in nh+1:nx-nh, j in nh+1:ny-nh
 	end
 end
 
-state.f .=  5 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
+state.f .=  100 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
 
 #Integrator TODO put somewhere else or use an externalized one
 function rk3step!(dt, mesh, f, h, u_x, u_y, zeta, pv,
@@ -84,7 +84,7 @@ function rk3step!(dt, mesh, f, h, u_x, u_y, zeta, pv,
 end
 
 #Saving/Viz
-save_every = 10
+save_every = 50
 
 #Plotting
 plot = false
@@ -123,12 +123,12 @@ if write
 end
 
 #TimeLoop
-tend = 50
-maxite = 5000
+tend = 10000
+maxite = 100000
 ite = 0
 
 #todo "borrowed" from fluids2d, check further
-cfl = 0.9
+cfl = 0.15
 dtmax = 0.15
 dt = dtmax
 t = 0
