@@ -139,9 +139,9 @@ function weno(U::Expression, a::Expression, o::Expression, lr::String, dir::Stri
 
 	return TernaryOperator(o>5,
 			TernaryOperator(U>0, wen5(qmmm, qmm, qm, qp, qpp), wen5(qppp, qpp, qp, qm, qmm)),
-			TernaryOperator(o>4,
+			TernaryOperator(o>3,
 				TernaryOperator(U>0, wen3(qmm, qm, qp), wen3(qpp, qp, qm)),
-				TernaryOperator(o>12, 
+				TernaryOperator(o>1, 
 					TernaryOperator(U>0, qm, qp),
 					RealValue(0)
 				)

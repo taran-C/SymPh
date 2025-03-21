@@ -1,10 +1,10 @@
 export to_kernel
 
-function to_kernel(exprs...; verbose=false)
+function to_kernel(exprs...; explparams = ExplicitParam(), verbose=false)
 	#Transforming the Forms expression into an Expression on arrays (TODO probably a more elegant way to do this)
 	math_exprs = []
 	for expr in exprs
-		expl_expr = explicit(expr)
+		expl_expr = explicit(expr; param = explparams)
 		if expl_expr isa AbstractArray
 			math_exprs = vcat(math_exprs, expl_expr)
 		else

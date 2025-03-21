@@ -18,14 +18,17 @@ import SymbolicPhysics.Arrays
 @Let du = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
 @Let dh = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
+#Defining the parameters needed to explicit
+explparams = ExplicitParam(; interp = Arrays.weno)
+
 #Generating the RHS
-rhs! = to_kernel(du, dh, pv)
+rhs! = to_kernel(du, dh, pv; explparams = explparams)
 
 #Testing the function
 
 #Defining the Mesh
-nx = 35
-ny = 35
+nx = 38
+ny = 38
 nh = 3
 
 msk = zeros(nx, ny)
@@ -52,7 +55,6 @@ for i in nh+1:nx-nh, j in nh+1:ny-nh
 
 	if config == "dipole"
 		d=0.05
-
 		h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, sigma) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[5,5]
 	elseif config == "vortex"
 		h[i,j] = (H + h0 * gaussian(x, y, 0.5, 0.5, sigma)) * mesh.A[5,5]
@@ -84,7 +86,7 @@ function rk3step!(dt, mesh, f, h, u_x, u_y, zeta, pv,
 end
 
 #Saving/Viz
-save_every = 50
+save_every = 10
 
 #Plotting
 plot = false
@@ -102,7 +104,7 @@ end
 #NetCDF
 write = true
 ncfname = "history.nc"
-writevars = (:zeta, :pv, :u_x, :u_y)
+writevars = (:zeta, :pv, :h, :u_x, :u_y)
 
 if write
 	using NCDatasets
@@ -123,8 +125,8 @@ if write
 end
 
 #TimeLoop
-tend = 10000
-maxite = 100000
+tend = 1000
+maxite = 10000
 ite = 0
 
 #todo "borrowed" from fluids2d, check further
@@ -150,7 +152,7 @@ for ite in 1:maxite
 	maxU = maximum(abs.(state.u_x)/mesh.A[1,1])+maximum(abs.(state.u_y)/mesh.A[1,1])+1e-10
 	global dt = min(cfl/maxU, dtmax)
 	
-	print("ite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(t; digits = 2))/$(tend)            \r")	
+	print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(t; digits = 2))/$(tend)            ")	
 	if (ite%save_every==0)
 		if plot
 			global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; plot_args...)
