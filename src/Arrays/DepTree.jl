@@ -50,7 +50,19 @@ function to_sequence!(tree::DepNode)
 	
 	while length(tree.childs) > 0
 		exprs = shave!(tree)
-		push!(blocks, Block(exprs))
+
+		loopexprs = Dict{String, Expression}()
+
+		for expr in exprs
+			if expr.second isa FuncCall
+				push!(blocks, CallBlock(expr.first,expr.second))
+			else
+				loopexprs[expr.first] = expr.second
+			end
+		end
+		if length(loopexprs) > 0
+			push!(blocks, LoopBlock(loopexprs))
+		end
 	end
 
 	return Sequence(vars, blocks)
@@ -73,12 +85,16 @@ function expr_to_node!(expr::Expression, node_names::Set{String}, parent)
 	if expr isa ArrayVariable
 		#This is ugly and this whole way of creating the tree is kinda terrible
 		n = DepNode(expr.name, expr[-expr.depx, -expr.depy])
-		addchild!(parent, n)	
+		addchild!(parent, n)
+		
+		return n
 	else 
 		n = DepNode(expr.name, nothing)
 		n.expr = go_deeper(expr, node_names, n)
-		n.expr = n.expr[-n.expr.depx, -expr.depy]
+		n.expr = n.expr[-n.expr.depx, -n.expr.depy]
 		addchild!(parent, n)
+
+		return n
 	end
 end
 
@@ -89,6 +105,16 @@ function go_deeper(expr::Expression, node_names::Set{String}, parent)
 		nnames = copy(node_names)
 		delete!(nnames, expr.name)	
 		expr_to_node!(expr, nnames, parent)
+		return ArrayVariable(expr.name, expr.depx, expr.depy)
+	elseif expr isa FuncCall
+		nnames = copy(node_names)
+		n = DepNode(expr.name, nothing)
+		n.expr = expr
+		n.expr = n.expr[-n.expr.depx, -n.expr.depy]
+		addchild!(parent, n)
+		for arg in expr.args
+			expr_to_node!(arg, nnames, n)
+		end
 		return ArrayVariable(expr.name, expr.depx, expr.depy)
 	elseif expr isa BinaryOperator
 		return typeof(expr)(expr.name, go_deeper(expr.left, node_names, parent), go_deeper(expr.right, node_names, parent), expr.depx, expr.depy)

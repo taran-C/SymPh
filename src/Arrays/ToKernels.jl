@@ -21,12 +21,21 @@ function to_kernel(seq::Sequence)
 
 	#Computation loops
 	for b in seq.blocks
-		str = str * "\tfor i in 1+mesh.nh:mesh.nx-mesh.nh, j in 1+mesh.nh:mesh.ny-mesh.nh\n"
-		
-		for key in keys(b.exprs)
-			str = str * "\t\t" *key * "[i,j] = $(string(b.exprs[key]))\n"
+		if b isa CallBlock
+			str = str * "\t"*b.expr.func*"("
+			for arg in b.expr.args
+				str = str * arg.name * ", "
+			end
+			str = chop(str, head = 0, tail = 2)
+			str = str * ")\n\n"
+		elseif b isa LoopBlock
+			str = str * "\tfor i in 1+mesh.nh:mesh.nx-mesh.nh, j in 1+mesh.nh:mesh.ny-mesh.nh\n"
+			
+			for key in keys(b.exprs)
+				str = str * "\t\t" *key * "[i,j] = $(string(b.exprs[key]))\n"
+			end
+			str = str * "\tend\n\n"
 		end
-		str = str * "\tend\n\n"
 	end
 
 	str = str * "end\n"

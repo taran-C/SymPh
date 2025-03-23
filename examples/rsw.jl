@@ -125,8 +125,8 @@ if write
 end
 
 #TimeLoop
-tend = 1000
-maxite = 10000
+tend = 100
+maxite = 1000
 ite = 0
 
 #todo "borrowed" from fluids2d, check further

@@ -1,14 +1,31 @@
 export Block, Sequence
 
-struct Block
+"""
+Block
+	
+	Any operation or block of operations that can be done at once
+"""
+abstract type Block end
+
+"""
+LoopBlock
+	
+	A block of operations to be computed in a loop on our domain
+"""
+struct LoopBlock
 	exprs::Dict{String, Expression}
 end
 
-function get_terms(b::Block)
+"""
+get_terms(b::LoopBlock)
+
+	Get a set of string representing the array being assigned in the loop
+"""
+function get_terms(b::LoopBlock)
 	return Set(collect(keys(b.exprs)))
 end
 
-function string(b::Block)
+function string(b::LoopBlock)
 	s = "["
 	for key in keys(b.exprs)
 		s = s*key*" = "*string(b.exprs[key])*",\n "
@@ -20,9 +37,28 @@ function string(b::Block)
 	return s
 end
 
+"""
+CallBlock
+	
+	A block representing a single function call
+"""
+struct CallBlock
+	name::String
+	expr::FuncCall
+end
+
+function get_terms(b::CallBlock)
+	return Set((b.name,))
+end
+
+"""
+Sequence
+	
+	A sequence of blocks of operations
+"""
 struct Sequence
 	vars::Vector{String}
-	blocks::Vector{Block}
+	blocks#::Vector{Block}
 end
 
 function get_terms(seq::Sequence)

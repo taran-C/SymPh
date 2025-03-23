@@ -3,6 +3,20 @@ Operators
 """
 abstract type Operator <: Expression end
 
+export FuncCall
+"""
+FuncCall
+
+	Forces computation of its arguments, then calls a function on them
+"""
+mutable struct FuncCall <: Operator
+	name::String
+	func#Figure out typing
+	args::Vector{Expression}
+	depx::Integer
+	depy::Integer
+end
+
 """
 Unary Operators
 """
@@ -17,8 +31,8 @@ Negative, represents the negation of an expression
 mutable struct Negative <: UnaryOperator
 	name::String
 	expr::Expression
-        depx :: Integer
-        depy :: Integer
+        depx::Integer
+        depy::Integer
 end
 symbol(expr::Negative) = "-"
 op(expr::Negative) = -
