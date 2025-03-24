@@ -22,7 +22,7 @@ function to_kernel(seq::Sequence)
 	#Computation loops
 	for b in seq.blocks
 		if b isa CallBlock
-			str = str * "\t"*b.expr.func*"("
+			str = str * "\t"*b.expr.func*"("*b.expr.name*", "
 			for arg in b.expr.args
 				str = str * arg.name * ", "
 			end

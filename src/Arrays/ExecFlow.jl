@@ -51,6 +51,8 @@ function get_terms(b::CallBlock)
 	return Set((b.name,))
 end
 
+string(b::CallBlock) = "[" * string(b.expr) * "]"
+
 """
 Sequence
 	

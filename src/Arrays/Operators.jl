@@ -8,6 +8,7 @@ export FuncCall
 FuncCall
 
 	Forces computation of its arguments, then calls a function on them
+	For now the function must have signature `f(out, args...)` where out will be replaced by the name assigned to the operator
 """
 mutable struct FuncCall <: Operator
 	name::String
@@ -15,6 +16,17 @@ mutable struct FuncCall <: Operator
 	args::Vector{Expression}
 	depx::Integer
 	depy::Integer
+end
+FuncCall(name, func, args) = FuncCall(name, func, args, 0, 0)
+getindex(expr::FuncCall, depx, depy) = FuncCall(expr.name, expr.func, expr.args, expr.depx + depx, expr.depy + depy)
+function string(expr::FuncCall)
+	str = expr.func * "("
+	for arg in expr.args
+		str = str * string(arg) * ", "
+	end
+	str = chop(str, head = 0, tail = 2)
+
+	return str
 end
 
 """
@@ -76,10 +88,13 @@ end
 symbol(expr::Addition) = "+"
 op(expr::Addition) = +
 prec(expr::Addition) = 1
-Addition(name, left, right) = Addition(name, left, right, 0,0)
+Addition(name, left::Expression, right::Expression) = Addition(name, left, right, 0,0)
+Addition(name, left::Real, right::Expression) = Addition(name, RealValue(left), right)
+Addition(name, left::Expression, right::Real) = Addition(name, left, RealValue(right))
++(name::String, left::Expression, right::Expression) = Addition(name, left, right)
++(name::String, left::Real, right::Expression) = Addition(name, left, right)
++(name::String, left::Expression, right::Real) = Addition(name, left, right)
 +(left::Expression, right::Expression) = Addition("p_"*left.name*"_"*right.name, left, right)
-+(left::Expression, right::Real) = left + RealValue(right)
-+(left::Real, right::Expression) = RealValue(left) + right
 
 """
 Substraction
@@ -112,10 +127,13 @@ end
 symbol(expr::Multiplication) = "*"
 op(expr::Multiplication) = *
 prec(expr::Multiplication) = 3
-Multiplication(name, left, right) = Multiplication(name, left, right, 0,0)
-*(left::Expression, right::Expression) = Multiplication("t_"*left.name*"_"*right.name, left, right)
-*(left::Expression, right::Real) = left * RealValue(right)
-*(left::Real, right::Expression) = RealValue(left) * right
+Multiplication(name, left::Expression, right::Expression) = Multiplication(name, left, right, 0,0)
+Multiplication(name, left::Real, right::Expression) = Multiplication(name, RealValue(left), right)
+Multiplication(name, left::Expression, right::Real) = Multiplication(name, left, RealValue(right))
+*(name::String, left::Expression, right::Expression) = Multiplication(name, left, right)
+*(name::String, left::Real, right::Expression) = Multiplication(name, left, right)
+*(name::String, left::Expression, right::Real) = Multiplication(name, left, right)
+*(left::Expression, right::Expression) = *("t_"*left.name*"_"*right.name, left, right)
 
 """
 Division

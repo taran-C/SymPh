@@ -112,8 +112,9 @@ function go_deeper(expr::Expression, node_names::Set{String}, parent)
 		n.expr = expr
 		n.expr = n.expr[-n.expr.depx, -n.expr.depy]
 		addchild!(parent, n)
-		for arg in expr.args
+		for (i, arg) in enumerate(expr.args)
 			expr_to_node!(arg, nnames, n)
+			expr.args[i] = ArrayVariable(arg.name, arg.depx, arg.depy)
 		end
 		return ArrayVariable(expr.name, expr.depx, expr.depy)
 	elseif expr isa BinaryOperator
