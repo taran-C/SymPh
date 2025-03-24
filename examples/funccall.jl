@@ -7,7 +7,7 @@ f(out, a, b) = print("test")
 @Let y = 2*a
 @Let c = 1+y
 @Let z = 3+c[1,0]
-@Let x = FuncCall("f", [y, c]) #Find a way to do this in a prettier way than a fname string
+@Let x = FuncCall("Main.f", [y, c]) #Find a way to do this in a prettier way than a fname string
 @Let b = 2*x[2,0]
 
 t = to_deptree!(Set{String}(), b)

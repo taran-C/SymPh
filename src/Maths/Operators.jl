@@ -5,6 +5,16 @@ export InteriorProduct
 export Sharp
 export Hodge
 export InnerProduct
+export FuncCall
+
+"""
+	FuncCall
+"""
+mutable struct FuncCall{D, P} <: Form{D,P}
+	name::String
+	func
+	args::Vector{Form}
+end
 
 """
 	Addition
