@@ -27,8 +27,8 @@ rhs! = to_kernel(du, dh, pv; explparams = explparams)
 #Testing the function
 
 #Defining the Mesh
-nx = 38
-ny = 38
+nx = 50
+ny = 50
 nh = 3
 
 msk = zeros(nx, ny)
@@ -125,8 +125,8 @@ if write
 end
 
 #TimeLoop
-tend = 100
-maxite = 1000
+tend = 1000
+maxite = 10000
 ite = 0
 
 #todo "borrowed" from fluids2d, check further

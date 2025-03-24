@@ -95,6 +95,8 @@ Addition(name, left::Expression, right::Real) = Addition(name, left, RealValue(r
 +(name::String, left::Real, right::Expression) = Addition(name, left, right)
 +(name::String, left::Expression, right::Real) = Addition(name, left, right)
 +(left::Expression, right::Expression) = Addition("p_"*left.name*"_"*right.name, left, right)
++(left::Real, right::Expression) = Addition("p_"*string(left)*"_"*right.name, left, right)
++(left::Expression, right::Real) = Addition("p_"*left.name*"_"*string(right), left, right)
 
 """
 Substraction
@@ -133,7 +135,9 @@ Multiplication(name, left::Expression, right::Real) = Multiplication(name, left,
 *(name::String, left::Expression, right::Expression) = Multiplication(name, left, right)
 *(name::String, left::Real, right::Expression) = Multiplication(name, left, right)
 *(name::String, left::Expression, right::Real) = Multiplication(name, left, right)
-*(left::Expression, right::Expression) = *("t_"*left.name*"_"*right.name, left, right)
+*(left::Expression, right::Expression) = Multiplication("t_"*left.name*"_"*right.name, left, right)
+*(left::Real, right::Expression) = Multiplication("t_"*string(left)*"_"*right.name, left, right)
+*(left::Expression, right::Real) = Multiplication("t_"*left.name*"_"*string(right), left, right)
 
 """
 Division
