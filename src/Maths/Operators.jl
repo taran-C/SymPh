@@ -6,6 +6,10 @@ export Sharp
 export Hodge
 export InnerProduct
 export FuncCall
+#TODO
+#export Codifferential
+#export InverseHodge
+#export Flat
 
 """
 	FuncCall
