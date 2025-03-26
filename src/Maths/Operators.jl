@@ -6,8 +6,9 @@ export Sharp
 export Hodge
 export InnerProduct
 export FuncCall
+export Codifferential
+export InverseLaplacian
 #TODO
-#export Codifferential
 #export InverseHodge
 #export Flat
 
@@ -79,6 +80,20 @@ mutable struct ExteriorDerivative{D,P} <: Form{D,P}
 end
 
 """
+	Codifferential
+"""
+mutable struct Codifferential{D,P} <: Form{D,P}
+	name::String
+	form::Form
+
+	function Codifferential(name::String, expr::Form{D,P}) where {D,P}
+		return new{D-1, P}(name, expr)
+	end
+	Codifferential(expr::Form) = Codifferential("CODIF_"*expr.name, expr)
+end
+
+
+"""
 	InteriorProduct
 """
 mutable struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
@@ -148,3 +163,14 @@ end
 *(name::String, form::Form, real::Real) = RealProdForm(name, real, form)
 *(real::Real,  form::Form) = RealProdForm("T_"*string(real)*"_"*form.name, real, form)
 *(form::Form, real::Real) = RealProdForm("T_"*string(real)*"_"*form.name, real, form)
+
+"""
+	InverseLaplacian
+
+Represents the solution to a Poisson problem
+"""
+mutable struct InverseLaplacian{D,P} <: Form{D,P}
+	name::String
+	form::Form{D,P}
+end
+InverseLaplacian(form::Form) = InverseLaplacian("INVLAP_"*form.name, form)

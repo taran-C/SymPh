@@ -151,14 +151,25 @@ function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	return dq
 end
 
+#Codifferential
+function explicit(form::Codifferential{0, Dual}; param = ExplicitParam())
+	exprs = explicit(form.form; param = param)
+	
+	dq = (exprs[1][1,0]-exprs[1][0,0] + exprs[2][1,0]-exprs[2][0,0]) * Arrays.msk0d
+	dq.name = form.name
+
+	return dq
+end
+
+
 #InteriorProduct
 #TODO Not tested !!
 function explicit(form::InteriorProduct{0, Dual, Dual}; param = ExplicitParam())
 	fx, fy = explicit(form.form; param = param)
 	U, V = explicit(form.vect; param = param)
 
-	fu = fx * uexpr
-	fv = fy * vexpr
+	fu = fx * U
+	fv = fy * V
 	
 	Uint = param.interp(U[0,0] + U[1,0], fu, Arrays.o2px, "left", "x")
 	Vint = param.interp(V[0,0] + V[0,1], fv, Arrays.o2py, "left", "y")
@@ -170,7 +181,7 @@ function explicit(form::InteriorProduct{0, Dual, Dual}; param = ExplicitParam())
 	
 	qout = (Uint + Vint) * Arrays.msk0d
 
-	return 
+	return qout
 end
 
 function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam()) 
@@ -231,4 +242,11 @@ function explicit(form::InnerProduct{2, Primal}; param = ExplicitParam())
 	ax, ay = explicit(form.left; param = param)
 	bx, by = explicit(form.right; param = param)
 	return 0.5*(ax*bx + ax[1,0]*bx[1,0] + ay*by + ay[0,1]*by[0,1]) * Arrays.msk2p
+end
+
+#InverseLaplacian
+function explicit(form::InverseLaplacian{0, Dual}; param = ExplicitParam())
+	fexpr = explicit(form.form; param = param)
+
+	return Arrays.FuncCall(form.name, "Main.poisson_solver", [fexpr], 0, 0)
 end

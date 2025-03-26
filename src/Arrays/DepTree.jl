@@ -107,14 +107,13 @@ function go_deeper(expr::Expression, node_names::Set{String}, parent)
 		expr_to_node!(expr, nnames, parent)
 		return ArrayVariable(expr.name, expr.depx, expr.depy)
 	elseif expr isa FuncCall
-		nnames = copy(node_names)
 		n = DepNode(expr.name, nothing)
-		n.expr = expr
+		n.expr = deepcopy(expr)
 		n.expr = n.expr[-n.expr.depx, -n.expr.depy]
 		addchild!(parent, n)
-		for (i, arg) in enumerate(expr.args)
-			expr_to_node!(arg, nnames, n)
-			expr.args[i] = ArrayVariable(arg.name, arg.depx, arg.depy)
+		for (i, arg) in enumerate(n.expr.args)
+			expr_to_node!(arg, node_names, n)
+			n.expr.args[i] = ArrayVariable(arg.name, arg.depx, arg.depy)
 		end
 		return ArrayVariable(expr.name, expr.depx, expr.depy)
 	elseif expr isa BinaryOperator
@@ -134,23 +133,28 @@ end
 function to_graphviz(tree::DepNode)
 	s=""
 	for c in tree.childs
-		s = s*"$(tree.name) -> $(c.name)\n"
-		s = s*to_graphviz(c)
+		if length(c.name) < 4 || SubString(c.name, 1, 4) != "mesh"
+			s = s*"$(tree.name) -> $(c.name)\n"
+			s = s*to_graphviz(c)
+		end
 	end
 	return s
 end
 
-function string(tree::DepNode, lev = 0)
+function string(tree::DepNode, lev = 0; show_expr = false)
 	#keeping track of indentation level and using it before each expression
-	
-	if tree.expr != nothing
-		s = "$("\t"^lev)$(tree.name) :\n$("\t"^(lev+1))expr : $(string(tree.expr)) @ [$(tree.expr.depx),$(tree.expr.depy)]\n$("\t"^(lev+1))childs:\n"
-	else 
-		s = "$("\t"^lev)$(tree.name) :\n$("\t"^(lev+1))childs:\n"
+		s = "$("\t"^lev)$(tree.name)\n"
+	if show_expr && tree.expr != nothing
+		s = "$("\t"^(lev+1))expr : $(string(tree.expr)) @ [$(tree.expr.depx),$(tree.expr.depy)]\n"
 	end
 
+	if length(tree.childs) > 0
+		s *= "$("\t"^(lev+1))childs:\n"
+	end
 	for c in tree.childs
-		s = s*string(c, lev+2)
+		if length(c.name) < 4 || SubString(c.name, 1, 4) != "mesh"
+			s = s*string(c, lev+2)
+		end
 	end
 
 	return s

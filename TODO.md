@@ -15,3 +15,4 @@
 - Ensure valid+unique names + Replace strings by symbols ?
 - Reflatten Loops (generate everything using step ? Nope, would need us to know nx at definition time, not in the philosophy)
 - Automatically compute nh (max relative (depx, depy) on all nodes)
+- Fuse nodes with same name in tree automatically (lots of duplicates rn)

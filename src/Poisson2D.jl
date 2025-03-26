@@ -1,15 +1,12 @@
 using LinearAlgebra, SparseArrays
 
-function laplacian(mesh, bc)
+function laplacian(mesh, msk, bc)
 	@assert bc in ["dirichlet", "neumann"]
 	
 	G = zeros(Int32, mesh.nx, mesh.ny)
-	G[mesh.msk .> 0] .= collect(1:length(G[mesh.msk .> 0]))
-	G[mesh.msk .== 0] .= -1
+	G[msk .> 0] .= collect(1:length(G[msk .> 0]))
+	G[msk .== 0] .= -1
 	
-	#TODO adapt to variable dx/dy
-	dx2 = 1/mesh.dx ^ 2
-	dy2 = 1/mesh.dy ^ 2
 	
 	N = sum(G .> -1)
 
@@ -28,7 +25,10 @@ function laplacian(mesh, bc)
 	for j in 1:mesh.ny
 		for i in 1:mesh.nx
 			I = G[i,j]
-
+			
+			dx2 = 1 / mesh.dx[i,j] ^ 2
+			dy2 = 1 / mesh.dy[i,j] ^ 2
+			
 			if I>-1
 				s = 0
 				
@@ -75,11 +75,18 @@ end
 Solves the poisson problem Ax = b and sets out to be x
 """
 function get_poisson_solver(mesh, bc)
-	@time A = laplacian(mesh, bc)
-	
+	@assert bc in ["dirichlet", "neumann"]
+	if bc == "dirichlet" #TODO check
+		msk = mesh.msk0d
+	elseif bc == "neumann"
+		msk = mesh.msk0p
+	end
+
+	A = laplacian(mesh, msk, bc)
+
 	#Create a function that solves Ax = b
 	function func!(out, b)
-		out[mesh.msk .> 0] = A\b[mesh.msk .> 0]
+		out[msk .> 0] = A\b[msk .> 0]
 	end
 
 	return func!
