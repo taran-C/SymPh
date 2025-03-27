@@ -1,7 +1,8 @@
 using LinearAlgebra, SparseArrays
 
-function laplacian(mesh, msk, bc)
+function laplacian(mesh, msk, bc, location)
 	@assert bc in ["dirichlet", "neumann"]
+	@assert location in ["center", "vertex"]
 	
 	G = zeros(Int32, mesh.nx, mesh.ny)
 	G[msk .> 0] .= collect(1:length(G[msk .> 0]))
@@ -57,9 +58,14 @@ function laplacian(mesh, msk, bc)
 					s += dy2
 				end
 
-				if bc == "dirichlet"
-					counter = add_entry(-2*(dx2+dy2), I, I, counter)
-				elseif bc == "neumann"
+				if bc == "dirichlet" #Closed border
+					if location == "vertex"
+						counter = add_entry(-2*(dx2+dy2), I, I, counter)
+					elseif location == "center"
+						#TODO check (mostly for different grids)
+						counter = add_entry(-4*(dx2+dy2) + s, I, I, counter)
+					end
+				elseif bc == "neumann" #Open border
 					counter = add_entry(-s, I, I, counter)
 				end
 			end
@@ -74,15 +80,25 @@ end
 
 Solves the poisson problem Ax = b and sets out to be x
 """
-function get_poisson_solver(mesh, bc)
+function get_poisson_solver(mesh, bc, form_type)
 	@assert bc in ["dirichlet", "neumann"]
-	if bc == "dirichlet" #TODO check
-		msk = mesh.msk0d
-	elseif bc == "neumann"
+	@assert form_type in ["0p", "0d", "2p", "2d"]
+
+	if form_type == "0p" #TODO check
+		location = "center"
 		msk = mesh.msk0p
+	elseif form_type == "0d"
+		location = "vertex"
+		msk = mesh.msk0d
+	elseif form_type == "2p"
+		location = "vertex"
+		msk = mesh.msk2p
+	elseif form_type == "2d"
+		location = "center"
+		msk = mesh.msk2d
 	end
 
-	A = laplacian(mesh, msk, bc)
+	A = laplacian(mesh, msk, bc, location)
 
 	#Create a function that solves Ax = b
 	function func!(out, b)
