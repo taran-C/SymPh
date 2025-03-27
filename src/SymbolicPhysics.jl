@@ -4,6 +4,9 @@ import Base: +,*,^,-,/,<,>,!, string, getindex
 
 include("Misc.jl")
 include("State.jl")
+include("Integration.jl")
+include("Poisson2D.jl")
+include("Run.jl")
 
 #Arrays
 module Arrays

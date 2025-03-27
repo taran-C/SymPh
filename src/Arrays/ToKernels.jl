@@ -7,7 +7,7 @@ function to_kernel(seq::Sequence)
 	str = "(mesh::Mesh; "
 
 	for term in get_terms(seq)
-		str = str*term*"::AbstractArray{Float64}, "
+		str = str*term*"::Matrix{Float64}, "
 	end
 
 	str = chop(str; tail = 2)

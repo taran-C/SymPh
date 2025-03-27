@@ -1,5 +1,7 @@
 using LinearAlgebra, SparseArrays
 
+export get_poisson_solver
+
 function laplacian(mesh, msk, bc, location)
 	@assert bc in ["dirichlet", "neumann"]
 	@assert location in ["center", "vertex"]
