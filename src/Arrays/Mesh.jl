@@ -37,6 +37,11 @@ struct Mesh
 	msk2d::AbstractArray{Float64}
 
 	#Orders
+	o1px::AbstractArray{Float64} #order two, primal, x along x
+	o1py::AbstractArray{Float64}
+	o1dx::AbstractArray{Float64}
+	o1dy::AbstractArray{Float64}
+	
 	o2px::AbstractArray{Float64} #order two, primal, along x
 	o2py::AbstractArray{Float64}
 	o2dx::AbstractArray{Float64}
@@ -53,14 +58,14 @@ struct Mesh
 		msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d = compute_msks(msk)
 	
 		#Orders
-		o2px, o2py, o2dx, o2dy = compute_orders(msk2p, msk2d)
+		o1px, o1py, o1dx, o1dy, o2px, o2py, o2dx, o2dy = compute_orders(msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d)
 
 		#Creating the mesh
 		return new(nx, ny, nh,
 			   xc, yc, 1, 1, 1, 1, 1, 1,
 			   dx, dy, A, 
 			   msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d,
-			   o2px, o2py, o2dx, o2dy)
+			   o1px, o1py, o1dx, o1dy, o2px, o2py, o2dx, o2dy)
 	end
 end
 
@@ -84,8 +89,13 @@ function compute_metric(nx, ny, nh, Lx, Ly, msk)
 	return dx, dy, A
 end
 
-function compute_orders(msk2p, msk2d)
+function compute_orders(msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d)
 	nx,ny = size(msk2p)
+
+	o1px = zeros(nx,ny)
+	o1py = zeros(nx,ny)
+	o1dx = zeros(nx,ny)
+	o1dy = zeros(nx,ny)
 
 	o2px = zeros(nx,ny)
 	o2py = zeros(nx,ny)
@@ -93,14 +103,21 @@ function compute_orders(msk2p, msk2d)
 	o2dy = zeros(nx,ny)
 
 	#Primal
+	get_order_left(msk1px, 1, o1px)
+	get_order_left(msk1py, nx, o1py)
+
 	get_order_left(msk2p, 1, o2px)
 	get_order_left(msk2p, nx, o2py)
 
 	#Dual
+	get_order_right(msk1dx, 1, o1dx)
+	get_order_right(msk1dy, nx, o1dy)
+
 	get_order_right(msk2d, 1, o2dx)
 	get_order_right(msk2d, nx, o2dy)
 
-	return o2px, o2py, o2dx, o2dy
+	return (o1px, o1py, o1dx, o1dy,
+		o2px, o2py, o2dx, o2dy)
 end
 
 function compute_msks(msk)
@@ -144,6 +161,11 @@ msk1dx = ArrayVariable("mesh.msk1dx")
 msk1dy = ArrayVariable("mesh.msk1dy")
 msk2p = ArrayVariable("mesh.msk2p")
 msk2d = ArrayVariable("mesh.msk2d")
+
+o1px = ArrayVariable("mesh.o1px")
+o1py = ArrayVariable("mesh.o1py")
+o1dx = ArrayVariable("mesh.o1dx")
+o1dy = ArrayVariable("mesh.o1dy")
 
 o2px = ArrayVariable("mesh.o2px")
 o2py = ArrayVariable("mesh.o2py")

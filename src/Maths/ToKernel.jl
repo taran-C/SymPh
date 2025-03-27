@@ -40,12 +40,26 @@ function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=fa
 
 
 	#Generating the final function
-	func!, funcstr = Arrays.to_kernel(seq)
+	func!, funcstr, vars = Arrays.to_kernel(seq)
 	
 	if verbose
 		println("Generated code :")
 		println(funcstr)
 	end
-	
-	return func!
+
+	function func_call!(mesh, state; var_repls = Dict{String, String}())
+		kwargs = []
+
+		for var in vars
+			if var in keys(var_repls)
+				push!(kwargs, Pair(Symbol(var), getproperty(state, Symbol(var_repls[var]))))
+			else
+				push!(kwargs, Pair(Symbol(var), getproperty(state, Symbol(var))))
+			end
+		end
+		
+		func!(mesh; kwargs...)
+	end
+
+	return func_call!
 end

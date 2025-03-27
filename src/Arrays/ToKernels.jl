@@ -40,5 +40,5 @@ function to_kernel(seq::Sequence)
 
 	str = str * "end\n"
 		
-	return eval(Meta.parse(str)), str
+	return eval(Meta.parse(str)), str, get_terms(seq)
 end

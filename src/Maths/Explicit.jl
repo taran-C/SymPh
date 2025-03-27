@@ -181,8 +181,8 @@ function explicit(form::InteriorProduct{0, Dual, Dual}; param = ExplicitParam())
 	fu = fx * U
 	fv = fy * V
 	
-	Uint = param.interp(U[0,0] + U[1,0], fu, Arrays.o2px, "right", "x")
-	Vint = param.interp(V[0,0] + V[0,1], fv, Arrays.o2py, "right", "y")
+	Uint = param.interp(U[0,0] + U[1,0], fu, Arrays.o1dx, "right", "x")
+	Vint = param.interp(V[0,0] + V[0,1], fv, Arrays.o1dy, "right", "y")
 	
 	#elseif interp == "2ptavg"
 	#	Uint = 0.5 * (fu[0,0] + fu[-1,0])
@@ -200,8 +200,8 @@ function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam(
 	fexpr = explicit(form.form; param = param)
 	uexpr, vexpr = explicit(form.vect; param = param)
 
-	fintx = param.interp(uexpr, fexpr, Arrays.o2px, "left", "x")
-	finty = param.interp(vexpr, fexpr, Arrays.o2py, "left", "y")
+	fintx = param.interp(uexpr, fexpr, Arrays.o1px, "left", "x")
+	finty = param.interp(vexpr, fexpr, Arrays.o1py, "left", "y")
 	
 		#elseif interp == "2ptavg"
 	#	fintx = 0.5 * (fexpr[0,0] + fexpr[-1,0])
