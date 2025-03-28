@@ -28,5 +28,4 @@ Manifest.toml
 *.mp4
 *.swp
 *.nc
-
-history.nc
+*.pb.gz

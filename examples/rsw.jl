@@ -1,4 +1,4 @@
-import SymbolicPhysics: @Let, State
+import SymbolicPhysics: @Let, State, run!
 using SymbolicPhysics.Maths
 import SymbolicPhysics.Arrays
 
@@ -15,14 +15,14 @@ import SymbolicPhysics.Arrays
 @Let pv = (f + zeta) / h #TODO check what pv should be
 
 #Time derivative
-@Let du = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
-@Let dh = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
+@Let dtu = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
+@Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Defining the parameters needed to explicit
 explparams = ExplicitParam(; interp = Arrays.weno)
 
 #Generating the RHS
-rhs! = to_kernel(du, dh, pv; explparams = explparams)
+rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k"], explparams = explparams)
 
 #Testing the function
 
@@ -63,116 +63,5 @@ end
 
 state.f .=  100 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
 
-#Integrator TODO put somewhere else or use an externalized one
-function rk3step!(dt, mesh, f, h, u_x, u_y, zeta, pv,
-		dh1, dh2, dh3,
-		du_x1, du_x2, du_x3,
-		du_y1, du_y2, du_y3)
-	
-	rhs!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, zeta=zeta, pv=pv, dh=dh1, du_x=du_x1, du_y=du_y1)
-	h .+= dt .* dh1
-	u_x .+= dt .* du_x1
-	u_y .+= dt .* du_y1
-
-	rhs!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, zeta=zeta, pv=pv, dh=dh2, du_x=du_x2, du_y=du_y2)
-	h .+= dt .* (-3/4 .* dh1 + 1/4 .* dh2)
-	u_x .+= dt .* (-3/4 .* du_x1 + 1/4 .* du_x2)
-	u_y .+= dt .* (-3/4 .* du_y1 + 1/4 .* du_y2)
-
-	rhs!(mesh ;f=f, h=h, u_x=u_x, u_y=u_y, zeta=zeta, pv=pv, dh=dh3, du_x=du_x3, du_y=du_y3)
-	h .+= dt .* (-1/12 .* dh1 - 1/12 .* dh2 + 2/3 .* dh3)
-	u_x .+= dt .* (-1/12 .* du_x1 - 1/12 .* du_x2 + 2/3 .* du_x3)
-	u_y .+= dt .* (-1/12 .* du_y1 - 1/12 .* du_y2 + 2/3 .* du_y3)
-end
-
-#Saving/Viz
-save_every = 10
-
-#Plotting
-plot = false
-var_to_plot = state.zeta
-plot_args = (aspect_ratio=:equal, clims = (-1e-7, 1e-7))
-
-
-if plot
-	using Plots
-	global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; show = true, plot_args...)
-	global anim = Animation()
-	frame(anim, hm)
-end
-
-#NetCDF
-write = true
-ncfname = "history.nc"
-writevars = (:zeta, :pv, :h, :u_x, :u_y)
-
-if write
-	using NCDatasets
-
-	if isfile(ncfname)
-            rm(ncfname)
-        end
-
-	global ds = NCDataset(ncfname, "c")
-
-	defDim(ds,"x",mesh.nx)
-	defDim(ds,"y",mesh.ny)
-	defDim(ds,"time",Inf)
-
-        for sym in writevars
-		defVar(ds, string(sym), Float64, ("x", "y", "time"))
-        end
-end
-
-#TimeLoop
-tend = 1000
-maxite = 10000
-ite = 0
-
-#todo "borrowed" from fluids2d, check further
-cfl = 0.15
-dtmax = 0.15
-dt = dtmax
-t = 0
-wi = 1 #write index
-
-tstart = time()
-for ite in 1:maxite
-	if t>=tend || dt<1e-5
-		break
-	end
-
-	#Actual progress
-	rk3step!(dt, mesh, state.f, state.h, state.u_x, state.u_y, state.zeta, state.pv,
-		 state.dh1, state.dh2, state.dh3,
-		 state.du_x1, state.du_x2, state.du_x3,
-		 state.du_y1, state.du_y2, state.du_y3)
-
-	global t+=dt
-	maxU = maximum(abs.(state.u_x)/mesh.A[1,1])+maximum(abs.(state.u_y)/mesh.A[1,1])+1e-10
-	global dt = min(cfl/maxU, dtmax)
-	
-	print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(t; digits = 2))/$(tend)            ")	
-	if (ite%save_every==0)
-		if plot
-			global hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; plot_args...)
-			frame(anim, hm)
-		end
-		if write
-			for sym in writevars
-				ds[string(sym)][:,:, wi] = getproperty(state, sym)
-			end
-			global wi += 1
-		end
-	end
-end
-
-if plot
-	mp4(anim, "out.mp4"; fps = 60)
-end
-if write
-	close(ds)
-end
-
-println("")
-println(time()-tstart)
+#Running the simulation
+run!(rsw_rhs!, mesh, state; save_every = 1, cfl = 0.15, prognostics = ["u_x", "u_y", "h"], profiling = false, tend = 100, maxite = 1000, writevars = (:h, :pv, :u_x, :u_y, :zeta))

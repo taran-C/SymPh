@@ -155,7 +155,7 @@ end
 function explicit(form::Codifferential{0, Dual}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
 	
-	dq = -(exprs[1][1,0]-exprs[1][0,0] + exprs[2][0,1]-exprs[2][0,0]) * Arrays.msk0d
+	dq = -((exprs[1][1,0]-exprs[1][0,0]) + (exprs[2][0,1]-exprs[2][0,0])) * Arrays.msk0d
 	dq.name = form.name
 
 	return dq
@@ -203,7 +203,7 @@ function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam(
 	fintx = param.interp(uexpr, fexpr, Arrays.o1px, "left", "x")
 	finty = param.interp(vexpr, fexpr, Arrays.o1py, "left", "y")
 	
-		#elseif interp == "2ptavg"
+	#elseif interp == "2ptavg"
 	#	fintx = 0.5 * (fexpr[0,0] + fexpr[-1,0])
 	#	finty = 0.5 * (fexpr[0,0] + fexpr[0,-1])
 	#end
@@ -223,9 +223,10 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 
 	udec = Arrays.avg4pt(uexpr, 1, -1)
 	vdec = Arrays.avg4pt(vexpr, -1, 1)
-	
-	xout = -vdec * param.interp(vexpr, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
-	yout = udec * param.interp(uexpr, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
+
+	#TODO transp velocity dec or not
+	xout = -vdec * param.interp(vdec, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
+	yout = udec * param.interp(udec, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
 	
 	#elseif interp == "2ptavg"
 	#	xout = -vdec * 0.5 * (fexpr[0,0]+fexpr[0,1]) * Arrays.msk1dx
