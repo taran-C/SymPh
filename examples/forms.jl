@@ -1,4 +1,4 @@
-using SymbolicPhysics.Maths
+using SymPh.Maths
 
 x = FormVariable{0, Primal}("x")
 y = FormVariable{0, Primal}("y")

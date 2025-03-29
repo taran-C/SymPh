@@ -13,7 +13,7 @@ function run!(rhs!, mesh, state;
 
 		#Plotting
 		plot = false,
-		var_to_plot = nothing,
+		plot_var = nothing,
 		plot_args = (aspect_ratio=:equal,),
 		
 		#NetCDF
@@ -35,7 +35,7 @@ function run!(rhs!, mesh, state;
 	)
 
 	if plot
-		hm = heatmap(var_to_plot[nh+2:nx-nh, nh+2:ny-nh]; show = true, plot_args...)
+		hm = heatmap(plot_var[mesh.nh+2:mesh.nx-mesh.nh, mesh.nh+2:mesh.ny-mesh.nh]; show = true, plot_args...)
 		anim = Animation()
 		frame(anim, hm)
 	end
@@ -78,7 +78,7 @@ function run!(rhs!, mesh, state;
 			print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(t; digits = 2))/$(tend)            ")	
 			if (ite%save_every==0)
 				if plot
-					hm = heatmap(var_to_plot[mesh.nh+2:mesh.nx-mesh.nh, mesh.nh+2:mesh.ny-mesh.nh]; plot_args...)
+					hm = heatmap(plot_var[mesh.nh+2:mesh.nx-mesh.nh, mesh.nh+2:mesh.ny-mesh.nh]; plot_args...)
 					frame(anim, hm)
 				end
 				if write
@@ -111,7 +111,7 @@ function run!(rhs!, mesh, state;
 end
 
 function compute_dt(mesh, state, cfl, dtmax)
-	maxU = maximum(abs.(state.u_x)/mesh.A[1,1])+maximum(abs.(state.u_y)/mesh.A[1,1])+1e-10
+	maxU = maximum(abs.(state.u_x)/mesh.A[5,5])+maximum(abs.(state.u_y)/mesh.A[5,5])+1e-10
 	dt = min(cfl/maxU, dtmax)
 	return dt
 end

@@ -18,3 +18,6 @@
 - Fuse nodes with same name in tree automatically (lots of duplicates rn)
 - eps (machine epsilon) object for weno ?
 - ^ (and other) operator, more conditionals for ease of use ?
+- Automatic simplification which probably requires to :
+- Represent Expressions as a sum of products
+- Figure out time

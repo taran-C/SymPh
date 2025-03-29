@@ -1,6 +1,6 @@
-import SymbolicPhysics: @Let, State, run!
-using SymbolicPhysics.Maths
-import SymbolicPhysics.Arrays
+import SymPh: @Let, State, run!
+using SymPh.Maths
+import SymPh.Arrays
 
 
 #Defining our equation

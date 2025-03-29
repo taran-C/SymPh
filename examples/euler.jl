@@ -1,6 +1,6 @@
-using SymbolicPhysics
-using SymbolicPhysics.Maths
-import SymbolicPhysics.Arrays
+using SymPh
+using SymPh.Maths
+import SymPh.Arrays
 
 #Defining our equation
 @Let u = FormVariable{1, Dual}() #Transported velocity

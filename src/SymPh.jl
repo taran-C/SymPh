@@ -1,4 +1,4 @@
-module SymbolicPhysics
+module SymPh
 
 import Base: +,*,^,-,/,<,>,!, string, getindex
 

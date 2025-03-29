@@ -1,4 +1,4 @@
-# SymbolicPhysics
+# SymPh
 A module made to represent physical or mathematical operations on scalar/vector fields, and convert them into efficient kernels, to allow for lazy but powerful evaluation of operations.
 
 ## Structure
