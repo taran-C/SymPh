@@ -6,7 +6,7 @@ include("Misc.jl")
 include("State.jl")
 include("Integration.jl")
 include("Poisson2D.jl")
-include("Run.jl")
+include("Model.jl")
 
 #Arrays
 module Arrays

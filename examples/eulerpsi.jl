@@ -52,5 +52,8 @@ end
 #Vertex poisson_solver
 poisson_solver = get_poisson_solver(mesh, "dirichlet", "0d")
 
+#Creating the Model
+model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 100., dtmax = 5., integratorstep! = euler_forwardstep!)
+
 #Running the simulation
-run!(euler_rhs!, mesh, state; save_every = 1, plot = false, plot_var=state.omega, cfl = 100., dtmax = 25., prognostics = ["omega"], profiling = false, tend = 10000, maxite = 10000, writevars = (:u_x, :u_y, :omega))
+run!(model; save_every = 1, plot = false, plot_var=state.omega, profiling = false, tend = 5000, maxite = 1000, writevars = (:u_x, :u_y, :omega))

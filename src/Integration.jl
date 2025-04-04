@@ -1,4 +1,4 @@
-export rk3step!
+export rk3step!, euler_forwardstep!
 
 """
 rk3step!(dt, mesh, state, progs)
@@ -26,5 +26,20 @@ function rk3step!(rhs!, dt, mesh, state, progs)
 		getproperty(state, Symbol(p)) .-= dt * 1/12 * getproperty(state, Symbol("dt" * p * "1"))
 		getproperty(state, Symbol(p)) .-= dt * 1/12 * getproperty(state, Symbol("dt" * p * "2"))
 		getproperty(state, Symbol(p)) .+= dt * 2/3 * getproperty(state, Symbol("dt" * p * "3"))
+	end
+end
+
+"""
+euler_forwardstep!(dt, mesh, state, progs)
+
+	dt : time increment
+	mesh : Mesh object
+	state : State object
+	progs : Name of prognostic variables
+"""
+function euler_forwardstep!(rhs!, dt, mesh, state, progs)
+	rhs!(mesh, state)
+	for p in progs
+		getproperty(state, Symbol(p)) .+= dt * getproperty(state, Symbol("dt" * p))
 	end
 end

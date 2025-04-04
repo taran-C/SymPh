@@ -1,4 +1,4 @@
-import SymPh: @Let, State, run!
+using SymPh
 using SymPh.Maths
 import SymPh.Arrays
 
@@ -63,5 +63,8 @@ end
 
 state.f .=  100 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
 
+#Creating the Model
+model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15)
+
 #Running the simulation
-run!(rsw_rhs!, mesh, state; save_every = 1, cfl = 0.15, prognostics = ["u_x", "u_y", "h"], profiling = false, tend = 100, maxite = 1000, writevars = (:h, :pv, :u_x, :u_y, :zeta))
+run!(model; save_every = 1, profiling = false, tend = 100, maxite = 1000, writevars = (:h, :pv, :u_x, :u_y, :zeta))
