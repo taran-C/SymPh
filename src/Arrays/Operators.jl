@@ -20,7 +20,7 @@ end
 FuncCall(name, func, args) = FuncCall(name, func, args, 0, 0)
 getindex(expr::FuncCall, depx, depy) = FuncCall(expr.name, expr.func, expr.args, expr.depx + depx, expr.depy + depy)
 function string(expr::FuncCall)
-	str = expr.func * "("
+	str = expr.name * "("
 	for arg in expr.args
 		str = str * string(arg) * ", "
 	end
@@ -198,7 +198,7 @@ mutable struct TernaryOperator <: Operator
 end
 #TODO check with true if else cause i can't seem to find a way to override the ternary operator ?
 eval(expr::TernaryOperator, vals::AbstractDict) = eval(expr.a, vals) ? eval(expr.b, vals) : eval(expr.c, vals)
-string(expr::TernaryOperator) = "($(string(expr.a[expr.depx, expr.depy]))) ? ($(string(expr.b[expr.depx, expr.depy]))) : ($(string(expr.c[expr.depx, expr.depy])))"
+string(expr::TernaryOperator) = "vifelse($(string(expr.a[expr.depx, expr.depy])), $(string(expr.b[expr.depx, expr.depy])), $(string(expr.c[expr.depx, expr.depy])))"
 prec(expr::TernaryOperator) = 10
 getindex(expr::TernaryOperator, depx, depy) = TernaryOperator(expr.name, expr.a, expr.b, expr.c, expr.depx+depx, expr.depy+depy)
 TernaryOperator(name, a, b, c) = TernaryOperator(name, a, b, c, 0, 0)

@@ -11,7 +11,7 @@ end
 function Base.getproperty(obj::State, sym::Symbol)
 	fields = getfield(obj, :fields)
 	mesh = getfield(obj, :mesh)
-
+	
 	if !(sym in fieldnames(State))
 		if sym in keys(fields)
 			return fields[sym]

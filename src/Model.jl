@@ -104,7 +104,7 @@ function run!(model;
 
 		#Actual step
 		dt = step!(model)
-
+		
 		print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
 		if (ite%save_every==0)
 			if plot

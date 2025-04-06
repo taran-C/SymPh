@@ -17,6 +17,10 @@ function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=fa
 		println(string(exprs))
 	end
 
+	if verbose
+		println("Explicit expression :")
+		println(string(math_exprs))
+	end
 
 	#Transforming our Expression into a dependency tree
 	tree = Arrays.to_deptree!(Set{String}(save), math_exprs)

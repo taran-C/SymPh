@@ -233,6 +233,9 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 	#	yout = udec * 0.5 * (fexpr[0,0]+fexpr[1,0]) * Arrays.msk1dy
 	#end
 
+	xout.name = form.name*"_x"
+	yout.name = form.name*"_y"
+
 	return [xout, yout]
 end
 
@@ -240,7 +243,13 @@ end
 function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate Primal and dual areas (could be very different, especially for non square grids)
 	xexpr, yexpr = explicit(vec.form; param = param)
 
-	return [xexpr/Arrays.dx, yexpr/Arrays.dy]
+	xout = xexpr/Arrays.dx
+	yout = yexpr/Arrays.dy
+
+	#TODO figure out sharp naming
+	#xout.name = vec.name*"_x"
+	#yout.name = vec.name*"_y"
+	return [xout, yout]
 end
 
 #Hodge

@@ -5,6 +5,8 @@ struct Mesh
 	
 	nh::Int64
 
+	mgr #LoopManager
+
 	#Locations
 	xc::AbstractArray{Float64}
 	yc::AbstractArray{Float64}
@@ -47,7 +49,7 @@ struct Mesh
 	o2dx::AbstractArray{Float64}
 	o2dy::AbstractArray{Float64}
 	
-	function Mesh(nx, ny, nh, msk, Lx = 1, Ly = 1)
+	function Mesh(nx, ny, nh, mgr, msk, Lx = 1, Ly = 1)
 		#Locations
 		xc, yc = compute_locations(nx,ny,nh,Lx,Ly)
 		
@@ -62,6 +64,7 @@ struct Mesh
 
 		#Creating the mesh
 		return new(nx, ny, nh,
+			   mgr,
 			   xc, yc, 1, 1, 1, 1, 1, 1,
 			   dx, dy, A, 
 			   msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d,

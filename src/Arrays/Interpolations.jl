@@ -143,7 +143,7 @@ function weno(U::Expression, a::Expression, o::Expression, lr::String, dir::Stri
 				TernaryOperator(U>0, wen3(qmm, qm, qp), wen3(qpp, qp, qm)),
 				TernaryOperator(o>1, 
 					TernaryOperator(U>0, qm, qp),
-					RealValue(0)
+					RealValue(0.0)
 				)
 			)
 		)

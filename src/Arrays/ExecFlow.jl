@@ -22,7 +22,7 @@ get_terms(b::LoopBlock)
 	Get a set of string representing the array being assigned in the loop
 """
 function get_terms(b::LoopBlock)
-	return Set(collect(keys(b.exprs)))
+	return unique(collect(keys(b.exprs)))
 end
 
 function string(b::LoopBlock)

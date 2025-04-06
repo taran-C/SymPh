@@ -1,6 +1,7 @@
 using SymPh
 using SymPh.Maths
 import SymPh.Arrays
+using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 
 #Defining our equation
 @Let omega = FormVariable{2, Dual}() #Vorticity
@@ -16,22 +17,27 @@ import SymPh.Arrays
 explparams = ExplicitParam(; interp = Arrays.weno)
 
 #Generating the RHS
-euler_rhs! = to_kernel(dtomega; save = ["u_x", "u_y", "ι_U_omega"], explparams = explparams, verbose = false)
+euler_rhs! = to_kernel(dtomega; save = ["u_x", "u_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false)
 
 #Testing the function
 
 #Defining the Mesh
-nx = 100
-ny = 100
+nx = 200
+ny = 200
 nh = 3
 
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 #msk[nx÷2-nx÷5:nx÷2+nx÷5, 2*ny÷10:4*ny÷10] .= 0
 
-
 Lx, Ly = (1,1)
-mesh = Arrays.Mesh(nx, ny, nh, msk, Lx, Ly)
+
+#LoopManager
+scalar = PlainCPU()
+simd = VectorizedCPU(4)
+threads = MultiThread(scalar)
+
+mesh = Arrays.Mesh(nx, ny, nh, simd, msk, Lx, Ly)
 
 #Initial Conditions
 state = State(mesh)
@@ -50,4 +56,4 @@ end
 model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 100., dtmax = 5., integratorstep! = euler_forwardstep!)
 
 #Running the simulation
-run!(model; save_every = 1, plot = false, plot_var=state.omega, profiling = false, tend = 1000, maxite = 1000, writevars = (:u_x, :u_y, :omega))
+run!(model; save_every = 5, plot = false, plot_var=state.omega, profiling = false, tend = 5000, maxite = 1000, writevars = (:u_x, :u_y, :omega, :psi))
