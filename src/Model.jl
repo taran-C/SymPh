@@ -28,10 +28,13 @@ step!(model::Model; n=1)
 	Performs n integration steps of the model
 """
 function step!(model::Model; n=1)
-	#Actual progress
-	dt = compute_dt(model.mesh, model.state, model.cfl, model.dtmax)
-	model.integratorstep!(model.rhs!, dt, model.mesh, model.state, model.prognostics)
-	model.t+=dt
+	dt = model.dtmax
+	for i in 1:n
+		#Actual progress
+		dt = compute_dt(model.mesh, model.state, model.cfl, model.dtmax)
+		model.integratorstep!(model.rhs!, dt, model.mesh, model.state, model.prognostics)
+		model.t+=dt
+	end
 	return dt
 end
 
