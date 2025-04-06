@@ -257,15 +257,29 @@ function explicit(form::InnerProduct{2, Primal}; param = ExplicitParam())
 	return 0.5*(ax*bx + ax[1,0]*bx[1,0] + ay*by + ay[0,1]*by[0,1]) * Arrays.msk2p
 end
 
-#InverseLaplacian
+#InverseLaplacian TODO DO NOT REGENERATE LAPLACIAN EACH TIME, EXTRA BAD, create a PoissonSolver object with generates the function the first time its called and not later
 function explicit(form::InverseLaplacian{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
-	return Arrays.FuncCall(form.name, "Main.poisson_solver", [fexpr], 0, 0)
+	callstr = "(mesh;$(form.name), $(form.form.name), kwargs...) -> begin
+	poisson_solver = get_poisson_solver(mesh, \"dirichlet\", \"0d\")
+	poisson_solver($(form.name), $(form.form.name))
+	end"
+
+	call = eval(Meta.parse(callstr))
+
+	return Arrays.FuncCall(form.name, call, [fexpr], 0, 0)
 end
 
 function explicit(form::InverseLaplacian{2, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
-	return Arrays.FuncCall(form.name, "Main.poisson_solver", [fexpr], 0, 0)
+	callstr = "(mesh;$(form.name), $(form.form.name), kwargs...) -> begin
+	poisson_solver = get_poisson_solver(mesh, \"dirichlet\", \"2d\")
+	poisson_solver($(form.name), $(form.form.name))
+	end"
+
+	call = eval(Meta.parse(callstr))
+
+	return Arrays.FuncCall(form.name, call, [fexpr], 0, 0)
 end

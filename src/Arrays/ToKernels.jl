@@ -15,7 +15,7 @@ function to_kernel(seq::Sequence)
 
 	vars = get_terms(seq)
 
-	function kernel!(mesh, state; var_repls)	
+	function kernel!(mesh, state; var_repls=[])	
 		#Generate kwargs from state and terms
 		kwargs = []
 

@@ -39,9 +39,6 @@ state = State(mesh)
 gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 dipole(x, y, x0,y0,d,sigma) = (gaussian(x, y, x0+d/2, y0, sigma) + gaussian(x, y, x0-d/2, y0, sigma))
 
-#Center poisson solver
-poisson_solver = get_poisson_solver(mesh, "dirichlet", "2d")
-
 omega = state.omega
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
@@ -49,11 +46,8 @@ for i in nh+1:nx-nh, j in nh+1:ny-nh
 	omega[i,j] = dipole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j]
 end
 
-#Vertex poisson_solver
-poisson_solver = get_poisson_solver(mesh, "dirichlet", "0d")
-
 #Creating the Model
 model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 100., dtmax = 5., integratorstep! = euler_forwardstep!)
 
 #Running the simulation
-run!(model; save_every = 1, plot = false, plot_var=state.omega, profiling = false, tend = 5000, maxite = 1000, writevars = (:u_x, :u_y, :omega))
+run!(model; save_every = 1, plot = false, plot_var=state.omega, profiling = false, tend = 1000, maxite = 1000, writevars = (:u_x, :u_y, :omega))

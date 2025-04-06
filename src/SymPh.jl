@@ -5,7 +5,6 @@ import Base: +,*,^,-,/,<,>,!, string, getindex
 include("Misc.jl")
 include("State.jl")
 include("Integration.jl")
-include("Poisson2D.jl")
 include("Model.jl")
 
 #Arrays
@@ -28,6 +27,7 @@ module Maths
 import ..Arrays
 import Base: +,-,*,/
 
+include("Poisson2D.jl")
 include("Maths/Variables.jl")
 include("Maths/Operators.jl")
 include("Maths/Explicit.jl")
