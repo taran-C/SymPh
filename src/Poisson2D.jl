@@ -1,6 +1,20 @@
 using LinearAlgebra, SparseArrays
 
-export get_poisson_solver
+export Poisson2D, solve_poisson
+
+mutable struct Poisson2D
+	bc
+	form_type
+	poisson_solver
+end
+Poisson2D(bc, form_type) = Poisson2D(bc, form_type, nothing)
+function solve_poisson(poisson::Poisson2D, mesh, out, b)
+	if poisson.poisson_solver == nothing
+		poisson.poisson_solver = get_poisson_solver(mesh, poisson.bc, poisson.form_type)
+	end
+	poisson.poisson_solver(out, b)
+end
+
 
 function laplacian(mesh, msk, bc, location)
 	@assert bc in ["dirichlet", "neumann"]

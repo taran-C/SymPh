@@ -1,7 +1,7 @@
 using SymPh
 using SymPh.Maths
 import SymPh.Arrays
-
+using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 
 #Defining our equation
 @Let h = FormVariable{2, Primal}() #Height * A (h* technically)
@@ -27,15 +27,21 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k"], explparams = explparams
 #Testing the function
 
 #Defining the Mesh
-nx = 50
-ny = 50
+nx = 100
+ny = 100
 nh = 3
 
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 
 Lx, Ly = (1,1)
-mesh = Arrays.Mesh(nx, ny, nh, msk, Lx, Ly)
+
+#LoopManager
+scalar = PlainCPU()
+simd = VectorizedCPU(16)
+threads = MultiThread(scalar)
+
+mesh = Arrays.Mesh(nx, ny, nh, simd, msk, Lx, Ly)
 
 #Initial Conditions
 state = State(mesh)
@@ -67,4 +73,4 @@ state.f .=  100 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
 model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15)
 
 #Running the simulation
-run!(model; save_every = 1, profiling = false, tend = 100, maxite = 1000, writevars = (:h, :pv, :u_x, :u_y, :zeta))
+run!(model; save_every = 1, profiling = false, tend = 100, maxite = 100, writevars = (:h, :pv, :u_x, :u_y, :zeta))
