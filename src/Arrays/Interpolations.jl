@@ -96,7 +96,7 @@ end
 #TODO Specific interpolations for forms (choosing the right orders, directions...)
 upwind(U::Expression, a::Expression, o::Expression, lr::String, dir::String) = TernaryOperator(o > 4, upinterp(U, a, lr, dir, 5), 
 						       TernaryOperator(o > 2, upinterp(U, a, lr, dir, 3),
-						       TernaryOperator(o > 0, upinterp(U, a, lr, dir, 1), RealValue(0))))
+						       TernaryOperator(o > 0, upinterp(U, a, lr, dir, 1), RealValue(0.0))))
 
 #Weno
 function weno(U::Expression, a::Expression, o::Expression, lr::String, dir::String)

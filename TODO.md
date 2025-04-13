@@ -1,5 +1,4 @@
 # To get a functional code
-- Generate multiple functions called with a loop manager, by manipulating julia Expr objects rather than strings
 - Replace strings by symbols/objects (would allow to actually pass function)
 - Ensure valid and unique names
 - Check placing for the 4 needed poisson solvers
@@ -7,7 +6,6 @@
 
 # For the internship
 - Higher order differentiation
-- GPU/CPU switch
 
 # Would be cool
 - MPI

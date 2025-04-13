@@ -1,7 +1,7 @@
 #TODO check if this is compatible with multi-threading (should be) (since the array is gathered before being used in the subfunction parameters)
 export State
 
-struct State
+mutable struct State
 	mesh
 	fields::Dict{Symbol, Array{Float64,2}}
 	function State(mesh)
@@ -23,4 +23,9 @@ function Base.getproperty(obj::State, sym::Symbol)
 		return getfield(obj, sym)
 	end
 end
-	
+
+export reset_state
+
+function reset_state(state::State)
+	state.fields = Dict{Symbol, Array{Float64,2}}()
+end
