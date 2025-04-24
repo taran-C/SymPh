@@ -3,6 +3,8 @@
 - Ensure valid and unique names
 - Check placing for the 4 needed poisson solvers
 - Check every possibility for every operator
+- Halo filling + periodic conditions
+- Forcing terms
 
 # For the internship
 - Higher order differentiation
