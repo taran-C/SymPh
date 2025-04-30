@@ -22,8 +22,8 @@ euler_rhs! = to_kernel(dtomega; save = ["u_x", "u_y", "ι_U_omega_x", "ι_U_omeg
 #Testing the function
 
 #Defining the Mesh
-nx = 100
-ny = 100
+nx = 50
+ny = 50
 nh = 3
 
 msk = zeros(nx, ny)
@@ -35,9 +35,9 @@ Lx, Ly = (1,1)
 #LoopManager
 scalar = PlainCPU()
 simd = VectorizedCPU(16)
-threads = MultiThread(scalar)
+threads = MultiThread(simd)
 
-mesh = Arrays.Mesh(nx, ny, nh, simd, msk, Lx, Ly)
+mesh = Arrays.Mesh(nx, ny, nh, threads, msk, Lx, Ly)
 
 #Initial Conditions
 state = State(mesh)
@@ -57,4 +57,4 @@ end
 model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 100., dtmax = 5., integratorstep! = rk3step!)
 
 #Running the simulation
-run!(model; save_every = 5, plot = false, plot_var=state.omega, profiling = false, tend = 10000, maxite = 2000, writevars = (:u_x, :u_y, :omega, :psi))
+run!(model; save_every = 5, plot = false, plot_var=state.omega, profiling = false, tend = 10000, maxite = 500, writevars = (:u_x, :u_y, :omega, :psi))

@@ -8,6 +8,7 @@
 
 # For the internship
 - Higher order differentiation
+- Automatic arbitrary order finite-diff + 
 
 # Would be cool
 - MPI

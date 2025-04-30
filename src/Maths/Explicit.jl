@@ -151,11 +151,11 @@ function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	return dq
 end
 
-#Codifferential TODO check sign
+#Codifferential
 function explicit(form::Codifferential{0, Dual}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
 	
-	dq = -((exprs[1][1,0]-exprs[1][0,0]) + (exprs[2][0,1]-exprs[2][0,0])) * Arrays.msk0d
+	dq = ((exprs[1][1,0]-exprs[1][0,0]) + (exprs[2][0,1]-exprs[2][0,0])) * Arrays.msk0d
 	dq.name = form.name
 
 	return dq
@@ -164,8 +164,8 @@ end
 function explicit(form::Codifferential{1, Dual}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
 
-	du = (expr[0,1] - expr[0,0]) * Arrays.msk1dx
-	dv = -(expr[1,0] - expr[0,0]) * Arrays.msk1dy
+	du = -(expr[0,1] - expr[0,0]) * Arrays.msk1dx
+	dv = (expr[1,0] - expr[0,0]) * Arrays.msk1dy
 
 	du.name = form.name * "_x"
 	dv.name = form.name * "_y"
