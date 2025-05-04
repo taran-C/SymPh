@@ -13,7 +13,9 @@ export InverseLaplacian
 #export Flat
 
 """
-	FuncCall
+	FuncCall{D, P}(name::String, func, args::Vector{Form}) <: Form{D,P}
+
+Represents a call to `func` applied to the objects represented by `args`. Forces the computation of its arguments.
 """
 mutable struct FuncCall{D, P} <: Form{D,P}
 	name::String
@@ -22,7 +24,9 @@ mutable struct FuncCall{D, P} <: Form{D,P}
 end
 
 """
-	Addition
+	Addition{D,P}(name::String, left::Form{D,P}, right::Form{D,P}) <: Form{D,P}
+
+The element-wise sum ``left + right``.
 """
 mutable struct Addition{D,P} <: Form{D,P}
 	name::String
@@ -33,7 +37,9 @@ end
 +(left::Form, right::Form) = Addition("P_"*left.name*"_"*right.name, left, right)
 
 """
-	Substraction
+	Substraction{D,P}(name::String, left::Form{D,P}, right::Form{D,P}) <: Form{D,P}
+
+The substraction ``left - right``.
 """
 mutable struct Substraction{D,P} <: Form{D,P}
 	name::String
@@ -44,7 +50,9 @@ end
 -(left::Form{D,P}, right::Form{D,P}) where {D,P} = Substraction{D,P}("P_"*left.name*"_"*right.name, left, right)
 
 """
-	Negative
+	Negative{D,P}(name::String, form::Form{D,P}) <: Form{D,P}
+
+The inverse of a form.
 """
 mutable struct Negative{D,P} <: Form{D,P}
 	name::String
@@ -54,9 +62,10 @@ end
 -(form::Form) = Negative("N_"*form.name, form)
 
 """
-	Division
-	TODO What is that actually in terms of FORMS ?
-	Simple division by a scalar field proxied by a 0-form ?
+	Division{D,P}(name::String, left::Form{D,P}, right::Form) <: Form{D,P}
+	
+TODO What is that actually in terms of FORMS ?
+Simple division by a scalar field proxied by a 0-form ?
 """
 mutable struct Division{D,P} <: Form{D,P}
 	name::String
@@ -67,7 +76,11 @@ end
 
 
 """
-	ExteriorDerivative
+	ExteriorDerivative{D,P}(name::String, omega::Form{D-1,P}) <: Form{D,P}
+
+The exterior derivative ``\\mathrm{d}\\omega``
+
+Transforms a ``k``-form into a ``k+1``-form
 """
 mutable struct ExteriorDerivative{D,P} <: Form{D,P}
 	name::String
@@ -80,7 +93,11 @@ mutable struct ExteriorDerivative{D,P} <: Form{D,P}
 end
 
 """
-	Codifferential
+	Codifferential{D,P}(name::String, omega::Form{D+1,P}) <: Form{D,P}
+
+The codifferential ``\\delta \\omega``
+
+Transforms a ``k``-form into a ``k-1``-form
 """
 mutable struct Codifferential{D,P} <: Form{D,P}
 	name::String
@@ -94,7 +111,9 @@ end
 
 
 """
-	InteriorProduct
+	InteriorProduct{D, Pv, Pf}(name::String, X::Vect, omega::Form) <: Form{D, Pf}
+
+The contraction of a ``k``-form ``\\omega`` with a vector field ``\\mathbf{X}`` which gives us a ``k-1``-form ``\\iota_\\mathbf{X}\\omega``
 """
 mutable struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
 	name::String

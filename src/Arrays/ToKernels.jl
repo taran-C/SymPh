@@ -3,8 +3,9 @@ using SIMD
 
 export to_kernel
 
-#TODO define each loop as a function used in the returned one to allow for passing arguments (strongly typed) + multi-threading with e-g ManagedLoops (or idk which other one) 
-#TODO THIS IS TERRIBLE ! (?) ACTUALLY CONSTRUCT SOMETHING INSTEAD OF RELYING ON STRINGS
+"""
+	Converts a sequence into a computing kernel
+"""
 function to_kernel(seq::Sequence)
 	calls = []
 

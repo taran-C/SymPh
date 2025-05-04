@@ -22,10 +22,11 @@ struct VectorVariable{P} <: Vect{P}
 end
 
 """
-	Form
+	Form{D,P<:Primality}
 
-D : degree (0/1/2... form)
-P : primality
+# Arguments
+- `D::Integer` : degree (0/1/2... form)
+- `P::Primality` : The primality of the form
 """
 abstract type Form{D,P<:Primality} end
 

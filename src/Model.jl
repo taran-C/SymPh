@@ -120,14 +120,14 @@ function run!(model;
 		end
 	end
 	
+	println("\nElapsed : $(round(time()-tstart; digits=2))s")
+	
 	if plot
 		mp4(anim, "out.mp4"; fps = 60)
 	end
 	if write
 		close(ds)
 	end
-
-	println("\nElapsed : $(round(time()-tstart; digits=2))s")
 end
 
 function compute_dt(mesh, state, cfl, dtmax)
