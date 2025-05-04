@@ -1,7 +1,16 @@
 using Documenter, SymPh
 
-pdf = false
-local_html = false
+#Parsing command-line arguments
+if "pdf" in ARGS
+	pdf = true
+else
+	pdf = false
+end
+if "local" in ARGS
+	local_html = true
+else
+	local_html = false
+end
 
 if pdf
 	format = Documenter.LaTeX(platform="tectonic")
@@ -22,7 +31,7 @@ makedocs(sitename="SymPh.jl",
 		 ]
 	)
 
-if !local_html
+if !local_html & !pdf
 	deploydocs(
     		repo = "github.com/taran-C/SymPh.git",
 	)
