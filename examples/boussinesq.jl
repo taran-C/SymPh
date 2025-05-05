@@ -25,14 +25,14 @@ explparams = ExplicitParam(; interp = Arrays.weno)
 
 #Generating the RHS
 println("generating rhs")
-boussinesq_rhs! = to_kernel(dtu, dtrho; save = ["du", "b_y", "KE", "omega"], explparams = explparams, verbose = false)
+boussinesq_rhs! = to_kernel(dtu, dtrho; save = ["du", "b_x", "b_y", "KE", "dKE_x", "dKE_y", "omega", "ι_U_rho_x", "ι_U_rho_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false)
 println("generated")
 
 #Testing the function
 
 #Defining the Mesh
-nx = 50
-ny = 50
+nx = 100
+ny = 100
 nh = 3
 
 msk = zeros(nx, ny)
@@ -57,15 +57,20 @@ rho = state.rho
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
-	rho[i,j] = gaussian(x, y, 0.5,0.5,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
+	rho[i,j] = (1 - 0.1 * gaussian(x, y, 0.5,0.5,0.05)) * mesh.msk2d[i,j] * mesh.A[i,j]
 end
 
-state.g_x .= 1
+state.g_X .= 1 #should be g_X i think ?
 
 
 #Creating the Model
 model = Model(boussinesq_rhs!, mesh, state, ["rho", "u_x", "u_y"]; cfl = 0.9, dtmax = 0.15, integratorstep! = rk3step!)
 
+println("first step")
+step!(model)
+println("Done")
+display(keys(state.fields))
+
 #Running the simulation
 println("Running...")
-run!(model; save_every = 5, plot = false, plot_var=state.omega, profiling = false, tend = 10000, maxite = 100, writevars = (:u_x, :u_y, :b_y))
+run!(model; save_every = 5, plot = true, plot_var=state.rho, profiling = false, tend = 10000, maxite = 100, writevars = (:u_x, :u_y, :rho))
