@@ -3,10 +3,13 @@ using SymPh.Maths
 import SymPh.Arrays
 using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 
+#TODO Boundary Conditions ! xperiodic + forcing at bottom
+
 #Defining the equation
 @Let rho = FormVariable{2, Dual}()
 @Let g = VectorVariable{Dual}()
 
+#TODO FIND A WAY TO DEFINE g OTHERWISE, THIS IS SUPER DUPER EXPENSIVE
 @Let b = InteriorProduct(g, rho)
 
 @Let u = FormVariable{1, Dual}()
@@ -21,18 +24,18 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 @Let dtrho = - ExteriorDerivative(InteriorProduct(U, rho))
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.weno)
+explparams = ExplicitParam(; interp = Arrays.upwind)
 
 #Generating the RHS
 println("generating rhs")
-boussinesq_rhs! = to_kernel(dtu, dtrho; save = ["du", "b_x", "b_y", "KE", "dKE_x", "dKE_y", "omega", "ι_U_rho_x", "ι_U_rho_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false)
+boussinesq_rhs! = to_kernel(dtu, dtrho; save = ["du", "b_x", "b_y", "KE", "omega", "ι_U_rho_x", "ι_U_rho_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false)
 println("generated")
 
 #Testing the function
 
 #Defining the Mesh
-nx = 100
-ny = 100
+nx = 150
+ny = 150
 nh = 3
 
 msk = zeros(nx, ny)
@@ -46,7 +49,7 @@ simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
-mesh = Arrays.Mesh(nx, ny, nh, thsimd, msk, Lx, Ly)
+mesh = Arrays.Mesh(nx, ny, nh, simd, msk, Lx, Ly)
 
 #Initial Conditions
 state = State(mesh)
@@ -57,20 +60,20 @@ rho = state.rho
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
-	rho[i,j] = (1 - 0.1 * gaussian(x, y, 0.5,0.5,0.05)) * mesh.msk2d[i,j] * mesh.A[i,j]
+	rho[i,j] = gaussian(x, y, 0.5,0.5,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
+	#rho[i,j] = (Int((0.1< y < 0.3) & (0.1<x<0.9)) + 1e-2 * rand()) * mesh.msk2d[i,j] * mesh.A[i,j]
 end
 
-state.g_X .= 1 #should be g_X i think ?
+state.g_X .= -1
 
 
 #Creating the Model
 model = Model(boussinesq_rhs!, mesh, state, ["rho", "u_x", "u_y"]; cfl = 0.9, dtmax = 0.15, integratorstep! = rk3step!)
 
-println("first step")
+#Force compilation
+println("First step")
 step!(model)
 println("Done")
-display(keys(state.fields))
 
 #Running the simulation
-println("Running...")
-run!(model; save_every = 5, plot = true, plot_var=state.rho, profiling = false, tend = 10000, maxite = 100, writevars = (:u_x, :u_y, :rho))
+run!(model; save_every = 5, plot = true, plot_var=state.rho, profiling = false, tend = 10000, maxite = 3000, writevars = (:u_x, :u_y, :rho))

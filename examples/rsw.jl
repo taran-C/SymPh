@@ -72,5 +72,9 @@ state.f .=  100 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
 #Creating the Model
 model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15)
 
+println("first step")
+step!(model)
+println("Done")
+
 #Running the simulation
 run!(model; save_every = 1, profiling = false, tend = 100, maxite = 100, writevars = (:h, :pv, :u_x, :u_y, :zeta))
