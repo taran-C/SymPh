@@ -1,6 +1,4 @@
-# Defining our equatio & !pdf//github.com/taran-C/SymPh.git
-To https://github.com/taran-C/SymbolicPhysics.git
-   a35e9ee..2bd732a  master -> mastern
+# Defining our equation
 
 ## The maths
 We will us as an example the stream function-vorticity formulation of the Euler equations with the vorticity $\omega$ as our prognostic variable. 
