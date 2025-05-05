@@ -272,13 +272,12 @@ function explicit(form::InverseLaplacian{0, Dual}; param = ExplicitParam())
 
 	poisson = Poisson2D("dirichlet", "0d")
 
-	callstr = "function poiss_dirich_0d(mesh;$(form.name), $(form.form.name), kwargs...)
-	solve_poisson(poisson, mesh, $(form.name), $(form.form.name))
-	end"
+	function poiss_dirich_0d(mesh;kwargs...)
+		args = Dict(kwargs)
+		solve_poisson(poisson, mesh, kwargs[Symbol(form.name)], kwargs[Symbol(form.form.name)])
+	end
 
-	call = eval(Meta.parse(callstr))
-
-	return Arrays.FuncCall(form.name, call, [fexpr], 0, 0)
+	return Arrays.FuncCall(form.name, poiss_dirich_0d, [fexpr], 0, 0)
 end
 
 function explicit(form::InverseLaplacian{2, Dual}; param = ExplicitParam())
