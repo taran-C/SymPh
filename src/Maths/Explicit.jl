@@ -181,13 +181,14 @@ function explicit(form::InteriorProduct{0, Dual, Dual}; param = ExplicitParam())
 	fu = fx * U
 	fv = fy * V
 	
-	Uint = param.interp(U[0,0] + U[1,0], fu, Arrays.o1dx, "right", "x")
-	Vint = param.interp(V[0,0] + V[0,1], fv, Arrays.o1dy, "right", "y")
+	if form.interp == Nothing
+		interp = param.interp
+	else
+		interp = form.interp
+	end
 	
-	#elseif interp == "2ptavg"
-	#	Uint = 0.5 * (fu[0,0] + fu[-1,0])
-	#	Vint = 0.5 * (fv[0,0] + fv[0,-1])
-	#end
+	Uint = interp(U[0,0] + U[1,0], fu, Arrays.o1dx, "right", "x")
+	Vint = interp(V[0,0] + V[0,1], fv, Arrays.o1dy, "right", "y")
 	
 	qout = (Uint + Vint) * Arrays.msk0d
 	
@@ -200,13 +201,14 @@ function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam(
 	fexpr = explicit(form.form; param = param)
 	uexpr, vexpr = explicit(form.vect; param = param)
 
+	if form.interp == Nothing
+		interp = param.interp
+	else
+		interp = form.interp
+	end
+
 	fintx = param.interp(uexpr, fexpr, Arrays.o1px, "left", "x")
 	finty = param.interp(vexpr, fexpr, Arrays.o1py, "left", "y")
-	
-	#elseif interp == "2ptavg"
-	#	fintx = 0.5 * (fexpr[0,0] + fexpr[-1,0])
-	#	finty = 0.5 * (fexpr[0,0] + fexpr[0,-1])
-	#end
 
 	uout = -vexpr * finty * Arrays.msk1px
 	vout = uexpr * fintx * Arrays.msk1py
@@ -224,15 +226,16 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 	udec = Arrays.avg4pt(uexpr, 1, -1)
 	vdec = Arrays.avg4pt(vexpr, -1, 1)
 
+	if form.interp == Nothing
+		interp = param.interp
+	else
+		interp = form.interp
+	end
+
 	#TODO transp velocity dec or not
 	xout = -vdec * param.interp(vdec, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
 	yout = udec * param.interp(udec, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
 	
-	#elseif interp == "2ptavg"
-	#	xout = -vdec * 0.5 * (fexpr[0,0]+fexpr[0,1]) * Arrays.msk1dx
-	#	yout = udec * 0.5 * (fexpr[0,0]+fexpr[1,0]) * Arrays.msk1dy
-	#end
-
 	xout.name = form.name*"_x"
 	yout.name = form.name*"_y"
 

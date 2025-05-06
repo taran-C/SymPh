@@ -111,19 +111,21 @@ end
 
 
 """
-	InteriorProduct{D, Pv, Pf}(name::String, X::Vect, omega::Form) <: Form{D, Pf}
+	InteriorProduct{D, Pv, Pf}(name::String, X::Vect, omega::Form, interp = Nothing) <: Form{D, Pf}
 
 The contraction of a ``k``-form ``\\omega`` with a vector field ``\\mathbf{X}`` which gives us a ``k-1``-form ``\\iota_\\mathbf{X}\\omega``
+Possibility to specify interpolation function
 """
 mutable struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
 	name::String
 	vect::Vect
 	form::Form
+	interp
 	
-	function InteriorProduct(name::String, vect::Vect{Pv}, form::Form{D,Pf}) where {Pv,D,Pf}
-		return new{D-1, Pv, Pf}(name, vect, form)
+	function InteriorProduct(name::String, vect::Vect{Pv}, form::Form{D,Pf}; interp = Nothing) where {Pv,D,Pf}
+		return new{D-1, Pv, Pf}(name, vect, form, interp)
 	end
-	InteriorProduct(vect::Vect, form::Form) = InteriorProduct("ι_"*vect.name*"_"*form.name, vect, form)
+	InteriorProduct(vect::Vect, form::Form) = InteriorProduct("ι_"*vect.name*"_"*form.name, vect, form; interp=Nothing)
 end
 
 """

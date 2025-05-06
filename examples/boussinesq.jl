@@ -3,14 +3,14 @@ using SymPh.Maths
 import SymPh.Arrays
 using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 
-#TODO Boundary Conditions ! xperiodic + forcing at bottom
+#TODO Boundary Conditions ! xperiodic + forcing (dirichlet) at bottom
 
 #Defining the equation
 @Let rho = FormVariable{2, Dual}()
 @Let g = VectorVariable{Dual}()
 
 #TODO FIND A WAY TO DEFINE g OTHERWISE, THIS IS SUPER DUPER EXPENSIVE
-@Let b = InteriorProduct(g, rho)
+@Let b = InteriorProduct(g, rho; interp = Arrays.avg2pt)
 
 @Let u = FormVariable{1, Dual}()
 @Let U = Sharp(u)
@@ -34,8 +34,8 @@ println("generated")
 #Testing the function
 
 #Defining the Mesh
-nx = 150
-ny = 150
+nx = 100
+ny = 100
 nh = 3
 
 msk = zeros(nx, ny)
@@ -60,7 +60,7 @@ rho = state.rho
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
-	rho[i,j] = gaussian(x, y, 0.5,0.5,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
+	rho[i,j] = gaussian(x, y, 0.5,0.5,0.02) * mesh.msk2d[i,j] * mesh.A[i,j]
 	#rho[i,j] = (Int((0.1< y < 0.3) & (0.1<x<0.9)) + 1e-2 * rand()) * mesh.msk2d[i,j] * mesh.A[i,j]
 end
 
@@ -68,7 +68,7 @@ state.g_X .= -1
 
 
 #Creating the Model
-model = Model(boussinesq_rhs!, mesh, state, ["rho", "u_x", "u_y"]; cfl = 0.9, dtmax = 0.15, integratorstep! = rk3step!)
+model = Model(boussinesq_rhs!, mesh, state, ["rho", "u_x", "u_y"]; cfl = 0.6, dtmax = 0.15, integratorstep! = rk3step!)
 
 #Force compilation
 println("First step")
@@ -76,4 +76,4 @@ step!(model)
 println("Done")
 
 #Running the simulation
-run!(model; save_every = 5, plot = true, plot_var=state.rho, profiling = false, tend = 10000, maxite = 3000, writevars = (:u_x, :u_y, :rho))
+run!(model; save_every = 10, plot = true, plot_var=state.rho, profiling = false, tend = 50, maxite = 2000, writevars = (:u_x, :u_y, :rho))

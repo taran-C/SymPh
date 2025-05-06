@@ -39,7 +39,7 @@ function get_order_right(msk, step, order)
 end
 
 """
-Interpolations TODO add weno and configurable interpolations
+Interpolations
 """
 
 #Upwind interpolation
@@ -97,6 +97,30 @@ end
 upwind(U::Expression, a::Expression, o::Expression, lr::String, dir::String) = TernaryOperator(o > 4, upinterp(U, a, lr, dir, 5), 
 						       TernaryOperator(o > 2, upinterp(U, a, lr, dir, 3),
 						       TernaryOperator(o > 0, upinterp(U, a, lr, dir, 1), RealValue(0.0))))
+
+"""
+	avg2pt(U::Expression, a::Expression, o::Expression, lr::String, dir::String)
+
+Two point average (simple mean)
+"""
+function avg2pt(U::Expression, a::Expression, o::Expression, lr::String, dir::String)
+	@assert lr in ["left", "right"]
+	@assert dir in ["x", "y"]
+	
+	if lr == "right"
+		if dir == "x"
+			return 0.5 * (a[1,0]+a[0,0])
+		elseif dir == "y"
+			return 0.5 * (a[0,1]+a[0,0])
+		end
+	elseif lr == "left"
+		if dir == "x"
+			return 0.5 * (a[-1,0]+a[0,0])
+		elseif dir == "y"
+			return 0.5 * (a[0,-1]+a[0,0])
+		end
+	end
+end
 
 #Weno
 function weno(U::Expression, a::Expression, o::Expression, lr::String, dir::String)

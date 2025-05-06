@@ -22,8 +22,8 @@ euler_rhs! = to_kernel(dtomega; save = ["u_x", "u_y", "ι_U_omega_x", "ι_U_omeg
 #Testing the function
 
 #Defining the Mesh
-nx = 200
-ny = 200
+nx = 100
+ny = 100
 nh = 3
 
 msk = zeros(nx, ny)
@@ -51,11 +51,11 @@ omega = state.omega
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
-	omega[i,j] = tripole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j]
+	omega[i,j] = dipole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j]
 end
 
 #Creating the Model
-model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 100., dtmax = 5., integratorstep! = rk3step!)
+model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 100., dtmax = 5., integratorstep! = rk4step!)
 
 #Running the simulation
-run!(model; save_every = 5, plot = true, plot_var=state.omega, profiling = false, tend = 1000000, maxite = 10000, writevars = (:u_x, :u_y, :omega, :psi))
+run!(model; save_every = 5, plot = true, plot_var=state.omega, profiling = false, tend = 20000, maxite = 10000, writevars = (:u_x, :u_y, :omega, :psi))
