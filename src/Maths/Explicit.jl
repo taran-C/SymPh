@@ -250,8 +250,8 @@ function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate
 	yout = yexpr/Arrays.dy
 
 	#TODO figure out sharp naming
-	#xout.name = vec.name*"_x"
-	#yout.name = vec.name*"_y"
+	xout.name = vec.name*"_X"
+	yout.name = vec.name*"_Y"
 	return [xout, yout]
 end
 

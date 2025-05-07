@@ -21,8 +21,8 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 #Defining the parameters needed to explicit
 explparams = ExplicitParam(; interp = Arrays.weno)
 
-#Generating the RHS
-rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k"], explparams = explparams)
+#Generating the RHS TODO change the way BCs are handled
+rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y"], explparams = explparams, bcs=[U, zeta, dtu, dth])
 
 #Testing the function
 
@@ -53,9 +53,10 @@ gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 
 h = state.h
 
-config = "dipole"
+config = "vortex"
 
-for i in nh+1:nx-nh, j in nh+1:ny-nh
+#for i in nh+1:nx-nh, j in nh+1:ny-nh
+for i in 1:nx, j in 1:ny
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
 
@@ -63,11 +64,11 @@ for i in nh+1:nx-nh, j in nh+1:ny-nh
 		d=0.05
 		h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, sigma) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[5,5]
 	elseif config == "vortex"
-		h[i,j] = (H + h0 * gaussian(x, y, 0.5, 0.5, sigma)) * mesh.A[5,5]
+		h[i,j] = (H + h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[5,5]
 	end
 end
 
-state.f .=  100 .* ones((nx,ny)) .* mesh.A .* mesh.msk2d
+state.f .=  100 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
 model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15)
@@ -77,4 +78,4 @@ step!(model)
 println("Done")
 
 #Running the simulation
-run!(model; save_every = 1, profiling = false, tend = 100, maxite = 100, writevars = (:h, :pv, :u_x, :u_y, :zeta))
+run!(model; save_every = 5, plot=true, plot_var = state.h, profiling = false, tend = 100, maxite = 1000, writevars = (:h, :pv, :u_x, :u_y, :zeta, :dth3, :dtu_x3, :dtu_y3))

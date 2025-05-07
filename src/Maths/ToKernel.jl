@@ -1,6 +1,6 @@
 export to_kernel
 
-function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=false)
+function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=false, bcs = [])
 	#Transforming the Forms expression into an Expression on arrays (TODO probably a more elegant way to do this)
 	math_exprs = []
 	for expr in exprs
@@ -42,9 +42,42 @@ function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=fa
 		println(string(seq)*"\n")
 	end
 
-
+	#Handling the BCs
+	fill = Dict()
+	for bc in bcs
+		if bc isa Vect
+			if primality(bc) == Dual
+				fill[bc.name * "_X"] = (+1, 0, 0, 0)
+				fill[bc.name * "_Y"] = (0, 0, +1, 0)
+			elseif primality(bc) == Primal
+				fill[bc.name * "_X"] = (0, 0, -1, 0)
+				fill[bc.name * "_Y"] = (-1, 0, 0, 0)
+			end
+		elseif degree(bc) == 0
+			if primality(bc) == Dual
+				fill[bc.name] = (0, 0, 0, 0) # second part : (ldec, rdec, bdec, tdec), offset wrt main msk, eh 
+			elseif primality(bc) == Primal
+				fill[bc.name] = (-1, 0, -1, 0)
+			end
+		elseif degree(bc) == 1
+			if primality(bc) == Dual
+				fill[bc.name * "_x"] = (+1, 0, 0, 0)
+				fill[bc.name * "_y"] = (0, 0, +1, 0)
+			elseif primality(bc) == Primal
+				fill[bc.name * "_x"] = (0, 0, -1, 0)
+				fill[bc.name * "_y"] = (-1, 0, 0, 0)
+			end
+		elseif degree(bc) == 2
+			if primality(bc) == Dual
+				fill[bc.name] = (+1, 0, +1, 0)
+			elseif primality(bc) == Primal
+				fill[bc.name] = (0, 0, 0, 0)
+			end
+		end
+	end
+	
 	#Generating the final function
-	func!,  vars = Arrays.to_kernel(seq)
+	func!,  vars = Arrays.to_kernel(seq, fill)
 
 	return func!
 end

@@ -6,16 +6,17 @@ export to_kernel
 """
 	Converts a sequence into a computing kernel
 """
-function to_kernel(seq::Sequence)
+function to_kernel(seq::Sequence, fill)
 	calls = []
 
 	vars = get_terms(seq)
 	
 	for b in seq.blocks
 		if b isa CallBlock
-			push!(calls, (b.expr.func,:call))
+			push!(calls, (b.expr.func,:call, [b.name]))
 		elseif b isa LoopBlock
-			push!(calls, (eval(Meta.parse(generate_loop_call(seq, vars, b))), :loop))
+			str, keys = generate_loop_call(seq, vars, b)
+			push!(calls, (eval(Meta.parse(str)), :loop, keys))
 		end
 	end
 
@@ -40,10 +41,42 @@ function to_kernel(seq::Sequence)
 			elseif call[2] == :call
 				call[1](mesh; kwargs...)
 			end
+			for key in call[3]
+				if haskey(fill, key)
+					nx = mesh.nx
+					ny = mesh.ny
+					nh = mesh.nh
+					
+					if key in keys(var_repls)
+						q = getproperty(state, Symbol(var_repls[key]))
+						copy_x!(q, nx, ny, nh)
+						copy_y!(q, nx, ny, nh)
+					else
+						q = getproperty(state, Symbol(key))
+						copy_x!(q, nx, ny, nh)
+						copy_y!(q, nx, ny, nh)
+					end
+				end
+			end
 		end
 	end
 
 	return kernel!, vars
+end
+
+function copy_x!(q, nx, ny, nh)
+	#horizontal edges
+	for i = 1:nh, j = nh+1:ny-nh
+		q[i,j] = q[i+nx-2*nh, j]
+		q[nx-nh+i,j] = q[i+nh, j]
+	end
+end
+function copy_y!(q, nx, ny, nh)
+	#vertical edges
+	for i = nh+1:nx-nh, j = 1:nh
+		q[i,j] = q[i, j+ny-2*nh]
+		q[i,ny-nh+j] = q[i, j+nh]
+	end
 end
 
 """
@@ -68,5 +101,5 @@ function generate_loop_call(seq, vars, block)
 	end
 	str = str * "\t\tend\n\tend\nend\n"
 	
-	return str
+	return str, keys(block.exprs)
 end

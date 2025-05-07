@@ -2,6 +2,7 @@ export Primal, Dual
 export Form, FormVariable
 export VectorVariable
 export Vect
+export degree, primality
 
 """
 	Primality
@@ -34,3 +35,6 @@ struct FormVariable{D,P} <: Form{D,P}
 	name::String
 end
 
+degree(f::Form{D,P}) where {D,P} = D
+primality(f::Form{D,P}) where {D,P} = P
+primality(v::Vect{P}) where {P} = P

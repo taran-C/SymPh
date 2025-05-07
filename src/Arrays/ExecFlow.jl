@@ -19,7 +19,7 @@ end
 """
 get_terms(b::LoopBlock)
 
-	Get a set of string representing the array being assigned in the loop
+	Get a set of string representing the arrays being assigned in the loop
 """
 function get_terms(b::LoopBlock)
 	return unique(collect(keys(b.exprs)))
