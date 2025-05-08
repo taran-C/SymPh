@@ -63,7 +63,7 @@ struct Mesh
 		msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d = compute_msks(msk)
 	
 		#Orders
-		o1px, o1py, o1dx, o1dy, o2px, o2py, o2dx, o2dy = compute_orders(msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d)
+		o1px, o1py, o1dx, o1dy, o2px, o2py, o2dx, o2dy = compute_orders(msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d, xperio, yperio)
 
 		#Creating the mesh
 		return new(nx, ny, nh,
@@ -96,7 +96,7 @@ function compute_metric(nx, ny, nh, Lx, Ly, msk)
 	return dx, dy, A
 end
 
-function compute_orders(msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d)
+function compute_orders(msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d, xperio, yperio)
 	nx,ny = size(msk2p)
 
 	o1px = zeros(nx,ny)
@@ -110,18 +110,50 @@ function compute_orders(msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d)
 	o2dy = zeros(nx,ny)
 
 	#Primal
-	get_order_left(msk1px, 1, o1px)
-	get_order_left(msk1py, nx, o1py)
+	if xperio
+		o1px .= 6
+	else
+		get_order_left(msk1px, 1, o1px)
+	end
+	if yperio
+		o1py .= 6
+	else
+		get_order_left(msk1py, nx, o1py)
+	end
 
-	get_order_left(msk2p, 1, o2px)
-	get_order_left(msk2p, nx, o2py)
+	if xperio
+		o2px .= 6
+	else
+		get_order_left(msk2p, 1, o2px)
+	end
+	if yperio
+		o2py .= 6
+	else
+		get_order_left(msk2p, nx, o2py)
+	end
 
 	#Dual
-	get_order_right(msk1dx, 1, o1dx)
-	get_order_right(msk1dy, nx, o1dy)
+	if xperio
+		o1dx .= 6
+	else
+		get_order_right(msk1dx, 1, o1dx)
+	end
+	if yperio
+		o1dy .= 6
+	else
+		get_order_right(msk1dy, nx, o1dy)
+	end
 
-	get_order_right(msk2d, 1, o2dx)
-	get_order_right(msk2d, nx, o2dy)
+	if xperio
+		o2dx .= 6
+	else
+		get_order_right(msk2d, 1, o2dx)
+	end
+	if yperio
+		o2dy .= 6
+	else
+		get_order_right(msk2d, nx, o2dy)
+	end
 
 	return (o1px, o1py, o1dx, o1dy,
 		o2px, o2py, o2dx, o2dy)

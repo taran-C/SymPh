@@ -19,29 +19,29 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 @Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.weno)
+explparams = ExplicitParam(; interp = Arrays.upwind)
 
 #Generating the RHS TODO change the way BCs are handled
-rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y"], explparams = explparams, bcs=[U, zeta, dtu, dth])
+rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y"], explparams = explparams, bcs=[U, zeta, k, dtu, dth])
 
 #Testing the function
 
 #Defining the Mesh
 nx = 100
-ny = 100
+ny = 150
 nh = 3
 
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 
-Lx, Ly = (1,1)
+Lx, Ly = (1,2)
 
 #LoopManager
 scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 
-mesh = Arrays.Mesh(nx, ny, nh, simd, msk, Lx, Ly)
+mesh = Arrays.Mesh(nx, ny, nh, simd, msk, Lx, Ly; xperio=true, yperio=true)
 
 #Initial Conditions
 state = State(mesh)
@@ -68,7 +68,7 @@ for i in 1:nx, j in 1:ny
 	end
 end
 
-state.f .=  100 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
+state.f .=  0 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
 model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15)
@@ -78,4 +78,4 @@ step!(model)
 println("Done")
 
 #Running the simulation
-run!(model; save_every = 5, plot=true, plot_var = state.h, profiling = false, tend = 100, maxite = 1000, writevars = (:h, :pv, :u_x, :u_y, :zeta, :dth3, :dtu_x3, :dtu_y3))
+run!(model; save_every = 5, plot=true, plot_var = state.h, profiling = false, tend = 10, maxite = 50000, writevars = (:h, :pv, :u_x, :u_y, :zeta))

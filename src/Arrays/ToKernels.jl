@@ -41,6 +41,8 @@ function to_kernel(seq::Sequence, fill)
 			elseif call[2] == :call
 				call[1](mesh; kwargs...)
 			end
+			
+			#Halo filling
 			for key in call[3]
 				if haskey(fill, key)
 					nx = mesh.nx
@@ -49,12 +51,15 @@ function to_kernel(seq::Sequence, fill)
 					
 					if key in keys(var_repls)
 						q = getproperty(state, Symbol(var_repls[key]))
-						copy_x!(q, nx, ny, nh)
-						copy_y!(q, nx, ny, nh)
 					else
 						q = getproperty(state, Symbol(key))
-						copy_x!(q, nx, ny, nh)
-						copy_y!(q, nx, ny, nh)
+					end
+					
+					if mesh.xperio
+						copy_x!(q, nx, ny, nh, fill[key])
+					end
+					if mesh.yperio
+						copy_y!(q, nx, ny, nh, fill[key])
 					end
 				end
 			end
@@ -64,20 +69,22 @@ function to_kernel(seq::Sequence, fill)
 	return kernel!, vars
 end
 
-function copy_x!(q, nx, ny, nh)
-	#horizontal edges
-	for i = 1:nh, j = nh+1:ny-nh
-		q[i,j] = q[i+nx-2*nh, j]
-		q[nx-nh+i,j] = q[i+nh, j]
-	end
+#dec : (ldec, rdec, bdec, tdec) TODO only works for dual grid rn (need to be able to copy less than full halo for bigger grid)
+function copy_x!(q, nx, ny, nh, dec)
+        #horizontal edges
+        for i = 1:nh, j = 1:ny
+                q[i+dec[1],j] = q[i+nx-2*nh+dec[2], j]
+                q[nx-nh+i-dec[2],j] = q[i+nh+dec[1], j]
+        end
 end
-function copy_y!(q, nx, ny, nh)
-	#vertical edges
-	for i = nh+1:nx-nh, j = 1:nh
-		q[i,j] = q[i, j+ny-2*nh]
-		q[i,ny-nh+j] = q[i, j+nh]
-	end
+function copy_y!(q, nx, ny, nh, dec)
+        #vertical edges
+        for i = 1:nx, j = 1:nh
+                q[i,j+dec[3]] = q[i, j+ny-2*nh+dec[4]]
+                q[i,ny-nh+j-dec[4]] = q[i, j+nh+dec[3]]
+        end
 end
+
 
 """
 generate_loop_call(seq, block)
