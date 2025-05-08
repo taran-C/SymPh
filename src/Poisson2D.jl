@@ -48,11 +48,11 @@ function laplacian(mesh, msk, bc, location)
 			
 			if I>-1
 				s = 0
-				
-				west = i>1 ? G[i-1, j] : -1 #(G[j, -1] if mesh.xperiodic else -1)
-				east = i<mesh.nx-1 ? G[i+1, j] : -1 #(G[j, 0] if mesh.xperiodic else -1)
-				south = j>1 ? G[i, j-1] : -1 #(G[-1, i] if mesh.yperiodic else -1)
-				north = j<mesh.ny-1 ? G[i, j+1] : -1 #(G[0, i] if mesh.yperiodic else -1)
+				#TODO doesn't handle the halo I think
+				west = i>1 ? G[i-1, j] : (mesh.xperio ? G[end, j] : -1)
+				east = i<mesh.nx-1 ? G[i+1, j] : (mesh.xperio ? G[0, j] : -1)
+				south = j>1 ? G[i, j-1] : (mesh.yperio ? G[i, end] : -1)
+				north = j<mesh.ny-1 ? G[i, j+1] : (mesh.yperio ? G[i, 0] : -1)
 				
 				if west > -1
 					counter = add_entry(dx2, I, west, counter)

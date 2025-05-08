@@ -8,7 +8,8 @@
 
 # For the internship
 - Higher order differentiation
-- Automatic arbitrary order finite-diff + 
+- Automatic arbitrary order finite-diff + fvtofd
+- Create plots for any metric
 
 # Would be cool
 - MPI
@@ -22,3 +23,4 @@
 - Automatic simplification which probably requires to :
 - Represent Expressions as a sum of products
 - Figure out time
+- Replace everything dx/dy by di/dj etc to clarify index coordinates (except in metric where we actually have dx/dy)

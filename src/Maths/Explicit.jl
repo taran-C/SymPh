@@ -3,9 +3,10 @@ export explicit, ExplicitParam
 
 struct ExplicitParam
 	interp
+	fvtofd
 
-	function ExplicitParam(;interp = Arrays.upwind)
-		return new(interp)
+	function ExplicitParam(;interp = Arrays.upwind, fvtofd = Arrays.fvtofd2)
+		return new(interp, fvtofd)
 	end
 end
 
@@ -207,8 +208,8 @@ function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam(
 		interp = form.interp
 	end
 
-	fintx = param.interp(uexpr, fexpr, Arrays.o1px, "left", "x")
-	finty = param.interp(vexpr, fexpr, Arrays.o1py, "left", "y")
+	fintx = interp(uexpr, fexpr, Arrays.o1px, "left", "x")
+	finty = interp(vexpr, fexpr, Arrays.o1py, "left", "y")
 
 	uout = -vexpr * finty * Arrays.msk1px
 	vout = uexpr * fintx * Arrays.msk1py
@@ -233,8 +234,8 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 	end
 
 	#TODO transp velocity dec or not
-	xout = -vdec * param.interp(vdec, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
-	yout = udec * param.interp(udec, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
+	xout = -vdec * interp(vdec, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
+	yout = udec * interp(udec, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
 	
 	xout.name = form.name*"_x"
 	yout.name = form.name*"_y"
@@ -246,8 +247,9 @@ end
 function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate Primal and dual areas (could be very different, especially for non square grids)
 	xexpr, yexpr = explicit(vec.form; param = param)
 
-	xout = xexpr/Arrays.dx
-	yout = yexpr/Arrays.dy
+	#TODO per object configurable fvtofd function
+	xout = param.fvtofd(xexpr, Arrays.dx, "x") * Arrays.msk1dx
+	yout = param.fvtofd(yexpr, Arrays.dy, "y") * Arrays.msk1dy
 
 	#TODO figure out sharp naming
 	xout.name = vec.name*"_X"
@@ -259,14 +261,9 @@ end
 function explicit(form::Hodge{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
-	return fexpr / Arrays.A
-end
-
-#InnerProduct
-function explicit(form::InnerProduct{2, Primal}; param = ExplicitParam())
-	ax, ay = explicit(form.left; param = param)
-	bx, by = explicit(form.right; param = param)
-	return 0.5*(ax*bx + ax[1,0]*bx[1,0] + ay*by + ay[0,1]*by[0,1]) * Arrays.msk2p
+	res = param.fvtofd(param.fvtofd(fexpr, Arrays.dx, "x"), Arrays.dy, "y") * Arrays.msk0d
+	res.name = form.name
+	return res
 end
 
 #InverseLaplacian TODO DO NOT REGENERATE LAPLACIAN EACH TIME, EXTRA BAD, create a PoissonSolver object with generates the function the first time its called and not later

@@ -8,7 +8,7 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 @Let u = FormVariable{1, Dual}() #Transported velocity
 
 @Let U = Sharp(u) # U = u#
-@Let k = 0.5 * Hodge(InnerProduct(u,u)) #k = 0.5 * hodge(innerproduct(u,u))
+@Let k = 0.5 * InteriorProduct(U, u; interp = Arrays.avg2pt) #k = 1/2 InteriorProduct(U,u)
 @Let p = Hodge(h) # p = *(g(h*+b*))
 @Let zeta = ExteriorDerivative(u) # ζ* = du
 @Let f = FormVariable{2, Dual}() #Coriolis (f* so times A)
@@ -19,7 +19,7 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 @Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.upwind)
+explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4)
 
 #Generating the RHS TODO change the way BCs are handled
 rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y"], explparams = explparams, bcs=[U, zeta, k, dtu, dth])
@@ -28,20 +28,20 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y"], explparam
 
 #Defining the Mesh
 nx = 100
-ny = 150
+ny = 200
 nh = 3
 
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 
-Lx, Ly = (1,2)
+Lx, Ly = (2,4)
 
 #LoopManager
 scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 
-mesh = Arrays.Mesh(nx, ny, nh, simd, msk, Lx, Ly; xperio=true, yperio=true)
+mesh = Arrays.Mesh(nx, ny, nh, simd, msk, Lx, Ly; xperio=false, yperio=true)
 
 #Initial Conditions
 state = State(mesh)
@@ -68,7 +68,7 @@ for i in 1:nx, j in 1:ny
 	end
 end
 
-state.f .=  0 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
+state.f .= 1 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
 model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15)
@@ -78,4 +78,4 @@ step!(model)
 println("Done")
 
 #Running the simulation
-run!(model; save_every = 5, plot=true, plot_var = state.h, profiling = false, tend = 10, maxite = 50000, writevars = (:h, :pv, :u_x, :u_y, :zeta))
+run!(model; save_every = 5, plot=true, plot_var = state.h, profiling = false, tend = 20, maxite = 5000, writevars = (:h, :pv, :u_x, :u_y, :zeta))

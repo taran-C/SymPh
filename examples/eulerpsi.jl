@@ -17,7 +17,7 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 explparams = ExplicitParam(; interp = Arrays.weno)
 
 #Generating the RHS
-euler_rhs! = to_kernel(dtomega; save = ["u_x", "u_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false)
+euler_rhs! = to_kernel(dtomega; save = ["U_x", "U_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega])
 
 #Testing the function
 
@@ -38,13 +38,13 @@ simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
-mesh = Arrays.Mesh(nx, ny, nh, thsimd, msk, Lx, Ly)
+mesh = Arrays.Mesh(nx, ny, nh, thsimd, msk, Lx, Ly; xperio=true, yperio=true)
 
 #Initial Conditions
 state = State(mesh)
 
 gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
-dipole(x,y,x0,y0,d,sigma) = gaussian(x, y, x0+d/2, y0, sigma) + gaussian(x, y, x0-d/2, y0, sigma)
+dipole(x,y,x0,y0,d,sigma) = gaussian(x, y, x0+d/2, y0, sigma) - gaussian(x, y, x0-d/2, y0, sigma)
 tripole(x,y,x0,y0,r,sigma) = gaussian(x, y, x0+r*cos(0*2pi/3), y0+r*sin(0*2pi/3), sigma) + gaussian(x, y, x0+r*cos(2pi/3), y0+r*sin(2pi/3), sigma) + gaussian(x, y, x0+r*cos(2*2pi/3), y0+r*sin(2*2pi/3), sigma)
 
 omega = state.omega
@@ -58,4 +58,4 @@ end
 model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 100., dtmax = 5., integratorstep! = rk4step!)
 
 #Running the simulation
-run!(model; save_every = 5, plot = true, plot_var=state.omega, profiling = false, tend = 20000, maxite = 10000, writevars = (:u_x, :u_y, :omega, :psi))
+run!(model; save_every = 15, plot = true, plot_var=state.omega, profiling = false, tend = 20000, maxite = 5000, writevars = (:u_x, :u_y, :omega, :psi))
