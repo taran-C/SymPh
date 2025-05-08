@@ -13,7 +13,6 @@ Codifferential
 InteriorProduct
 Sharp
 Hodge
-InnerProduct
 RealProdForm
 InverseLaplacian
 ```
