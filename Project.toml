@@ -4,6 +4,8 @@ authors = ["kazhdu "]
 version = "0.1.0"
 
 [deps]
+ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LoopManagers = "d33d4f76-8fbe-47a6-acd9-ead534c583ff"
 ManagedLoops = "36a4119d-6b73-4371-88fe-ba2d91f5495d"
@@ -14,7 +16,15 @@ Profile = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 SIMD = "fdea26ae-647d-5447-a871-4b548cad5224"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+SymPhMakieExt = ["Makie", "GeometryBasics", "ColorSchemes"]
+
 [compat]
+ColorSchemes = "3.29.0"
+GeometryBasics = "0.5.9"
 LinearAlgebra = "1.11.0"
 LoopManagers = "0.2.0"
 ManagedLoops = "0.1.13"

@@ -6,6 +6,7 @@ include("Misc.jl")
 include("State.jl")
 include("Integration.jl")
 include("Model.jl")
+include("plotform.jl")
 
 #Arrays
 module Arrays

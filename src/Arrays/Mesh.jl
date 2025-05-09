@@ -52,12 +52,9 @@ struct Mesh
 	xperio::Bool
 	yperio::Bool
 	
-	function Mesh(nx, ny, nh, mgr, msk, Lx = 1, Ly = 1; xperio=false, yperio=false)
-		#Locations
-		xc, yc = compute_locations(nx,ny,nh,Lx,Ly)
-		
+	function Mesh(nx, ny, nh, mgr, msk, xc, yc; xperio=false, yperio=false)
 		#Metric
-		dx, dy, A = compute_metric(nx,ny, nh, Lx, Ly, msk)
+		dx, dy, A = compute_metric(nx,ny, xc, yc)
 
 		#Masks
 		msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d = compute_msks(msk)
@@ -76,21 +73,29 @@ struct Mesh
 	end
 end
 
-function compute_locations(nx, ny, nh, Lx, Ly)
-	xc = zeros(nx,ny)
-	yc = zeros(nx,ny)
-	for i in 1:nx, j in 1:ny
-		xc[i,j] = (i-0.5-nh) * Lx/(nx-2*nh)
-		yc[i,j] = (j-0.5-nh) * Ly/(ny-2*nh)
+#TODO only compute xc/yc etc if called ?
+function get_x(msh::Mesh; location = "c")
+	if location == "c"
+		return msh.xc
 	end
-	
-	return xc, yc
+end
+function get_y(msh::Mesh; location = "c")
+	if location == "c"
+		return msh.yc
+	end
 end
 
+
 #TODO primal and dual metric
-function compute_metric(nx, ny, nh, Lx, Ly, msk)
-	dx = ones(nx,ny) .* Lx ./ (nx-2*nh)
-	dy = ones(nx,ny) .* Ly ./ (ny-2*nh)
+function compute_metric(nx, ny, xc, yc)
+	dx, dy = zeros(nx, ny), zeros(nx, ny)
+
+	dx[2:end, 1:end] .= xc[2:end, 1:end] .- xc[1:end-1, 1:end]
+	dx[1, :] .= dx[end, :]
+
+	dy[1:end, 2:end] .= yc[1:end, 2:end] .- yc[1:end, 1:end-1]
+	dy[:, 1] .= dy[:, end]
+	
 	A = dx .* dy
 
 	return dx, dy, A
@@ -210,3 +215,60 @@ o2px = ArrayVariable("mesh.o2px")
 o2py = ArrayVariable("mesh.o2py")
 o2dx = ArrayVariable("mesh.o2dx")
 o2dy = ArrayVariable("mesh.o2dy")
+
+
+"""
+	CartesianMesh(nx, ny, nh, mgr, msk, Lx = 1, Ly = 1; xperio=false, yperio=false)
+
+A rectangular mesh of extent `Lx`, `Ly`
+"""
+function CartesianMesh(nx, ny, nh, mgr, msk, Lx = 1, Ly = 1; xperio=false, yperio=false)
+		#Locations
+		xc, yc = compute_locations_cartesian(nx,ny,nh,Lx,Ly)
+		
+		return Mesh(nx, ny, nh, mgr, msk, xc, yc; xperio = xperio, yperio=yperio)
+end
+
+function compute_locations_cartesian(nx, ny, nh, Lx, Ly)
+	xc = zeros(nx,ny)
+	yc = zeros(nx,ny)
+	for i in 1:nx, j in 1:ny
+		xc[i,j] = (i-0.5-nh) * Lx/(nx-2*nh)
+		yc[i,j] = (j-0.5-nh) * Ly/(ny-2*nh)
+	end
+	
+	return xc, yc
+end
+
+"""
+	PolarMesh(nx, ny, nh, mgr, msk, rin = 0.5, rout = 1.5)
+
+An annulus mesh with inner radius `rin` and outer radius `rout`
+
+The i/x direction is the radial, j/y orthoradial
+"""
+function PolarMesh(nx, ny, nh, mgr, msk, rin = 0.5, rout = 1.5)
+		#Locations
+		xc, yc = compute_locations_polar(nx,ny,nh,rin, rout)
+		
+		return Mesh(nx, ny, nh, mgr, msk, xc, yc; xperio = false, yperio=true)
+end
+
+polar2cart(r, theta) = (r * cos(theta), r * sin(theta))
+
+function compute_locations_polar(nx, ny, nh, rin, rout)
+	xc = zeros(nx,ny)
+	yc = zeros(nx,ny)
+
+	for i in 1:nx, j in 1:ny
+		r = rin + (i-0.5-nh) * (rout-rin) / (nx-2*nh)
+		theta = (j-0.5-nh) * 2*pi/(ny-2*nh)
+		coords = polar2cart(r, theta)
+		xc[i,j] = coords[1] 
+		yc[i,j] = coords[2]
+	end
+	
+	return xc, yc
+end
+
+

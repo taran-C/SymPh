@@ -38,7 +38,7 @@ simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
-mesh = Arrays.Mesh(nx, ny, nh, thsimd, msk, Lx, Ly; xperio=true, yperio=true)
+mesh = Arrays.CartesianMesh(nx, ny, nh, thsimd, msk, Lx, Ly; xperio=true, yperio=true)
 
 #Initial Conditions
 state = State(mesh)
