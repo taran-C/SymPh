@@ -30,7 +30,7 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y"], explparam
 
 #Defining the Mesh
 nx = 50
-ny = 100
+ny = 200
 nh = 3
 
 msk = zeros(nx, ny)
@@ -41,7 +41,7 @@ scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 
-mesh = Arrays.CartesianMesh(nx, ny, nh, simd, msk)
+mesh = Arrays.PolarMesh(nx, ny, nh, simd, msk)
 
 #Initial Conditions
 state = State(mesh)
@@ -62,11 +62,11 @@ for i in 1:nx, j in 1:ny
 		d=0.05
 		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, sigma) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[5,5]
 	elseif config == "vortex"
-		state.h[i,j] = (H + h0 * gaussian(x, y, 0.5, 0.5, sigma)) * mesh.A[5,5]
+		state.h[i,j] = (H + h0 * gaussian(x, y, 1, 0.5, sigma)) * mesh.A[5,5]
 	end
 end
 
-state.f .= 1 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
+state.f .= 10 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
 
 fig = Figure(size = (800,800))
 ax = Axis(fig[1, 1], aspect = 1)
@@ -74,11 +74,11 @@ plotform!(ax, h, mesh, state)
 display(fig)
 
 #Creating the Model
-model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15)
+model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.005, dtmax=0.005)
 
 for i in 1:500
-	print(i)
-	step!(model)
+	dt = step!(model)
+	println("$(i) : dt = $(dt)")
 	plotform!(ax, h, mesh, state)
 	sleep(1/60)
 	#display(fig)

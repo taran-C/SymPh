@@ -28,9 +28,14 @@ function Makie.plot!(plotform::PlotForm)
 	max = Makie.@lift maximum($arr)
 	min = Makie.@lift minimum($arr)
 
-	cols = Makie.@lift get(colorschemes[:balance], $arr[2:end, 2:end], ($min, $max))
+	nx = Makie.@lift getproperty($msh, :nx)
+	ny = Makie.@lift getproperty($msh, :ny)
+	nh = Makie.@lift getproperty($msh, :nh)
 
-	out = Makie.@lift curvilinear_grid_mesh($xc, $yc, zero($xc), $arr[2:end, 2:end])#$cols)
+	cols = Makie.@lift get(colorschemes[:balance], $arr[2+$nh:$nx-$nh, 2+$nh:$ny-$nh], ($min, $max))
+
+	#TODO adapt "stencil" to form type, also, quiver for 1-forms
+	out = Makie.@lift curvilinear_grid_mesh($xc[$nh+1:$nx-$nh, $nh+1:$ny-$nh], $yc[$nh+1:$nx-$nh, $nh+1:$ny-$nh], zero($xc[$nh+1:$nx-$nh, $nh+1:$ny-$nh]), $arr[$nh+2:$nx-$nh, $nh+2:$ny-$nh])#$cols)
 	points = Makie.@lift $out[1]
 	faces = Makie.@lift $out[2]
 	colors = Makie.@lift $out[3]

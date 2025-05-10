@@ -131,7 +131,9 @@ function run!(model;
 end
 
 function compute_dt(mesh, state, cfl, dtmax)
-	maxU = maximum(abs.(state.u_x)/mesh.A[5,5])+maximum(abs.(state.u_y)/mesh.A[5,5])+1e-10
+	#TODO optimize
+	interval = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
+	maxU = maximum(abs.(state.u_x[interval...] ./ mesh.dx[interval...])) + maximum(abs.(state.u_y[interval...] ./ mesh.dy[interval...]))+1e-10
 	dt = min(cfl/maxU, dtmax)
 	return dt
 end
