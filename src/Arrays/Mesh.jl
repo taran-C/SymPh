@@ -89,12 +89,17 @@ end
 #TODO primal and dual metric
 function compute_metric(nx, ny, xc, yc)
 	dx, dy = zeros(nx, ny), zeros(nx, ny)
+	
+	#TODO fix dx and dy (actually compute dx along dirs with norm)
+	for i in 2:nx, j in 2:ny
+		dx[i,j] = sqrt((xc[i, j]-xc[i-1,j])^2 + (yc[i,j]-yc[i-1,j])^2)
+		dy[i,j] = sqrt((xc[i, j]-xc[i,j-1])^2 + (yc[i,j]-yc[i,j-1])^2)
+	end
+	#dx[2:end, 1:end] .= xc[2:end, 1:end] .- xc[1:end-1, 1:end]
+	#dx[1, :] .= dx[end, :]
 
-	dx[2:end, 1:end] .= xc[2:end, 1:end] .- xc[1:end-1, 1:end]
-	dx[1, :] .= dx[end, :]
-
-	dy[1:end, 2:end] .= yc[1:end, 2:end] .- yc[1:end, 1:end-1]
-	dy[:, 1] .= dy[:, end]
+	#dy[1:end, 2:end] .= yc[1:end, 2:end] .- yc[1:end, 1:end-1]
+	#dy[:, 1] .= dy[:, end]
 	
 	A = dx .* dy
 

@@ -248,8 +248,8 @@ function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate
 	xexpr, yexpr = explicit(vec.form; param = param)
 
 	#TODO per object configurable fvtofd function
-	xout = param.fvtofd(xexpr, Arrays.dx, "x") * Arrays.msk1dx
-	yout = param.fvtofd(yexpr, Arrays.dy, "y") * Arrays.msk1dy
+	xout = param.fvtofd(xexpr, Arrays.dx, "x") * Arrays.msk1dx #/Arrays.dx
+	yout = param.fvtofd(yexpr, Arrays.dy, "y") * Arrays.msk1dy #/Arrays.dy
 
 	#TODO figure out sharp naming
 	xout.name = vec.name*"_X"
