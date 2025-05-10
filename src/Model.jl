@@ -2,7 +2,7 @@ using Plots, NCDatasets
 using Profile, PProf
 
 export Model
-export run!, profile_model!, step!
+export run!, profile_model!, step!, plotrun!
 """
 Model
 
@@ -39,6 +39,13 @@ function step!(model::Model; n=1)
 end
 
 """
+	plotrun!(model; ...)
+
+end
+"""
+function plotrun!() end
+
+"""
 run!(model; ...)
 
 	TODO document
@@ -70,9 +77,7 @@ function run!(model;
 	prognostics = model.prognostics
 
 	if plot
-		hm = heatmap(plot_var[mesh.nh+2:mesh.nx-mesh.nh, mesh.nh+2:mesh.ny-mesh.nh]; show = true, plot_args...)
-		anim = Animation()
-		frame(anim, hm)
+		println("Carefull, you do not have a Makie backend loaded ! No plots will apear/be saved")
 	end
 
 	if write
@@ -107,10 +112,6 @@ function run!(model;
 		
 		print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
 		if (ite%save_every==0)
-			if plot
-				hm = heatmap(plot_var[mesh.nh+2:mesh.nx-mesh.nh, mesh.nh+2:mesh.ny-mesh.nh]; plot_args...)
-				frame(anim, hm)
-			end
 			if write
 				for sym in writevars
 					ds[string(sym)][:,:, wi] = getproperty(state, sym)
@@ -122,9 +123,6 @@ function run!(model;
 	
 	println("\nElapsed : $(round(time()-tstart; digits=2))s")
 	
-	if plot
-		mp4(anim, "out.mp4"; fps = 60)
-	end
 	if write
 		close(ds)
 	end

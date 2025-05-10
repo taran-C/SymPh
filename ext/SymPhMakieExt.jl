@@ -6,7 +6,7 @@ import Makie
 using SymPh
 using SymPh.Maths
 import SymPh.Arrays
-import SymPh: plotform, plotform!
+import SymPh: plotform, plotform!, plotrun!
 
 Makie.@recipe(PlotForm, form, mesh, state) do scene
 	Makie.Theme(
@@ -32,10 +32,10 @@ function Makie.plot!(plotform::PlotForm)
 	ny = Makie.@lift getproperty($msh, :ny)
 	nh = Makie.@lift getproperty($msh, :nh)
 
-	cols = Makie.@lift get(colorschemes[:balance], $arr[2+$nh:$nx-$nh, 2+$nh:$ny-$nh], ($min, $max))
+	cols = Makie.@lift get(colorschemes[:balance], $arr[1+$nh:$nx-$nh, 1+$nh:$ny-$nh], ($min, $max))
 
 	#TODO adapt "stencil" to form type, also, quiver for 1-forms
-	out = Makie.@lift curvilinear_grid_mesh($xc[$nh+1:$nx-$nh, $nh+1:$ny-$nh], $yc[$nh+1:$nx-$nh, $nh+1:$ny-$nh], zero($xc[$nh+1:$nx-$nh, $nh+1:$ny-$nh]), $arr[$nh+2:$nx-$nh, $nh+2:$ny-$nh])#$cols)
+	out = Makie.@lift curvilinear_grid_mesh($xc[$nh:$nx-$nh, $nh:$ny-$nh], $yc[$nh:$nx-$nh, $nh:$ny-$nh], zero($xc[$nh:$nx-$nh, $nh:$ny-$nh]), $arr[$nh+1:$nx-$nh, $nh+1:$ny-$nh])#$cols)
 	points = Makie.@lift $out[1]
 	faces = Makie.@lift $out[2]
 	colors = Makie.@lift $out[3]
@@ -44,6 +44,58 @@ function Makie.plot!(plotform::PlotForm)
 
 	plotform
 end
+
+"""
+	plotrun!(model; ...)
+
+TODO document, overwrite run by adding plot instead
+"""
+function plotrun!(model;
+		#Saving / Visualization
+		plot_every = 10,
+
+		#Plotting
+		plot_var = nothing,
+		plot_args = (aspect_ratio=:equal,),
+		
+		#TimeLoop
+		tend = 100,
+		maxite = 500,
+	)
+
+	mesh = model.mesh
+	state = model.state
+	prognostics = model.prognostics
+
+	fig = Makie.Figure(size = (800,800))
+	ax = Makie.Axis(fig[1, 1], aspect = 1)
+	plotform!(ax, plot_var, mesh, state)
+	display(fig)
+
+	#todo "borrowed" from fluids2d, check further
+	ite = 0
+	wi = 1 #write index
+	dt = model.dtmax
+
+	tstart = time()
+	for ite in 1:maxite
+		if model.t>=tend || dt<1e-10
+			break
+		end
+
+		#Actual step
+		dt = step!(model)
+		
+		print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
+		if (ite%plot_every==0)
+			plotform!(ax, plot_var, mesh, state)
+			sleep(1/60)
+		end
+	end
+	
+	println("\nElapsed : $(round(time()-tstart; digits=2))s")
+end
+
 
 """
 	curvilinear_grid_mesh(xs, ys, zs, colors) 

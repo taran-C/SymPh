@@ -95,11 +95,9 @@ function compute_metric(nx, ny, xc, yc)
 		dx[i,j] = sqrt((xc[i, j]-xc[i-1,j])^2 + (yc[i,j]-yc[i-1,j])^2)
 		dy[i,j] = sqrt((xc[i, j]-xc[i,j-1])^2 + (yc[i,j]-yc[i,j-1])^2)
 	end
-	#dx[2:end, 1:end] .= xc[2:end, 1:end] .- xc[1:end-1, 1:end]
-	#dx[1, :] .= dx[end, :]
-
-	#dy[1:end, 2:end] .= yc[1:end, 2:end] .- yc[1:end, 1:end-1]
-	#dy[:, 1] .= dy[:, end]
+	
+	dx[1, :] .= dx[end, :]
+	dy[:, 1] .= dy[:, end]
 	
 	A = dx .* dy
 

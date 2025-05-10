@@ -1,3 +1,6 @@
+using GLMakie
+using GeometryBasics
+using ColorSchemes
 using SymPh
 using SymPh.Maths
 import SymPh.Arrays
@@ -22,8 +25,8 @@ euler_rhs! = to_kernel(dtomega; save = ["U_x", "U_y", "ι_U_omega_x", "ι_U_omeg
 #Testing the function
 
 #Defining the Mesh
-nx = 100
-ny = 100
+nx = 50
+ny = 200
 nh = 3
 
 msk = zeros(nx, ny)
@@ -38,7 +41,7 @@ simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
-mesh = Arrays.CartesianMesh(nx, ny, nh, thsimd, msk, Lx, Ly; xperio=true, yperio=true)
+mesh = Arrays.PolarMesh(nx, ny, nh, thsimd, msk)
 
 #Initial Conditions
 state = State(mesh)
@@ -47,15 +50,15 @@ gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 dipole(x,y,x0,y0,d,sigma) = gaussian(x, y, x0+d/2, y0, sigma) - gaussian(x, y, x0-d/2, y0, sigma)
 tripole(x,y,x0,y0,r,sigma) = gaussian(x, y, x0+r*cos(0*2pi/3), y0+r*sin(0*2pi/3), sigma) + gaussian(x, y, x0+r*cos(2pi/3), y0+r*sin(2pi/3), sigma) + gaussian(x, y, x0+r*cos(2*2pi/3), y0+r*sin(2*2pi/3), sigma)
 
-omega = state.omega
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
-	omega[i,j] = dipole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j]
+	state.omega[i,j] = dipole(x, y, -1,0,0.3,0.05) * mesh.msk2d[i,j]
 end
 
 #Creating the Model
-model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 100., dtmax = 5., integratorstep! = rk4step!)
+model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 10., dtmax = 0.5, integratorstep! = rk4step!)
 
 #Running the simulation
-run!(model; save_every = 15, plot = true, plot_var=state.omega, profiling = false, tend = 20000, maxite = 5000, writevars = (:u_x, :u_y, :omega, :psi))
+plotrun!(model; plot_every = 5, plot_var = omega, tend = 200, maxite = 5000)
+#run!(model; save_every = 15, plot = true, plot_var=omega, profiling = false, tend = 20000, maxite = 5000, writevars = (:u_x, :u_y, :omega, :psi))
