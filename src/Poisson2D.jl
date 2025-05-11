@@ -42,9 +42,10 @@ function laplacian(mesh, msk, bc, location)
 	for j in 1:mesh.ny
 		for i in 1:mesh.nx
 			I = G[i,j]
-			
-			dx2 = 1 / mesh.dx[i,j] ^ 2
-			dy2 = 1 / mesh.dy[i,j] ^ 2
+		
+			#TODO explain why (someting to do with hodge in codif in laplacian i think)
+			dx2 = mesh.dy[i,j] / mesh.dx[i,j]
+			dy2 = mesh.dx[i,j] / mesh.dy[i,j]
 			
 			if I>-1
 				s = 0

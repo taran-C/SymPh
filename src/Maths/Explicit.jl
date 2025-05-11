@@ -282,8 +282,8 @@ end
 
 function explicit(form::InverseLaplacian{2, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
-
-	poisson = Poisson2D("dirichlet", "2d")
+	#TODO check with periodic condition +bc
+	poisson = Poisson2D("neumann", "2d")
 
 	function poiss_dirich_2d(mesh;kwargs...)
 		args = Dict(kwargs)
