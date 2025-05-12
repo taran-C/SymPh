@@ -30,8 +30,8 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-nx = 100
-ny = 300
+nx = 50
+ny = 200
 nh = 3
 
 msk = zeros(nx, ny)
@@ -53,7 +53,7 @@ H = 1
 sigma = 0.05
 gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 
-config = "dambreak"
+config = "vortex"
 
 #for i in nh+1:nx-nh, j in nh+1:ny-nh
 for i in 1:nx, j in 1:ny
@@ -81,4 +81,4 @@ step!(model)
 println("Done")
 
 #Running the simulation
-plotrun!(model; plot_every = 1, plot_var = p, tend = 2, maxite = 1000)
+plotrun!(model; plot_every = 5, plot_var = p, tend = 2, maxite = 200)

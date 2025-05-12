@@ -31,28 +31,27 @@ explparams = ExplicitParam(; interp = Arrays.upwind)
 
 #Generating the RHS
 println("generating rhs")
-boussinesq_rhs! = to_kernel(dtu, dtrho; save = ["du", "b_x", "b_y", "k", "omega", "ι_U_rho_x", "ι_U_rho_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false)
+boussinesq_rhs! = to_kernel(dtu, dtrho; save = ["du", "b_x", "b_y", "k", "omega", "ι_U_rho_x", "ι_U_rho_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false, bcs=[rho, b, dtrho, dtu])
 println("generated")
 
 #Testing the function
 
 #Defining the Mesh
-nx = 200
-ny = 200
+nx = 150
+ny = 75
 nh = 3
 
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 
-Lx, Ly = (1,1)
+Lx, Ly = (2,1)
 
 #LoopManager
 scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
-thsimd = MultiThread(simd)
 
-mesh = Arrays.CartesianMesh(nx, ny, nh, simd, msk; xperio=true, yperio=true)
+mesh = Arrays.CartesianMesh(nx, ny, nh, simd, msk, Lx, Ly; xperio=false, yperio=false)
 
 #Initial Conditions
 state = State(mesh)
@@ -67,18 +66,32 @@ for i in nh+1:nx-nh, j in nh+1:ny-nh
 	#state.rho[i,j] = (Int((y < 0.2)&(0.2<x<0.8)) * (1+ 1e-1*rand())) * mesh.msk2d[i,j] * mesh.A[i,j]
 end
 
-state.g_X .= -1
+state.g_X .= 0.1
 
 #forcing
-function bottom_temp()
-	for i in nh+1:nx-nh, j in nh+1:10
+function bottom_temp(model)
+	for i in 1:nx, j in 1:ny
 		x = mesh.xc[i,j]
 		y = mesh.yc[i,j]
 		#state.rho[i,j] = gaussian(x, y, 0.5,0.5,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
-		state.rho[i,j] = Int(0.2<x<0.8) * (1+ 1e-1*rand()) * mesh.msk2d[i,j] * mesh.A[i,j]
+		if (y<0.05)
+			state.rho[i,j] = -0.5 * (1 + 1e-1*rand()) * mesh.msk2d[i,j] * mesh.A[i,j]
+		end
+
+		if (y>0.95)
+			state.rho[i,j] = 0.5 * (1 + 1e-1*rand()) * mesh.msk2d[i,j] * mesh.A[i,j]
+		end
 	end
 end
 
+function oscillator(model)
+	t = model.t
+	for i in nh+1:nx-nh, j in nh+1:ny-nh
+		x = mesh.xc[i,j]
+		y = mesh.yc[i,j]
+		state.rho[i,j] += 0.1 * gaussian(x,y,0.5,0.5,0.05) * sin(t) * mesh.A[i,j]
+	end
+end
 
 #Creating the Model
 model = Model(boussinesq_rhs!, mesh, state, ["rho", "u_x", "u_y"]; cfl = 0.06, dtmax = 0.15, integratorstep! = rk3step!)
@@ -90,4 +103,4 @@ println("Done")
 
 #Running the simulation
 #run!(model; save_every = 10, plot = true, plot_var=state.rho, profiling = false, tend = 50, maxite = 2000, writevars = (:u_x, :u_y, :rho))
-plotrun!(model; plot_every = 1, plot_var = rho, tend = 100, maxite = 1000, forcing = bottom_temp)
+plotrun!(model; plot_every = 5, plot_var = rho, tend = 1000, maxite = 1000, forcing = bottom_temp)

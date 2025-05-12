@@ -88,7 +88,7 @@ function plotrun!(model;
 			
 			#apply forcing
 			if forcing != nothing
-				forcing()
+				forcing(model)
 			end
 
 			#Actual step
