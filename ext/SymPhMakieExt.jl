@@ -61,6 +61,8 @@ function plotrun!(model;
 		#TimeLoop
 		tend = 100,
 		maxite = 500,
+
+		forcing = nothing
 	)
 
 	mesh = model.mesh
@@ -78,17 +80,27 @@ function plotrun!(model;
 	dt = model.dtmax
 
 	tstart = time()
-	for ite in 1:maxite
-		if model.t>=tend || dt<1e-10
-			break
-		end
+	Makie.record(fig, "out.mp4"; framerate = 20) do io
+		for ite in 1:maxite
+			if model.t>=tend || dt<1e-10
+				break
+			end
+			
+			#apply forcing
+			if forcing != nothing
+				forcing()
+			end
 
-		#Actual step
-		dt = step!(model)
-		
-		print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
-		if (ite%plot_every==0)
-			plotform!(ax, plot_var, mesh, state)
+			#Actual step
+			dt = step!(model; n=plot_every)
+			
+			print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
+			
+			if ite%plot_every == 0
+				plotform!(ax, plot_var, mesh, state)
+				Makie.recordframe!(io)
+			end
+
 			sleep(1/60)
 		end
 	end

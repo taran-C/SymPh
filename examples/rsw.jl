@@ -11,7 +11,7 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 @Let u = FormVariable{1, Dual}() #Transported velocity
 
 @Let U = Sharp(u) # U = u#
-@Let k = 0.5 * InteriorProduct(U, u; interp = Arrays.avg2pt) #k = 1/2 InteriorProduct(U,u)
+@Let k = 0.5 * InteriorProduct(U, u)#; interp = Arrays.avg2pt) #k = 1/2 InteriorProduct(U,u)
 @Let p = Hodge(h) # p = *(g(h*+b*))
 @Let zeta = ExteriorDerivative(u) # ζ* = du
 @Let f = FormVariable{2, Dual}() #Coriolis (f* so times A)
@@ -30,8 +30,8 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-nx = 200
-ny = 400
+nx = 100
+ny = 300
 nh = 3
 
 msk = zeros(nx, ny)
@@ -74,11 +74,11 @@ end
 state.f .= 10 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
-model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.0015, dtmax=0.0015)
+model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk4step!, cfl = 0.0015, dtmax=0.0015)
 
 println("first step")
 step!(model)
 println("Done")
 
 #Running the simulation
-plotrun!(model; plot_every = 5, plot_var = p, tend = 2, maxite = 5000)
+plotrun!(model; plot_every = 1, plot_var = p, tend = 2, maxite = 1000)

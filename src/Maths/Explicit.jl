@@ -248,8 +248,8 @@ function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate
 	xexpr, yexpr = explicit(vec.form; param = param)
 
 	#TODO per object configurable fvtofd function
-	xout = param.fvtofd(xexpr, Arrays.dx, "x") * Arrays.msk1dx /Arrays.dx
-	yout = param.fvtofd(yexpr, Arrays.dy, "y") * Arrays.msk1dy /Arrays.dy
+	xout = param.fvtofd(xexpr, Arrays.dx, "x") / Arrays.dx * Arrays.msk1dx 
+	yout = param.fvtofd(yexpr, Arrays.dy, "y") / Arrays.dy * Arrays.msk1dy
 
 	#TODO figure out sharp naming
 	xout.name = vec.name*"_X"
@@ -283,7 +283,7 @@ end
 function explicit(form::InverseLaplacian{2, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 	#TODO check with periodic condition +bc
-	poisson = Poisson2D("neumann", "2d")
+	poisson = Poisson2D("dirichlet", "2d")
 
 	function poiss_dirich_2d(mesh;kwargs...)
 		args = Dict(kwargs)
