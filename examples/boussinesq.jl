@@ -73,13 +73,14 @@ function bottom_temp(model)
 	for i in 1:nx, j in 1:ny
 		x = mesh.xc[i,j]
 		y = mesh.yc[i,j]
-		#state.rho[i,j] = gaussian(x, y, 0.5,0.5,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
-		if (y<0.05)
-			state.rho[i,j] = -0.5 * (1 + 1e-1*rand()) * mesh.msk2d[i,j] * mesh.A[i,j]
-		end
+		if (0.4<x<Lx-0.4)
+			if (y<0.05)
+				state.rho[i,j] = -0.5 * (1 + 1e-1*rand()) * mesh.msk2d[i,j] * mesh.A[i,j]
+			end
 
-		if (y>0.95)
-			state.rho[i,j] = 0.5 * (1 + 1e-1*rand()) * mesh.msk2d[i,j] * mesh.A[i,j]
+			if (y>Ly-0.05)
+				state.rho[i,j] = 0.5 * (1 + 1e-1*rand()) * mesh.msk2d[i,j] * mesh.A[i,j]
+			end
 		end
 	end
 end
@@ -94,7 +95,7 @@ function oscillator(model)
 end
 
 #Creating the Model
-model = Model(boussinesq_rhs!, mesh, state, ["rho", "u_x", "u_y"]; cfl = 0.06, dtmax = 0.15, integratorstep! = rk3step!)
+model = Model(boussinesq_rhs!, mesh, state, ["rho", "u_x", "u_y"]; cfl = 0.06, dtmax = 0.5, integratorstep! = rk3step!)
 
 #Force compilation
 println("First step")
@@ -103,4 +104,4 @@ println("Done")
 
 #Running the simulation
 #run!(model; save_every = 10, plot = true, plot_var=state.rho, profiling = false, tend = 50, maxite = 2000, writevars = (:u_x, :u_y, :rho))
-plotrun!(model; plot_every = 5, plot_var = rho, tend = 1000, maxite = 1000, forcing = bottom_temp)
+plotrun!(model; plot_every = 1, plot_var = rho, tend = 1000, maxite = 1000, forcing = bottom_temp)

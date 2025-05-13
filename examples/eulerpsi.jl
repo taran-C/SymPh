@@ -25,15 +25,14 @@ euler_rhs! = to_kernel(dtomega; save = ["U_x", "U_y", "ι_U_omega_x", "ι_U_omeg
 #Testing the function
 
 #Defining the Mesh
-nx = 100
-ny = 100
+nx = 50
+ny = 50
 nh = 3
 
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 #msk[nx÷2-nx÷5:nx÷2+nx÷5, 2*ny÷10:4*ny÷10] .= 0
 
-Lx, Ly = (1,1)
 
 #LoopManager
 scalar = PlainCPU()
@@ -41,7 +40,7 @@ simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
-mesh = Arrays.CartesianMesh(nx, ny, nh, thsimd, msk; xperio=true, yperio=true)
+mesh = Arrays.CartesianMesh(nx, ny, nh, thsimd, msk)
 
 #Initial Conditions
 state = State(mesh)
@@ -53,11 +52,14 @@ tripole(x,y,x0,y0,r,sigma) = gaussian(x, y, x0+r*cos(0*2pi/3), y0+r*sin(0*2pi/3)
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
-	state.omega[i,j] = dipole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j]
+	state.omega[i,j] = dipole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
+	#if 0.48<y<0.52
+	#	state.omega[i,j] = (1+0e-1*rand())* mesh.A[i,j]
+	#end
 end
 
 #Creating the Model
-model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 0.001, dtmax = 0.00005, integratorstep! = rk4step!)
+model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 0.15, dtmax = 0.15, integratorstep! = rk4step!)
 
 #Running the simulation
 plotrun!(model; plot_every = 1, plot_var = omega, tend = 200, maxite = 5000)

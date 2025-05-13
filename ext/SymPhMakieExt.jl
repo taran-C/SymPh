@@ -19,6 +19,10 @@ function Makie.plot!(plotform::PlotForm)
 	msh = plotform[:mesh]
 	state = plotform[:state]
 
+	#TODO handle form type
+	#D = Makie.@lift SymPh.Maths.degree($form)
+	#P = Makie.@lift SymPh.Maths.primality($form)
+
 	fname = Makie.@lift getproperty($form, :name)
 	arr = Makie.@lift getproperty($state, Symbol($fname))
 
@@ -62,6 +66,7 @@ function plotrun!(model;
 		tend = 100,
 		maxite = 500,
 
+		#Physical stuff
 		forcing = nothing
 	)
 
@@ -69,8 +74,8 @@ function plotrun!(model;
 	state = model.state
 	prognostics = model.prognostics
 
-	fig = Makie.Figure(size = (800,800))
-	ax = Makie.Axis(fig[1, 1], aspect = 1)
+	fig = Makie.Figure()
+	ax = Makie.Axis(fig[1, 1])
 	plotform!(ax, plot_var, mesh, state)
 	display(fig)
 
@@ -92,7 +97,7 @@ function plotrun!(model;
 			end
 
 			#Actual step
-			dt = step!(model; n=plot_every)
+			dt = step!(model)
 			
 			print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
 			
@@ -108,6 +113,96 @@ function plotrun!(model;
 	println("\nElapsed : $(round(time()-tstart; digits=2))s")
 end
 
+#TODO handle record
+function run!(model;
+		#Saving / Visualization
+		save_every = 10,
+		plot_every = save_every,
+
+		#Plotting
+		plot_var = nothing,
+		plot_args = (aspect_ratio=:equal,),
+		
+		#NetCDF
+		ncfname = "history.nc",
+		writevars = nothing,
+
+		#TimeLoop
+		tend = 100,
+		maxite = 500,
+
+		#Profiling
+		profiling = false,
+
+		#Physical stuff
+		forcing = nothing
+	)
+	println("there")
+	mesh = model.mesh
+	state = model.state
+	prognostics = model.prognostics
+
+	plot = plot_var != nothing
+	write = writevars != nothing
+	
+	if plot
+		fig = Makie.Figure(size = (800,800))
+		ax = Makie.Axis(fig[1, 1], aspect = 1)
+		plotform!(ax, plot_var, mesh, state)
+		display(fig)
+	end
+
+	if write
+		if isfile(ncfname)
+		    rm(ncfname)
+		end
+
+		global ds = NCDataset(ncfname, "c")
+
+		defDim(ds,"x",mesh.nx)
+		defDim(ds,"y",mesh.ny)
+		defDim(ds,"time",Inf)
+
+		for sym in writevars
+			defVar(ds, string(sym), Float64, ("x", "y", "time"))
+		end
+	end
+
+	#todo "borrowed" from fluids2d, check further
+	ite = 0
+	wi = 1 #write index
+	dt = model.dtmax
+
+	tstart = time()
+	for ite in 1:maxite
+		if model.t>=tend || dt<1e-4
+			break
+		end
+
+		#Actual step
+		dt = step!(model)
+		
+		print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
+		if (ite%save_every==0) & write
+			for sym in writevars
+				ds[string(sym)][:,:, wi] = getproperty(state, sym)
+			end
+			wi += 1
+		end
+
+		if (ite%plot_every==0) & plot
+			plotform!(ax, plot_var, mesh, state)
+			sleep(1/60)
+		end
+
+	end
+	
+	println("\nElapsed : $(round(time()-tstart; digits=2))s")
+	
+	if write
+		close(ds)
+	end
+end
 
 """
 	curvilinear_grid_mesh(xs, ys, zs, colors) 

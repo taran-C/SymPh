@@ -53,14 +53,13 @@ run!(model; ...)
 function run!(model;
 		#Saving / Visualization
 		save_every = 10,
+		plot_every = save_every,
 
 		#Plotting
-		plot = false,
 		plot_var = nothing,
 		plot_args = (aspect_ratio=:equal,),
 		
 		#NetCDF
-		write = true,
 		ncfname = "history.nc",
 	       	writevars = nothing,
 	
@@ -69,12 +68,18 @@ function run!(model;
 		maxite = 500,
 
 		#Profiling
-		profiling = false
-	)
+		profiling = false,
 
+		#Physical stuff
+		forcing = nothing
+	)
+	println("here")
 	mesh = model.mesh
 	state = model.state
 	prognostics = model.prognostics
+
+	plot = plot_var != nothing
+	write = writevars != nothing
 
 	if plot
 		println("Carefull, you do not have a Makie backend loaded ! No plots will apear/be saved")
@@ -103,13 +108,18 @@ function run!(model;
 
 	tstart = time()
 	for ite in 1:maxite
-		if model.t>=tend || dt<1e-4
+		if model.t>=tend || dt<1e-10
 			break
 		end
 
 		#Actual step
 		dt = step!(model)
-		
+			
+		#last step to arrive precisely at t
+		if model.t + dt > tend
+			dt = tend - model.t
+		end
+
 		print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
 		if (ite%save_every==0)
 			if write

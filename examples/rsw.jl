@@ -9,10 +9,13 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 #Defining our equation
 @Let h = FormVariable{2, Primal}() #Height * A (h* technically)
 @Let u = FormVariable{1, Dual}() #Transported velocity
+@Let b = FormVariable{2, Primal}() #Topo
+
+g = 9.81
 
 @Let U = Sharp(u) # U = u#
 @Let k = 0.5 * InteriorProduct(U, u)#; interp = Arrays.avg2pt) #k = 1/2 InteriorProduct(U,u)
-@Let p = Hodge(h) # p = *(g(h*+b*))
+@Let p = Hodge(g*(h+b)) # p = *(g(h*+b*))
 @Let zeta = ExteriorDerivative(u) # ζ* = du
 @Let f = FormVariable{2, Dual}() #Coriolis (f* so times A)
 @Let pv = (f + zeta) / h #TODO check what pv should be
@@ -30,7 +33,7 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-nx = 50
+nx = 200
 ny = 200
 nh = 3
 
@@ -43,7 +46,7 @@ scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 
-mesh = Arrays.PolarMesh(nx, ny, nh, simd, msk)
+mesh = Arrays.CartesianMesh(nx, ny, nh, simd, msk)
 
 #Initial Conditions
 state = State(mesh)
@@ -64,14 +67,15 @@ for i in 1:nx, j in 1:ny
 		d=0.05
 		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, sigma) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[i,j]
 	elseif config == "vortex"
-		state.h[i,j] = (H + h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
-	elseif config == "dambreak"
-		dh0 = h0 * tanh(100*x)
+		state.h[i,j] = (H - h0 * gaussian(x, y, 0.7, 0.7, sigma) + 0.5*h0 * gaussian(x,y, 0.7,0.7,sigma*0.7)) * mesh.A[i,j]
+		state.b[i,j] = 0 #(h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
+	elseif config == "straight_dam"
+		dh0 = h0 * tanh(100*(x-0.5))
 		state.h[i,j] = (H+dh0) * mesh.A[i,j]
 	end
 end
 
-state.f .= 10 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
+state.f .= 0 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
 model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk4step!, cfl = 0.0015, dtmax=0.0015)
@@ -81,4 +85,4 @@ step!(model)
 println("Done")
 
 #Running the simulation
-plotrun!(model; plot_every = 5, plot_var = p, tend = 2, maxite = 200)
+plotrun!(model; plot_every = 2, plot_var = p, tend = 2, maxite = 1000)
