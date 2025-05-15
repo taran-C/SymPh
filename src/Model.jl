@@ -1,5 +1,6 @@
 using Plots, NCDatasets
 using Profile, PProf
+using Printf
 
 export Model
 export run!, profile_model!, step!, plotrun!
@@ -19,19 +20,26 @@ mutable struct Model
 	cfl
 	t
 	dtmax
+	Umax
 end
-Model(rhs!, mesh, state, prognostics; integratorstep! = rk3step!, cfl = 0.6, dtmax = 1) = Model(rhs!, mesh, state, integratorstep!, prognostics, cfl, 0, dtmax)
+Model(rhs!, mesh, state, prognostics; integratorstep! = rk3step!, cfl = 0.6, dtmax = 1, Umax = nothing) = Model(rhs!, mesh, state, integratorstep!, prognostics, cfl, 0, dtmax, Umax)
 
 """
 step!(model::Model; n=1)
 
 	Performs n integration steps of the model
 """
-function step!(model::Model; n=1)
+function step!(model::Model; n=1, tend=-1)
 	dt = model.dtmax
 	for i in 1:n
 		#Actual progress
-		dt = compute_dt(model.mesh, model.state, model.cfl, model.dtmax)
+		dt = compute_dt(model)
+
+		#last step to arrive precisely at t
+		if (model.t + dt > tend) & (tend > 0)
+			dt = tend - model.t
+		end
+
 		model.integratorstep!(model.rhs!, dt, model.mesh, model.state, model.prognostics)
 		model.t+=dt
 	end
@@ -113,14 +121,9 @@ function run!(model;
 		end
 
 		#Actual step
-		dt = step!(model)
-			
-		#last step to arrive precisely at t
-		if model.t + dt > tend
-			dt = tend - model.t
-		end
+		dt = step!(model; tend = tend)
 
-		print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
+		@printf "\rite : %i/%i, dt: %.2e, t : %.3f/%.3f            " ite maxite dt model.t tend
 		if (ite%save_every==0)
 			if write
 				for sym in writevars
@@ -138,10 +141,20 @@ function run!(model;
 	end
 end
 
-function compute_dt(mesh, state, cfl, dtmax)
-	#TODO optimize
+function compute_dt(model)
+	mesh = model.mesh
+	state = model.state
+	cfl = model.cfl
+	dtmax = model.dtmax
+	Umax = model.Umax
+
 	interval = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
-	maxU = maximum(abs.(state.u_x[interval...] ./ mesh.dx[interval...])) + maximum(abs.(state.u_y[interval...] ./ mesh.dy[interval...]))+1e-10
+
+	if Umax == nothing
+		maxU = maximum(abs.(state.u_x[interval...] ./ mesh.dx[interval...])) + maximum(abs.(state.u_y[interval...] ./ mesh.dy[interval...]))+1e-10
+	else
+		maxU = Umax(model)
+	end
 	dt = min(cfl/maxU, dtmax)
 	return dt
 end

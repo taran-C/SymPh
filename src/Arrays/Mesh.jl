@@ -17,8 +17,8 @@ struct Mesh
 	xx#::AbstractArray{Float64}
 	yx#::AbstractArray{Float64}
 
-	xv#::AbstractArray{Float64}
-	yv#::AbstractArray{Float64}
+	xv::AbstractArray{Float64}
+	yv::AbstractArray{Float64}
 
 	#Metric TODO different edge length for primal/dual grids (and primal/dual grids at all anyway)
 	dx::AbstractArray{Float64}
@@ -52,7 +52,7 @@ struct Mesh
 	xperio::Bool
 	yperio::Bool
 	
-	function Mesh(nx, ny, nh, mgr, msk, xc, yc; xperio=false, yperio=false)
+	function Mesh(nx, ny, nh, mgr, msk, xc, yc, xv, yv; xperio=false, yperio=false)
 		#Metric
 		dx, dy, A = compute_metric(nx,ny, xc, yc)
 
@@ -65,7 +65,7 @@ struct Mesh
 		#Creating the mesh
 		return new(nx, ny, nh,
 			   mgr,
-			   xc, yc, 1, 1, 1, 1, 1, 1,
+			   xc, yc, 1, 1, 1, 1, xv, yv,
 			   dx, dy, A, 
 			   msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d,
 			   o1px, o1py, o1dx, o1dy, o2px, o2py, o2dx, o2dy,
@@ -227,20 +227,24 @@ A rectangular mesh of extent `Lx`, `Ly`
 """
 function CartesianMesh(nx, ny, nh, mgr, msk, Lx = 1, Ly = 1; xperio=false, yperio=false)
 		#Locations
-		xc, yc = compute_locations_cartesian(nx,ny,nh,Lx,Ly)
+		xc, yc, xv, yv = compute_locations_cartesian(nx,ny,nh,Lx,Ly)
 		
-		return Mesh(nx, ny, nh, mgr, msk, xc, yc; xperio = xperio, yperio=yperio)
+		return Mesh(nx, ny, nh, mgr, msk, xc, yc, xv, yv; xperio = xperio, yperio=yperio)
 end
 
 function compute_locations_cartesian(nx, ny, nh, Lx, Ly)
 	xc = zeros(nx,ny)
 	yc = zeros(nx,ny)
+	xv = zeros(nx,ny)
+	yv = zeros(nx,ny)
 	for i in 1:nx, j in 1:ny
 		xc[i,j] = (i-0.5-nh) * Lx/(nx-2*nh)
 		yc[i,j] = (j-0.5-nh) * Ly/(ny-2*nh)
+		xv[i,j] = (i-nh) * Lx/(nx-2*nh)
+		yv[i,j] = (j-nh) * Ly/(ny-2*nh)
 	end
 	
-	return xc, yc
+	return xc, yc, xv, yv
 end
 
 """
@@ -252,9 +256,9 @@ The i/x direction is the radial, j/y orthoradial
 """
 function PolarMesh(nx, ny, nh, mgr, msk, rin = 0.5, rout = 1.5)
 		#Locations
-		xc, yc = compute_locations_polar(nx,ny,nh,rin, rout)
+		xc, yc, xv, yv = compute_locations_polar(nx,ny,nh,rin, rout)
 		
-		return Mesh(nx, ny, nh, mgr, msk, xc, yc; xperio = false, yperio=true)
+		return Mesh(nx, ny, nh, mgr, msk, xc, yc, xv, yv; xperio = false, yperio=true)
 end
 
 polar2cart(r, theta) = (r * cos(theta), r * sin(theta))
@@ -262,6 +266,8 @@ polar2cart(r, theta) = (r * cos(theta), r * sin(theta))
 function compute_locations_polar(nx, ny, nh, rin, rout)
 	xc = zeros(nx,ny)
 	yc = zeros(nx,ny)
+	xv = zeros(nx,ny)
+	yv = zeros(nx,ny)
 
 	for i in 1:nx, j in 1:ny
 		r = rin + (i-0.5-nh) * (rout-rin) / (nx-2*nh)
@@ -269,9 +275,15 @@ function compute_locations_polar(nx, ny, nh, rin, rout)
 		coords = polar2cart(r, theta)
 		xc[i,j] = coords[1] 
 		yc[i,j] = coords[2]
+
+		r = rin + (i-nh) * (rout-rin) / (nx-2*nh)
+		theta = (j-nh) * 2*pi/(ny-2*nh)
+		coords = polar2cart(r, theta)
+		xv[i,j] = coords[1] 
+		yv[i,j] = coords[2]
 	end
 	
-	return xc, yc
+	return xc, yc, xv, yv
 end
 
 

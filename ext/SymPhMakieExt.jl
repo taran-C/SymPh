@@ -2,6 +2,7 @@ module SymPhMakieExt
 
 using ColorSchemes
 using GeometryBasics
+using Printf
 import Makie
 using SymPh
 using SymPh.Maths
@@ -99,8 +100,7 @@ function plotrun!(model;
 			#Actual step
 			dt = step!(model)
 			
-			print("\rite : $(ite)/$(maxite), dt: $(round(dt; digits = 2)), t : $(round(model.t; digits = 2))/$(tend)            ")	
-			
+			@printf "\rite : %i/%i, dt: %.2e, t : %.2f/%.2f            " ite maxite dt model.t tend
 			if ite%plot_every == 0
 				plotform!(ax, plot_var, mesh, state)
 				Makie.recordframe!(io)

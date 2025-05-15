@@ -20,7 +20,7 @@ function rk3step!(rhs!, dt, mesh, state, progs)
 		getproperty(state, Symbol(p)) .-= dt * 3/4 * getproperty(state, Symbol("dt" * p * "1"))
 		getproperty(state, Symbol(p)) .+= dt * 1/4 * getproperty(state, Symbol("dt" * p * "2"))
 	end
-
+	
 	rhs!(mesh, state; var_repls = Dict{String, String}("dt" .* progs .=> "dt" .* progs .* "3"))
 	for p in progs
 		getproperty(state, Symbol(p)) .-= dt * 1/12 * getproperty(state, Symbol("dt" * p * "1"))

@@ -1,3 +1,4 @@
+import SpecialFunctions
 using GLMakie
 using GeometryBasics
 using ColorSchemes
@@ -33,20 +34,22 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-nx = 200
-ny = 200
+nx = 100
+ny = 100
 nh = 3
 
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
-
 
 #LoopManager
 scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 
-mesh = Arrays.CartesianMesh(nx, ny, nh, simd, msk)
+Lx = 10
+Ly = 10
+
+mesh = Arrays.CartesianMesh(nx, ny, nh, simd, msk, Lx, Ly; xperio = true, yperio = true)
 
 #Initial Conditions
 state = State(mesh)
@@ -56,7 +59,18 @@ H = 1
 sigma = 0.05
 gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 
-config = "vortex"
+#TODO only call once
+function get_Umax(model)
+	mesh = model.mesh
+	interval = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
+	c = sqrt(g*H)
+	U = c/minimum(model.mesh.dx[interval...])
+	V = c/minimum(model.mesh.dy[interval...])
+
+	return U+V
+end
+
+config = "bessel"
 
 #for i in nh+1:nx-nh, j in nh+1:ny-nh
 for i in 1:nx, j in 1:ny
@@ -72,17 +86,22 @@ for i in 1:nx, j in 1:ny
 	elseif config == "straight_dam"
 		dh0 = h0 * tanh(100*(x-0.5))
 		state.h[i,j] = (H+dh0) * mesh.A[i,j]
+	elseif config == "bessel"
+		r = sqrt((x-Lx/2)^2+(y-Ly/2)^2)
+
+		state.h[i,j] = (H + h0 * gaussian(x,y, x-0.5Lx, y-0.5Ly, 50)* SpecialFunctions.besselj0(sqrt(g*H) * r)) * mesh.A[i,j] * mesh.msk2p[i,j]
+		#state.h[i,j] = (H + h0 * gaussian(x,y, x-0.5Lx, y-0.5Ly, 50)* SpecialFunctions.airyai(r)) * mesh.A[i,j] * mesh.msk2p[i,j]
 	end
 end
 
 state.f .= 0 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
-model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk4step!, cfl = 0.0015, dtmax=0.0015)
+model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk4step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
 
 println("first step")
 step!(model)
 println("Done")
 
 #Running the simulation
-plotrun!(model; plot_every = 2, plot_var = p, tend = 2, maxite = 1000)
+plotrun!(model; plot_every = 10, plot_var = p, tend = 2, maxite = 500)

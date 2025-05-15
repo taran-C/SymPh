@@ -32,27 +32,41 @@ explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd2)
 rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, bcs=[U, zeta, k, dtu, dth])
 
 #SWASHES parameters
-hl = 0.005
-hr = 0.001
-x0 = 5
-L = 10
-T = 6
+#CF https://hal.science/hal-03762587v2/
+L = 4
+l = 4
 
-function get_mesh(xps)
+a = 1
+r0 = 0.8
+A = (a^2-r0^2)/(a^2+r0^2)
+h0 = 0.1
+omega = sqrt(8*g*h0)/a
+T = 3*2pi/omega
+
+function get_Umax(model)
+	mesh = model.mesh
+	interval = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
+	c = sqrt(g*maximum(model.state.h))
+	U = c/minimum(model.mesh.dx[interval...])
+	V = c/minimum(model.mesh.dy[interval...])
+
+	return U+V
+end
+
+function get_mesh(N)
 	nh = 3
-	nx = xps + 2 * nh
-	ny = 64 + 2 * nh
+	nx = N + 2 * nh
+	ny = N + 2 * nh
 
 	msk = zeros(nx, ny)
 	msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
-
 
 	#LoopManager
 	scalar = PlainCPU()
 	simd = VectorizedCPU(16)
 	threads = MultiThread(scalar)
 
-	return Arrays.CartesianMesh(nx, ny, nh, simd, msk, L, L)
+	return Arrays.CartesianMesh(nx, ny, nh, simd, msk, L, l)
 end
 
 
@@ -64,8 +78,10 @@ function get_ics(mesh)
 		x = mesh.xc[i,j]
 		y = mesh.yc[i,j]
 		
-		#Dry floor test
-		state.h[i,j] = (x>x0 ? hr : hl) * mesh.A[i,j]
+		r = sqrt((x-L/2)^2 + (y-l/2)^2)
+
+		state.b[i,j] = -h0 * (1-r^2/a^2) * mesh.A[i,j]
+		state.h[i,j] = (h0 * (sqrt(1-A^2)/(1-A) - 1 - r^2/a^2*((1-A^2)/(1-A)^2 - 1))) * mesh.A[i,j] - state.b[i,j]
 	end
 
 	state.f .= 0 .* ones((mesh.nx,mesh.ny)) .* mesh.A #.* mesh.msk2d
@@ -73,42 +89,43 @@ function get_ics(mesh)
 	return state
 end
 
-function test_conv(xps)
-	mesh = get_mesh(xps)
+function get_swashes(N)
+	ps = pyimport("pyswashes")
+	s = ps.TwoDimensional(1, 1, 1, N, N)
+	depth = s.np_depth()'
+	topo = s.np_topo()'
+	return depth, topo
+end
 
+function test_conv(N)
+	mesh = get_mesh(N)
+
+	depth, topo = get_swashes(N)
 	state = get_ics(mesh)
-
+	
 	#Creating the Model
-	model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.0015, dtmax=0.015)
+	model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.0015, dtmax=0.015, Umax = get_Umax)
 
 	#Running the simulation
 	run!(model; tend = T, maxite = 100000)
 
-	function get_swashes(nx)
-		ps = pyimport("pyswashes")
-		s = ps.OneDimensional(3, 1, 1, nx)
-		res = s.np_depth()
-		return res
-	end
+	Figure()
+	plt = plotform(h, mesh, state)
+	display(plt)
 
-	#hinner = state.h[mesh.nh+1:mesh.nx *11 ÷ 24, mesh.ny ÷ 2] ./ mesh.A[20,20]
-	#analytical = get_swashes(xps)[1:(mesh.nx * 11 ÷ 24 - mesh.nh)]
-	
-	hinner = state.h[mesh.nh+1:mesh.nx-mesh.nh, mesh.ny ÷ 2] ./ mesh.A[20,20]
-	analytical = get_swashes(xps)
+	hinner = state.h[mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh] ./ mesh.A[20,20]
 
-	error = sum(abs.(hinner-analytical) * mesh.dx[10,10])
+	error = sum(abs.(hinner-depth) * mesh.A[10,10])
 	println("error : $error")
 
-	lines(hinner)
-	plot!(get_swashes(xps))
-	display(current_figure())
+	#lines(hinner)
+	#plot!(get_swashes(xps))
+	#display(current_figure())
 
 	return error, mesh.dx[20,20]
 end
 
-
-range = 5:10
+range = 6:9
 errs = []
 dxs = []
 for p in range
@@ -121,6 +138,3 @@ fig = Figure()
 ax = Axis(fig[1,1], xlabel = "dx", ylabel = "error", xscale = log2, yscale = log2) 
 plot!(ax, dxs, errs)
 display(fig)
-
-#Linear Regression to find the error nah, problem
-#println("O = $(log2.(dxs) \ log2.(errs))")

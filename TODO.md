@@ -10,6 +10,7 @@
 - Higher order differentiation
 - Automatic arbitrary order finite-diff + fvtofd
 - Create plots for any metric
+- Automatically separate diag and rhs in model ?
 
 # Would be cool
 - MPI
