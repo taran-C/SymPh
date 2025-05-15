@@ -43,14 +43,14 @@ compute_p! = to_kernel(p; explparams=explparams)
 
 #Testing the function
 
-h0 = 0.05
+h0 = 0.04
 H = 1
 a = 0.5
 c = sqrt(g*H)
-T = 10
+T = 5
 
-Lx = 50
-Ly = 50
+Lx = 25
+Ly = 25
 
 
 #Defining the Mesh
@@ -83,7 +83,7 @@ function get_model(mesh)
 
 		#We integrate the initial conditions in order to have an actual finite volume solution TODO use xv/yv instead, also check how to handles curved coordinates (gfun argument in dblquad)
 		func(x,y) = (H + h0 * gaussian(r(x,y), a))# * mesh.A[i,j] #* mesh.msk2p[i,j]
-		state.h[i,j] = spi.dblquad(func, mesh.xv[i-1,j], mesh.xv[i,j], mesh.yv[i,j-1], mesh.yv[i,j])[1]
+		state.h[i,j] = spi.dblquad(func, mesh.xv[i-1,j], mesh.xv[i,j], mesh.yv[i,j-1], mesh.yv[i,j], epsabs = 2e-14, epsrel = 2e-14)[1]
 	end
 
 	#TODO ugly ugly ugly
@@ -108,7 +108,7 @@ function get_analytical(model, t)
 
 	func(k, r, t) = exp(-k^2 /(4*a^2))/(2*a^2) * cos(k*c*t) * SpecialFunctions.besselj0(k*r) * k
 	f1(r, t) = QuadGK.quadgk((k) -> func(k,r,t), 0, Inf)[1] #SLOOOOW (faster to go through python...)
-	f2(r, t) = spi.quad(func, 0, Inf, args = (r, t))[1]
+	f2(r, t) = spi.quad(func, 0, Inf, args = (r, t), epsabs = 2e-14, epsrel = 2e-14)[1]
 	#display(@benchmark $f1(100,2))
 	#display(@benchmark $f2(100,2))
 
@@ -136,24 +136,29 @@ function test_conv(pow)
 
 	inner = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
 
-	#fig = Figure()
-	#ax1 = Axis(fig[1,1])
-	#ax2 = Axis(fig[1,2])
-	#ax3 = Axis(fig[2,1])
-	#plotform!(ax1, p, mesh, state)
-	#hm1 = heatmap!(ax2, exact_height)
-	#hm2 = heatmap!(ax3, (H .+ h0 .* exact_height[inner...]) .- state.p[inner...]) #NOT GOOD, FORCES SECOND ORDER
-	#Colorbar(fig[1,3], hm1)
-	#Colorbar(fig[2,3], hm2)
-	#display(fig)
+	plot = true
+	if plot
+		fig = Figure()
+		ax1 = Axis(fig[1,1])
+		ax2 = Axis(fig[1,2])
+		ax3 = Axis(fig[2,1])
+		plotform!(ax1, p, mesh, state)
+		hm1 = heatmap!(ax2, exact_height)
+		hm2 = heatmap!(ax3, (H .+ h0 .* exact_height[inner...]) .- state.p[inner...]) #NOT GOOD, FORCES SECOND ORDER
+		Colorbar(fig[1,3], hm1)
+		Colorbar(fig[2,3], hm2)
+		display(fig)
+	end
 
-	error = LinearAlgebra.norm((H .+ h0 .* exact_height[inner...]) .- state.p[inner...])/(2^(2*pow))
+	#error = LinearAlgebra.norm((H .+ h0 .* exact_height[inner...]) .- state.p[inner...]) / LinearAlgebra.norm(state.p[inner...]) #Relative nodal error ? cf https://www.mathworks.com/matlabcentral/answers/1660740-different-error-calculation-between-finite-element-method-s-numerical-solution-and-exact-solution
+	error = maximum(abs.((H .+ h0 .* exact_height[inner...]) .- state.p[inner...]))
 	@printf "Mean error per point with a %dx%d grid : %.3e\n" 2^pow 2^pow error
 	return error
 end
 
 pows = 5:9
-dAs = 1 ./ collect(pows) .^ 2
+dAs = 1 ./ (2 .^ collect(pows)) .^2
+h = 1 ./(2 .^collect(pows))
 errs = zero(dAs)
 
 for (i, pow) in enumerate(pows)
@@ -162,7 +167,9 @@ end
 
 fig = Figure()
 ax = Axis(fig[1,1], xscale = log2, yscale = log2)
-lines!(ax, dAs, errs)
-display(fig)
+lines!(ax, h, errs)
 
-println("O = $(log2.(dAs) \ log2.(errs))")
+display(fig)
+save("convergence.png", fig)
+
+println("O = $(log2.(h) \ log2.(errs))")
