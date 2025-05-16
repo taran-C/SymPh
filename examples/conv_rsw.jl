@@ -2,10 +2,9 @@
 import SpecialFunctions
 import QuadGK
 using PyCall
-using Cubature
 using BenchmarkTools
-import LinearAlgebra
 using Printf
+using DelimitedFiles
 
 #To use plotrun
 using GLMakie
@@ -35,7 +34,7 @@ g = 1
 
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd4)
+explparams = ExplicitParam(; interp = Arrays.avg2pt, fvtofd = Arrays.fvtofd2)
 
 #Generating the RHS TODO change the way BCs are handled
 rhs! = to_kernel(dtu, dth; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams)
@@ -102,24 +101,36 @@ function get_model(mesh)
 end
 
 function get_analytical(model, t)
-	spi = pyimport("scipy.integrate")
+	#Cheching if file exists already
+	N = model.mesh.nx -2*model.mesh.nh
+	fname = "gaussana$N.txt"
+	if isfile(fname)
+		anal = readdlm(fname)
+	else
 
-	anal = zeros(model.mesh.nx, model.mesh.ny)
+		spi = pyimport("scipy.integrate")
 
-	func(k, r, t) = exp(-k^2 /(4*a^2))/(2*a^2) * cos(k*c*t) * SpecialFunctions.besselj0(k*r) * k
-	f1(r, t) = QuadGK.quadgk((k) -> func(k,r,t), 0, Inf)[1] #SLOOOOW (faster to go through python...)
-	f2(r, t) = spi.quad(func, 0, Inf, args = (r, t), epsabs = 2e-14, epsrel = 2e-14)[1]
-	#display(@benchmark $f1(100,2))
-	#display(@benchmark $f2(100,2))
+		anal = zeros(model.mesh.nx, model.mesh.ny)
 
-	#TODO remove loop ?
-	for i in 1:model.mesh.nx, j in 1:model.mesh.ny
-		x = model.mesh.xc[i,j]
-		y = model.mesh.yc[i,j]
+		func(k, r, t) = exp(-k^2 /(4*a^2))/(2*a^2) * cos(k*c*t) * SpecialFunctions.besselj0(k*r) * k
+		f1(r, t) = QuadGK.quadgk((k) -> func(k,r,t), 0, Inf)[1] #SLOOOOW (faster to go through python...)
+		f2(r, t) = spi.quad(func, 0, Inf, args = (r, t), epsabs = 2e-14, epsrel = 2e-14)[1]
+		#display(@benchmark $f1(100,2))
+		#display(@benchmark $f2(100,2))
 
-		r = sqrt((x - Lx/2) ^ 2 + (y - Ly/2) ^ 2)
-		anal[i,j] = f2(r,t)
+		#TODO remove loop ?
+		for i in 1:model.mesh.nx, j in 1:model.mesh.ny
+			x = model.mesh.xc[i,j]
+			y = model.mesh.yc[i,j]
+
+			r = sqrt((x - Lx/2) ^ 2 + (y - Ly/2) ^ 2)
+			anal[i,j] = f2(r,t)
+		end
+		
+		#Storing the data to avoid recomputing it
+		writedlm(fname, anal)
 	end
+
 	return anal
 end
 
@@ -150,13 +161,17 @@ function test_conv(pow)
 		display(fig)
 	end
 
-	#error = LinearAlgebra.norm((H .+ h0 .* exact_height[inner...]) .- state.p[inner...]) / LinearAlgebra.norm(state.p[inner...]) #Relative nodal error ? cf https://www.mathworks.com/matlabcentral/answers/1660740-different-error-calculation-between-finite-element-method-s-numerical-solution-and-exact-solution
-	error = maximum(abs.((H .+ h0 .* exact_height[inner...]) .- state.p[inner...]))
-	@printf "Mean error per point with a %dx%d grid : %.3e\n" 2^pow 2^pow error
+	Linf(A) = maximum(abs.(a))
+	rms(A) = sqrt(mean(A .^ 2)) #Root Mean Square
+	residue = (H .+ h0 .* exact_height[inner...]) .- state.p[inner...]
+
+	error = rms(residue)
+
+	@printf "Error with a %dx%d grid : %.3e\n" 2^pow 2^pow error
 	return error
 end
 
-pows = 5:9
+pows = 5:10
 dAs = 1 ./ (2 .^ collect(pows)) .^2
 h = 1 ./(2 .^collect(pows))
 errs = zero(dAs)
