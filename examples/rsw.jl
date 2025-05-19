@@ -1,4 +1,3 @@
-import SpecialFunctions
 using GLMakie
 using GeometryBasics
 using ColorSchemes
@@ -26,7 +25,7 @@ g = 9.81
 @Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Defining the parameters needed to explicit TODO check if parameters actually DO ANYTHING ???
-explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd4)
+explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd2)
 
 #Generating the RHS TODO change the way BCs are handled
 rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, bcs=[U, zeta, k, dtu, dth])
@@ -34,8 +33,8 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-nx = 100
-ny = 100
+nx = 200
+ny = 200
 nh = 3
 
 msk = zeros(nx, ny)
@@ -87,14 +86,14 @@ for i in 1:nx, j in 1:ny
 		dh0 = h0 * tanh(100*(x-0.5))
 		state.h[i,j] = (H+dh0) * mesh.A[i,j]
 	elseif config == "plateau"
-		state.h[i,j] = (H - h0 * (gaussian(x, y, 0.7, 0.7, sigma)>0.5)) * mesh.A[i,j]
+		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5, 0.5, sigma)>0.5)) * mesh.A[i,j]
 	end
 end
 
 state.f .= 0 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
-model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
+model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk4step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
 
 println("first step")
 @time step!(model)

@@ -31,12 +31,12 @@ end
 
 #Addition
 function explicit(form::Addition{0,P}; param = ExplicitParam()) where {P}
-	return Arrays.Addition(form.name, explicit(form.left), explicit(form.right))
+	return Arrays.Addition(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
 end
 
 function explicit(form::Addition{1,P}; param = ExplicitParam()) where {P}
-	ls = explicit(form.left)
-	rs = explicit(form.right)
+	ls = explicit(form.left; param = param)
+	rs = explicit(form.right; param = param)
 
 	return [Arrays.Addition(form.name*"_x", ls[1], rs[1]), Arrays.Addition(form.name*"_y", ls[2], rs[2])]
 end
@@ -248,8 +248,8 @@ function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate
 	xexpr, yexpr = explicit(vec.form; param = param)
 
 	#TODO per object configurable fvtofd function
-	xout = param.fvtofd(xexpr, Arrays.dx, "x") / Arrays.dx * Arrays.msk1dx 
-	yout = param.fvtofd(yexpr, Arrays.dy, "y") / Arrays.dy * Arrays.msk1dy
+	xout = param.fvtofd(xexpr, Arrays.msk1dx, "x") / Arrays.dx / Arrays.dx * Arrays.msk1dx 
+	yout = param.fvtofd(yexpr, Arrays.msk1dy, "y") / Arrays.dy /Arrays.dy * Arrays.msk1dy
 
 	xout.name = vec.name*"_X"
 	yout.name = vec.name*"_Y"
@@ -260,7 +260,7 @@ end
 function explicit(form::Hodge{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
-	res = param.fvtofd(param.fvtofd(fexpr, Arrays.dx, "x"), Arrays.dy, "y") * Arrays.msk0d
+	res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2p, "x"), Arrays.msk2p, "y") / Arrays.dx /Arrays.dy * Arrays.msk0d
 	res.name = form.name
 	return res
 end

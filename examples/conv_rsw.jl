@@ -1,6 +1,6 @@
 #For the analytical solution
 using SpecialFunctions
-import QuadGK
+#import QuadGK
 using PyCall
 using BenchmarkTools
 using Printf
@@ -15,11 +15,7 @@ from https://doi.org/10.1364/OL.23.000409
 """ 
 function hankel(f, r, R, N) 
         res = zero(r) 
- 
-        #S1 = besselj_zero(0, nite+1) 
-        #display(S1)     
-        #R2 = S1/(2pi*R) 
- 
+
         for n in 1:N 
                 print("$n\r") 
                 res += f(besselj_zero(0, n)/(2*pi*R)) /(besselj1(besselj_zero(0,n))^2) .* besselj0.(besselj_zero(0,n) .*r ./(2pi * R)) 
@@ -45,7 +41,7 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 g = 1
 
 @Let U = Sharp(u) # U = u#
-@Let k = 0.5 * InteriorProduct(U, u)#; interp = Arrays.avg2pt) #k = 1/2 InteriorProduct(U,u)
+@Let k = 0.5 * InteriorProduct(U, u) #k = 1/2 InteriorProduct(U,u)
 @Let p = Hodge(g * h) # p = *(g(h*+b*))
 @Let zeta = ExteriorDerivative(u) # ζ* = du
 
@@ -58,19 +54,19 @@ g = 1
 explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd4)
 
 #Generating the RHS TODO change the way BCs are handled
-rhs! = to_kernel(dtu, dth; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams)
-compute_p! = to_kernel(p; explparams=explparams)
+rhs! = to_kernel(dtu, dth; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, verbose = false)
+compute_p! = to_kernel(p; explparams=explparams, verbose = false)
 
 #Testing the function
 
 h0 = 0.0001
 H = 1
-a = 2
+a = 0.5
 c = sqrt(g*H)
 T = 2
 
-Lx = 30
-Ly = 30
+Lx = 40
+Ly = 40
 
 
 #Defining the Mesh
@@ -85,7 +81,7 @@ function get_mesh(pow)
 	#LoopManager
 	simd = VectorizedCPU(16)
 
-	return Arrays.CartesianMesh(nx, ny, nh, simd, msk, Lx, Ly; xperio = true, yperio = true)
+	return Arrays.CartesianMesh(nx, ny, nh, simd, msk, Lx, Ly)#; xperio = true, yperio = true)
 end
 function get_Umax(mesh)
 	interval = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
@@ -97,6 +93,7 @@ end
 #Initial Conditions
 function get_model(mesh)
 	state = State(mesh)
+
 	gaussian(r,a) = exp(-r^2 * a^2)
 
 	spi = pyimport("scipy.integrate")
@@ -107,10 +104,13 @@ function get_model(mesh)
 		y = mesh.yc[i,j]
 		r(x,y) = sqrt((x-Lx/2)^2+(y-Ly/2)^2)
 
-		#We integrate the initial conditions in order to have an actual finite volume solution TODO check how to handles curved coordinates (gfun argument in dblquad)
+		#We integrate the initial conditions in order to have an actual finite volume solution TODO check how to handle curved coordinates (gfun argument in dblquad), use inverse hodge instead ?
 		func(x,y) = (H + h0 * gaussian(r(x,y), a))# * mesh.A[i,j] #* mesh.msk2p[i,j]
 		state.h[i,j] = spi.dblquad(func, mesh.xv[i-1,j], mesh.xv[i,j], mesh.yv[i,j-1], mesh.yv[i,j], epsabs = 2e-14, epsrel = 2e-14)[1]
 	end
+	
+	#x0, y0 = Lx/2, Ly/2
+	#state.h[2:end, 2:end] .= H .+ (h0/4*a^4) .* ((mesh.xv[2:end, 2:end] .-x0) .* exp.(-a^2 .* (mesh.xv[2:end, 2:end] .-x0) .^2) .- (mesh.xv[1:end-1, 2:end] .-x0) .* exp.(-a^2 .* (mesh.xv[1:end-1, 2:end] .-x0) .^2)) .* ((mesh.yv[2:end, 2:end] .-y0) .* exp.(-a^2 .* (mesh.yv[2:end, 2:end] .-y0) .^2) .- (mesh.yv[2:end, 1:end-1] .-y0) .* exp.(-a^2 .* (mesh.yv[2:end, 1:end-1] .-y0) .^2)) 
 
 	#TODO ugly ugly ugly	
 	um = get_Umax(mesh)
@@ -120,44 +120,9 @@ function get_model(mesh)
 	model = Model(rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk4step!, cfl = 0.3, dtmax=0.15, Umax = Umax)
 end
 
-function get_analytical(model)
-	#=
-	#Cheching if file exists already
-	N = model.mesh.nx -2*model.mesh.nh
-	fname = "gaussanash$N.txt"
-	
-	if isfile(fname)
-		anal = readdlm(fname)
-	else
-
-		spi = pyimport("scipy.integrate")
-
-		anal = zeros(model.mesh.nx, model.mesh.ny)
-
-		func(k, r, t) = exp(-k^2 /(4*a^2))/(2*a^2) * cos(k*c*t) * SpecialFunctions.besselj0(k*r) * k
-		f1(r, t) = QuadGK.quadgk((k) -> func(k,r,t), 0, Inf)[1] #SLOOOOW (faster to go through python...)
-		f2(r, t) = spi.quad(func, 0, Inf, args = (r, t), epsabs = 2e-14, epsrel = 2e-14, limit = 100)[1]
-
-		#TODO remove loop ?
-		for i in 1:model.mesh.nx, j in 1:model.mesh.ny
-			x = model.mesh.xc[i,j]
-			y = model.mesh.yc[i,j]
-
-			r = sqrt((x - Lx/2) ^ 2 + (y - Ly/2) ^ 2)
-			anal[i,j] = f2(r,t)
-			@printf "\rComputing analytic solution : %.2f%%    " (i*(model.mesh.ny-1)+j)/(model.mesh.ny*model.mesh.nx)*100
-		end
-		
-		@printf "\n"
-		#Storing the data to avoid recomputing it
-		writedlm(fname, anal)
-	end
-	=#
-
-	t = model.t
-
-	xs = model.mesh.xc
-	ys = model.mesh.yc
+function get_analytical(mesh, t)
+	xs = mesh.xc
+	ys = mesh.yc
 
 	rs = sqrt.((xs .- Lx/2) .^2 .+ (ys .- Ly/2) .^2)
 	
@@ -165,6 +130,7 @@ function get_analytical(model)
 
 	return hankel(f, rs, max(Lx, Ly), 1000)
 end
+get_analytical(model::Model) = get_analytical(model.mesh, model.t)
 
 #Running the simulation
 function test_conv(pow)
@@ -174,13 +140,21 @@ function test_conv(pow)
 	state = model.state
 	print("\rDone !        \r")
 	
-	run!(model; tend = T, maxite = 10000, writevars = [:h])
+	#run!(model; tend = T, maxite = 10000, writevars = [:h])
+	run!(model; tend = 100, maxite = 2^pow, writevars = [:h])
 	compute_p!(mesh, state)
 
 	@time exact_height = get_analytical(model)
 	
 	inner = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
 
+	Linf(A) = maximum(abs.(A))
+	rms(A) = sqrt(mean(A .^ 2)) #Root Mean Square
+	residue = (H .+ h0 .* exact_height[inner...]) .- state.p[inner...]#NOT GOOD, FORCES SECOND ORDER <- WHY ???
+
+
+	error = Linf(residue)
+	
 	plot = true
 	if plot
 		fig = Figure()
@@ -189,39 +163,34 @@ function test_conv(pow)
 		ax3 = Axis(fig[2,1])
 		plotform!(ax1, p, mesh, state)
 		hm1 = heatmap!(ax2, exact_height)
-		hm2 = heatmap!(ax3, (H .+ h0 .* exact_height[inner...]) .- state.p[inner...]) #NOT GOOD, FORCES SECOND ORDER
+		hm2 = heatmap!(ax3, residue) 		
 		Colorbar(fig[1,3], hm1)
 		Colorbar(fig[2,3], hm2)
 		display(fig)
 	end
 
-	Linf(A) = maximum(abs.(a))
-	rms(A) = sqrt(mean(A .^ 2)) #Root Mean Square
-	residue = (H .+ h0 .* exact_height[inner...]) .- state.p[inner...]
-
-	error = rms(residue)
-
 	@printf "Error with a %dx%d grid : %.3e\n" 2^pow 2^pow error
 	return error
 end
 
+function do_tests()
+	#TODO CHECK IF RK4 WORKS
+	pows = 6:8
+	#dAs = 1 ./ (2 .^ collect(pows)) .^2
+	h = 1 ./(2 .^collect(pows))
+	errs = zero(h)
 
-#TODO CHECK IF RK4 WORKS
-pows = 5:8
-#dAs = 1 ./ (2 .^ collect(pows)) .^2
-h = 1 ./(2 .^collect(pows))
-errs = zero(h)
+	for (i, pow) in enumerate(pows)
+		errs[i] = test_conv(pow)
+	end
 
-for (i, pow) in enumerate(pows)
-	errs[i] = test_conv(pow)
+	order = LinearRegression.slope(linregress(log.(h), log.(errs)))[1]
+	println("O = $order")
+
+	fig = Figure()
+	ax = Axis(fig[1,1], xscale = log2, yscale = log2, title = (@sprintf "O(%.2f)" order))
+	lines!(ax, h, errs)
+
+	display(fig)
+	save("convergence.png", fig)
 end
-
-order = LinearRegression.slope(linregress(log.(h), log.(errs)))[1]
-println("O = $order")
-
-fig = Figure()
-ax = Axis(fig[1,1], xscale = log2, yscale = log2, title = (@sprintf "O(%.2f)" order))
-lines!(ax, h, errs)
-
-display(fig)
-save("convergence.png", fig)
