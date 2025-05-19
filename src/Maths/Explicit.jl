@@ -251,7 +251,6 @@ function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate
 	xout = param.fvtofd(xexpr, Arrays.dx, "x") / Arrays.dx * Arrays.msk1dx 
 	yout = param.fvtofd(yexpr, Arrays.dy, "y") / Arrays.dy * Arrays.msk1dy
 
-	#TODO figure out sharp naming
 	xout.name = vec.name*"_X"
 	yout.name = vec.name*"_Y"
 	return [xout, yout]
@@ -266,7 +265,7 @@ function explicit(form::Hodge{0, Dual}; param = ExplicitParam())
 	return res
 end
 
-#InverseLaplacian TODO DO NOT REGENERATE LAPLACIAN EACH TIME, EXTRA BAD, create a PoissonSolver object with generates the function the first time its called and not later
+#InverseLaplacian
 function explicit(form::InverseLaplacian{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 

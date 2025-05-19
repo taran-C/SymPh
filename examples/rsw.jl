@@ -25,7 +25,7 @@ g = 9.81
 @Let dtu = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
 @Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
-#Defining the parameters needed to explicit
+#Defining the parameters needed to explicit TODO check if parameters actually DO ANYTHING ???
 explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd4)
 
 #Generating the RHS TODO change the way BCs are handled
@@ -46,8 +46,8 @@ scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 
-Lx = 10
-Ly = 10
+Lx = 1
+Ly = 1
 
 mesh = Arrays.CartesianMesh(nx, ny, nh, simd, msk, Lx, Ly; xperio = true, yperio = true)
 
@@ -70,7 +70,7 @@ function get_Umax(model)
 	return U+V
 end
 
-config = "bessel"
+config = "plateau"
 
 #for i in nh+1:nx-nh, j in nh+1:ny-nh
 for i in 1:nx, j in 1:ny
@@ -81,26 +81,23 @@ for i in 1:nx, j in 1:ny
 		d=0.05
 		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, sigma) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[i,j]
 	elseif config == "vortex"
-		state.h[i,j] = (H - h0 * gaussian(x, y, 0.7, 0.7, sigma) + 0.5*h0 * gaussian(x,y, 0.7,0.7,sigma*0.7)) * mesh.A[i,j]
+		state.h[i,j] = (H - h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
 		state.b[i,j] = 0 #(h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
 	elseif config == "straight_dam"
 		dh0 = h0 * tanh(100*(x-0.5))
 		state.h[i,j] = (H+dh0) * mesh.A[i,j]
-	elseif config == "bessel"
-		r = sqrt((x-Lx/2)^2+(y-Ly/2)^2)
-
-		state.h[i,j] = (H + h0 * gaussian(x,y, x-0.5Lx, y-0.5Ly, 50)* SpecialFunctions.besselj0(sqrt(g*H) * r)) * mesh.A[i,j] * mesh.msk2p[i,j]
-		#state.h[i,j] = (H + h0 * gaussian(x,y, x-0.5Lx, y-0.5Ly, 50)* SpecialFunctions.airyai(r)) * mesh.A[i,j] * mesh.msk2p[i,j]
+	elseif config == "plateau"
+		state.h[i,j] = (H - h0 * (gaussian(x, y, 0.7, 0.7, sigma)>0.5)) * mesh.A[i,j]
 	end
 end
 
 state.f .= 0 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
-model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk4step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
+model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
 
 println("first step")
-step!(model)
+@time step!(model)
 println("Done")
 
 #Running the simulation
