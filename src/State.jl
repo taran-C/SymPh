@@ -16,7 +16,7 @@ function Base.getproperty(obj::State, sym::Symbol)
 		if sym in keys(fields)
 			return fields[sym]
 		else
-			fields[sym] = zeros(Float64, mesh.nx, mesh.ny)
+			fields[sym] = zeros(Float64, mesh.ni, mesh.nj)
 			return fields[sym]
 		end
 	else

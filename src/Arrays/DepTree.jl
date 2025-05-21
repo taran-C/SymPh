@@ -84,47 +84,47 @@ end
 function expr_to_node!(expr::Expression, node_names::Set{String}, parent)
 	if expr isa ArrayVariable
 		#This is ugly and this whole way of creating the tree is kinda terrible
-		n = DepNode(expr.name, expr[-expr.depx, -expr.depy])
+		n = DepNode(expr.name, expr[-expr.depi, -expr.depj])
 		addchild!(parent, n)
 		
 		return n
 	else 
 		n = DepNode(expr.name, nothing)
 		n.expr = go_deeper(expr, node_names, n)
-		n.expr = n.expr[-n.expr.depx, -n.expr.depy]
+		n.expr = n.expr[-n.expr.depi, -n.expr.depj]
 		addchild!(parent, n)
 
 		return n
 	end
 end
 
-#TODO set depx/depy to 0 when creating a new node (so node isn't offset WRT itself)
+#TODO set depi/depj to 0 when creating a new node (so node isn't offset WRT itself)
 #Also WHY is there nondeterministic behavior ? -> Due to the way Sets are handled i guess, iteration on it seems to be chaotic
 function go_deeper(expr::Expression, node_names::Set{String}, parent)
 	if in(expr.name, node_names)
 		nnames = copy(node_names)
 		delete!(nnames, expr.name)	
 		expr_to_node!(expr, nnames, parent)
-		return ArrayVariable(expr.name, expr.depx, expr.depy)
+		return ArrayVariable(expr.name, expr.depi, expr.depj)
 	elseif expr isa FuncCall
 		n = DepNode(expr.name, nothing)
 		n.expr = deepcopy(expr)
-		n.expr = n.expr[-n.expr.depx, -n.expr.depy]
+		n.expr = n.expr[-n.expr.depi, -n.expr.depj]
 		addchild!(parent, n)
 		for (i, arg) in enumerate(n.expr.args)
 			expr_to_node!(arg, node_names, n)
-			n.expr.args[i] = ArrayVariable(arg.name, arg.depx, arg.depy)
+			n.expr.args[i] = ArrayVariable(arg.name, arg.depi, arg.depj)
 		end
-		return ArrayVariable(expr.name, expr.depx, expr.depy)
+		return ArrayVariable(expr.name, expr.depi, expr.depj)
 	elseif expr isa BinaryOperator
-		return typeof(expr)(expr.name, go_deeper(expr.left, node_names, parent), go_deeper(expr.right, node_names, parent), expr.depx, expr.depy)
+		return typeof(expr)(expr.name, go_deeper(expr.left, node_names, parent), go_deeper(expr.right, node_names, parent), expr.depi, expr.depj)
 	elseif expr isa UnaryOperator
-		return typeof(expr)(expr.name, go_deeper(expr.expr, node_names, parent), expr.depx, expr.depy)
+		return typeof(expr)(expr.name, go_deeper(expr.expr, node_names, parent), expr.depi, expr.depj)
 	elseif expr isa TernaryOperator
-		return TernaryOperator(expr.name, go_deeper(expr.a, node_names, parent), go_deeper(expr.b, node_names, parent), go_deeper(expr.c, node_names, parent), expr.depx, expr.depy)
+		return TernaryOperator(expr.name, go_deeper(expr.a, node_names, parent), go_deeper(expr.b, node_names, parent), go_deeper(expr.c, node_names, parent), expr.depi, expr.depj)
 	elseif expr isa ArrayVariable
 		expr_to_node!(expr, node_names, parent)
-		return ArrayVariable(expr.name, expr.depx, expr.depy)
+		return ArrayVariable(expr.name, expr.depi, expr.depj)
 	else
 		return expr
 	end
@@ -145,7 +145,7 @@ function string(tree::DepNode, lev = 0; show_expr = false)
 	#keeping track of indentation level and using it before each expression
 		s = "$("\t"^lev)$(tree.name)\n"
 	if show_expr && tree.expr != nothing
-		s = "$("\t"^(lev+1))expr : $(string(tree.expr)) @ [$(tree.expr.depx),$(tree.expr.depy)]\n"
+		s = "$("\t"^(lev+1))expr : $(string(tree.expr)) @ [$(tree.expr.depi),$(tree.expr.depj)]\n"
 	end
 
 	if length(tree.childs) > 0

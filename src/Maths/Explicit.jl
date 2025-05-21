@@ -22,7 +22,7 @@ function explicit(form::FormVariable{0, P}; param = ExplicitParam()) where {P}
 end
 
 function explicit(form::FormVariable{1, P}; param = ExplicitParam()) where {P}
-	return [Arrays.ArrayVariable(form.name*"_x"), Arrays.ArrayVariable(form.name*"_y")]
+	return [Arrays.ArrayVariable(form.name*"_i"), Arrays.ArrayVariable(form.name*"_j")]
 end
 
 function explicit(form::FormVariable{2,P}; param = ExplicitParam()) where {P}
@@ -38,7 +38,7 @@ function explicit(form::Addition{1,P}; param = ExplicitParam()) where {P}
 	ls = explicit(form.left; param = param)
 	rs = explicit(form.right; param = param)
 
-	return [Arrays.Addition(form.name*"_x", ls[1], rs[1]), Arrays.Addition(form.name*"_y", ls[2], rs[2])]
+	return [Arrays.Addition(form.name*"_i", ls[1], rs[1]), Arrays.Addition(form.name*"_j", ls[2], rs[2])]
 end
 
 function explicit(form::Addition{2,P}; param = ExplicitParam()) where {P}
@@ -54,7 +54,7 @@ function explicit(form::Substraction{1,P}; param = ExplicitParam()) where {P}
 	ls = explicit(form.left; param = param)
 	rs = explicit(form.right; param = param)
 
-	return [Arrays.Substraction(form.name*"_x", ls[1], rs[1]), Arrays.Substraction(form.name*"_y", ls[2], rs[2])]
+	return [Arrays.Substraction(form.name*"_i", ls[1], rs[1]), Arrays.Substraction(form.name*"_j", ls[2], rs[2])]
 end
 
 function explicit(form::Substraction{2,P}; param = ExplicitParam()) where {P}
@@ -68,7 +68,7 @@ end
 
 function explicit(form::Negative{1,P}; param = ExplicitParam()) where {P}
 	fexpr = explicit(form.form; param = param)
-	return [Arrays.Negative(form.name*"_x", fexpr[1]), Arrays.Negative(form.name*"_y", fexpr[2])]
+	return [Arrays.Negative(form.name*"_i", fexpr[1]), Arrays.Negative(form.name*"_j", fexpr[2])]
 end
 
 function explicit(form::Negative{2,P}; param = ExplicitParam()) where {P}
@@ -100,8 +100,8 @@ function explicit(form::RealProdForm{1,D}; param = ExplicitParam()) where {D}
 	l = form.real * exprs[1]
 	r = form.real * exprs[2]
 
-	l.name = form.name*"_x"
-	r.name = form.name*"_y"
+	l.name = form.name*"_i"
+	r.name = form.name*"_j"
 
 	return [l, r]
 end
@@ -116,22 +116,26 @@ end
 #ExteriorDerivative
 function explicit(form::ExteriorDerivative{1, Primal}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
-	d_x = (expr[1,0] - expr[0,0]) * Arrays.msk1px
-	d_x.name = form.name * "_x"
 
-	d_y = (expr[0,1] - expr[0,0]) * Arrays.msk1py
-	d_y.name = form.name * "_y"
+	expi = param.fvtofd(expr, Arrays.msk1p, "i")
+	expj = param.fvtofd(expr, Arrays.msk1p, "j")
 
-	return [d_x, d_y]
+	d_i = (expi[1,0] - expi[0,0]) * Arrays.msk1pi
+	d_j = (expj[0,1] - expj[0,0]) * Arrays.msk1pj
+	
+	d_i.name = form.name * "_i"
+	d_j.name = form.name * "_j"
+
+	return [d_i, d_j]
 end
 
 function explicit(form::ExteriorDerivative{1, Dual}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
-	d_x = (expr[0,0] - expr[-1,0]) * Arrays.msk1dx
-	d_x.name = form.name * "_x"
+	d_x = (expr[0,0] - expr[-1,0]) * Arrays.msk1di
+	d_x.name = form.name * "_i"
 
-	d_y = (expr[0,0] - expr[0,-1]) * Arrays.msk1dy
-	d_y.name = form.name * "_y"
+	d_y = (expr[0,0] - expr[0,-1]) * Arrays.msk1dj
+	d_y.name = form.name * "_j"
 
 	return [d_x, d_y]
 end
@@ -152,10 +156,10 @@ function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	return dq
 end
 
-#Codifferential
+#Codifferential #TODO handle FV to FD for codifferential
 function explicit(form::Codifferential{0, Dual}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
-	
+
 	dq = ((exprs[1][1,0]-exprs[1][0,0]) + (exprs[2][0,1]-exprs[2][0,0])) * Arrays.msk0d
 	dq.name = form.name
 
@@ -165,11 +169,11 @@ end
 function explicit(form::Codifferential{1, Dual}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
 
-	du = -(expr[0,1] - expr[0,0]) * Arrays.msk1dx
-	dv = (expr[1,0] - expr[0,0]) * Arrays.msk1dy
+	du = -(expr[0,1] - expr[0,0]) * Arrays.msk1di
+	dv = (expr[1,0] - expr[0,0]) * Arrays.msk1dj
 
-	du.name = form.name * "_x"
-	dv.name = form.name * "_y"
+	du.name = form.name * "_i"
+	dv.name = form.name * "_j"
 
 	return[du, dv]
 end
@@ -188,8 +192,8 @@ function explicit(form::InteriorProduct{0, Dual, Dual}; param = ExplicitParam())
 		interp = form.interp
 	end
 	
-	Uint = interp(U[0,0] + U[1,0], fu, Arrays.o1dx, "right", "x")
-	Vint = interp(V[0,0] + V[0,1], fv, Arrays.o1dy, "right", "y")
+	Uint = interp(U[0,0] + U[1,0], fu, Arrays.o1di, "right", "i")
+	Vint = interp(V[0,0] + V[0,1], fv, Arrays.o1dj, "right", "j")
 	
 	qout = (Uint + Vint) * Arrays.msk0d
 	
@@ -208,14 +212,14 @@ function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam(
 		interp = form.interp
 	end
 
-	fintx = interp(uexpr, fexpr, Arrays.o1px, "left", "x")
-	finty = interp(vexpr, fexpr, Arrays.o1py, "left", "y")
+	finti = interp(uexpr, fexpr, Arrays.o1pi, "left", "i")
+	fintj = interp(vexpr, fexpr, Arrays.o1pj, "left", "j")
 
-	uout = -vexpr * finty * Arrays.msk1px
-	vout = uexpr * fintx * Arrays.msk1py
+	uout = -vexpr * fintj * Arrays.msk1pi
+	vout = uexpr * finti * Arrays.msk1pj
 
-	uout.name = form.name*"_x"
-	vout.name = form.name*"_y"
+	uout.name = form.name*"_i"
+	vout.name = form.name*"_j"
 
 	return [uout, vout]
 end
@@ -224,32 +228,38 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 	uexpr, vexpr = explicit(form.vect; param = param)
 
-	udec = Arrays.avg4pt(uexpr, 1, -1)
-	vdec = Arrays.avg4pt(vexpr, -1, 1)
-
 	if form.interp == Nothing
 		interp = param.interp
 	else
 		interp = form.interp
 	end
 
-	#TODO transp velocity dec or not
-	xout = -vdec * interp(vdec, fexpr, Arrays.o2dy, "right", "y") * Arrays.msk1dx
-	yout = udec * interp(udec, fexpr, Arrays.o2dx, "right", "x") * Arrays.msk1dy
-	
-	xout.name = form.name*"_x"
-	yout.name = form.name*"_y"
+	udec = Arrays.avg4pt(uexpr, 1, -1)
+	vdec = Arrays.avg4pt(vexpr, -1, 1)
 
-	return [xout, yout]
+	#udec = interp(vexpr, interp(uexpr, uexpr, Arrays.o1di, "right", "x"), Arrays.o1dj, "left", "y")
+	#vdec = interp(vexpr, interp(uexpr, vexpr, Arrays.o1di, "left", "x"), Arrays.o1dj, "right", "y")
+
+	#TODO transp velocity dec or not
+	iout = -vdec * interp(vdec, fexpr, Arrays.o2dj, "right", "i") * Arrays.msk1di
+	jout = udec * interp(udec, fexpr, Arrays.o2di, "right", "j") * Arrays.msk1dj
+	
+	iout.name = form.name*"_i"
+	jout.name = form.name*"_j"
+
+	return [iout, jout]
 end
 
 #Sharp
 function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate Primal and dual areas (could be very different, especially for non square grids)
-	xexpr, yexpr = explicit(vec.form; param = param)
+	iexpr, jexpr = explicit(vec.form; param = param)
 
 	#TODO per object configurable fvtofd function
-	xout = param.fvtofd(xexpr, Arrays.msk1dx, "x") / Arrays.dx / Arrays.dx * Arrays.msk1dx 
-	yout = param.fvtofd(yexpr, Arrays.msk1dy, "y") / Arrays.dy /Arrays.dy * Arrays.msk1dy
+	#xout = param.fvtofd(iexpr, Arrays.msk1di, "i") / Arrays.dx / Arrays.dx * Arrays.msk1di 
+	#yout = param.fvtofd(jexpr, Arrays.msk1dj, "j") / Arrays.dy / Arrays.dy * Arrays.msk1dj
+
+	xout = iexpr / Arrays.dx / Arrays.dx
+	yout = jexpr / Arrays.dy / Arrays.dy
 
 	xout.name = vec.name*"_X"
 	yout.name = vec.name*"_Y"
@@ -260,7 +270,8 @@ end
 function explicit(form::Hodge{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
-	res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2p, "x"), Arrays.msk2p, "y") / Arrays.dx /Arrays.dy * Arrays.msk0d
+	#res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2p, "i"), Arrays.msk2p, "j") / Arrays.dx /Arrays.dy * Arrays.msk0d
+	res = fexpr / Arrays.dx / Arrays.dy
 	res.name = form.name
 	return res
 end

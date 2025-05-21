@@ -25,7 +25,7 @@ g = 9.81
 @Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Defining the parameters needed to explicit TODO check if parameters actually DO ANYTHING ???
-explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd2)
+explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd4)
 
 #Generating the RHS TODO change the way BCs are handled
 rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, bcs=[U, zeta, k, dtu, dth])
@@ -33,12 +33,12 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-nx = 200
-ny = 200
+ni = 200
+nj = 200
 nh = 3
 
-msk = zeros(nx, ny)
-msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
+msk = zeros(ni, nj)
+msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
 
 #LoopManager
 scalar = PlainCPU()
@@ -48,7 +48,7 @@ threads = MultiThread(scalar)
 Lx = 1
 Ly = 1
 
-mesh = Arrays.CartesianMesh(nx, ny, nh, simd, msk, Lx, Ly; xperio = true, yperio = true)
+mesh = Arrays.CartesianMesh(ni, nj, nh, simd, msk, Lx, Ly; xperio = true, yperio = true)
 
 #Initial Conditions
 state = State(mesh)
@@ -61,7 +61,7 @@ gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 #TODO only call once
 function get_Umax(model)
 	mesh = model.mesh
-	interval = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
+	interval = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
 	c = sqrt(g*H)
 	U = c/minimum(model.mesh.dx[interval...])
 	V = c/minimum(model.mesh.dy[interval...])
@@ -71,8 +71,8 @@ end
 
 config = "plateau"
 
-#for i in nh+1:nx-nh, j in nh+1:ny-nh
-for i in 1:nx, j in 1:ny
+#for i in nh+1:ni-nh, j in nh+1:nj-nh
+for i in 1:ni, j in 1:nj
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
 
@@ -90,10 +90,10 @@ for i in 1:nx, j in 1:ny
 	end
 end
 
-state.f .= 0 .* ones((nx,ny)) .* mesh.A #.* mesh.msk2d
+state.f .= 0 .* ones((ni,nj)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
-model = Model(rsw_rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk4step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
+model = Model(rsw_rhs!, mesh, state, ["u_i", "u_j", "h"]; integratorstep! = rk4step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
 
 println("first step")
 @time step!(model)

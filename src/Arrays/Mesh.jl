@@ -1,7 +1,7 @@
 struct Mesh
 	#Grid
-	nx::Int64
-	ny::Int64
+	ni::Int64
+	nj::Int64
 	
 	nh::Int64
 
@@ -20,7 +20,7 @@ struct Mesh
 	xv::AbstractArray{Float64}
 	yv::AbstractArray{Float64}
 
-	#Metric TODO different edge length for primal/dual grids (and primal/dual grids at all anyway)
+	#Metric TODO different edge length for primal/dual grids (and primal/dual grids at all anjway)
 	dx::AbstractArray{Float64}
 	dy::AbstractArray{Float64}
 	
@@ -30,46 +30,46 @@ struct Mesh
 	msk0p::AbstractArray{Float64}
 	msk0d::AbstractArray{Float64}
 	
-	msk1px::AbstractArray{Float64}
-	msk1py::AbstractArray{Float64}
-	msk1dx::AbstractArray{Float64}
-	msk1dy::AbstractArray{Float64}
+	msk1pi::AbstractArray{Float64}
+	msk1pj::AbstractArray{Float64}
+	msk1di::AbstractArray{Float64}
+	msk1dj::AbstractArray{Float64}
 	
 	msk2p::AbstractArray{Float64}
 	msk2d::AbstractArray{Float64}
 
 	#Orders
-	o1px::AbstractArray{Float64} #order two, primal, x along x
-	o1py::AbstractArray{Float64}
-	o1dx::AbstractArray{Float64}
-	o1dy::AbstractArray{Float64}
+	o1pi::AbstractArray{Float64} #order two, primal, x along x
+	o1pj::AbstractArray{Float64}
+	o1di::AbstractArray{Float64}
+	o1dj::AbstractArray{Float64}
 	
-	o2px::AbstractArray{Float64} #order two, primal, along x
-	o2py::AbstractArray{Float64}
-	o2dx::AbstractArray{Float64}
-	o2dy::AbstractArray{Float64}
+	o2pi::AbstractArray{Float64} #order two, primal, along x
+	o2pj::AbstractArray{Float64}
+	o2di::AbstractArray{Float64}
+	o2dj::AbstractArray{Float64}
 	
-	xperio::Bool
-	yperio::Bool
+	iperio::Bool
+	jperio::Bool
 	
-	function Mesh(nx, ny, nh, mgr, msk, xc, yc, xv, yv; xperio=false, yperio=false)
+	function Mesh(ni, nj, nh, mgr, msk, xc, yc, xv, yv; iperio=false, jperio=false)
 		#Metric
-		dx, dy, A = compute_metric(nx,ny, xc, yc)
+		dx, dy, A = compute_metric(ni,nj, xc, yc)
 
 		#Masks
-		msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d = compute_msks(msk)
+		msks = compute_msks(msk)
 	
 		#Orders
-		o1px, o1py, o1dx, o1dy, o2px, o2py, o2dx, o2dy = compute_orders(msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d, xperio, yperio)
+		ords = compute_orders(msks, iperio, jperio)
 
 		#Creating the mesh
-		return new(nx, ny, nh,
+		return new(ni, nj, nh,
 			   mgr,
 			   xc, yc, 1, 1, 1, 1, xv, yv,
 			   dx, dy, A, 
-			   msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d,
-			   o1px, o1py, o1dx, o1dy, o2px, o2py, o2dx, o2dy,
-			   xperio, yperio)
+			   msks...,
+			   ords...,
+			   iperio, jperio)
 	end
 end
 
@@ -87,11 +87,11 @@ end
 
 
 #TODO primal and dual metric
-function compute_metric(nx, ny, xc, yc)
-	dx, dy = zeros(nx, ny), zeros(nx, ny)
+function compute_metric(ni, nj, xc, yc)
+	dx, dy = zeros(ni, nj), zeros(ni, nj)
 	
 	#TODO fix dx and dy (actually compute dx along dirs with norm)
-	for i in 2:nx, j in 2:ny
+	for i in 2:ni, j in 2:nj
 		dx[i,j] = sqrt((xc[i, j]-xc[i-1,j])^2 + (yc[i,j]-yc[i-1,j])^2)
 		dy[i,j] = sqrt((xc[i, j]-xc[i,j-1])^2 + (yc[i,j]-yc[i,j-1])^2)
 	end
@@ -104,95 +104,96 @@ function compute_metric(nx, ny, xc, yc)
 	return dx, dy, A
 end
 
-function compute_orders(msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d, xperio, yperio)
-	nx,ny = size(msk2p)
+function compute_orders(msks, iperio, jperio)
+	_, _, msk1pi, msk1pj, msk1di, msk1dj, msk2p, msk2d = msks
+	ni,nj = size(msk2p)
 
-	o1px = zeros(nx,ny)
-	o1py = zeros(nx,ny)
-	o1dx = zeros(nx,ny)
-	o1dy = zeros(nx,ny)
+	o1pi = zeros(ni,nj)
+	o1pj = zeros(ni,nj)
+	o1di = zeros(ni,nj)
+	o1dj = zeros(ni,nj)
 
-	o2px = zeros(nx,ny)
-	o2py = zeros(nx,ny)
-	o2dx = zeros(nx,ny)
-	o2dy = zeros(nx,ny)
+	o2pi = zeros(ni,nj)
+	o2pj = zeros(ni,nj)
+	o2di = zeros(ni,nj)
+	o2dj = zeros(ni,nj)
 
 	#Primal
-	if xperio
-		o1px .= 6
+	if iperio
+		o1pi .= 6
 	else
-		get_order_left(msk1px, 1, o1px)
+		get_order_left(msk1pi, 1, o1pi)
 	end
-	if yperio
-		o1py .= 6
+	if jperio
+		o1pj .= 6
 	else
-		get_order_left(msk1py, nx, o1py)
+		get_order_left(msk1pj, ni, o1pj)
 	end
 
-	if xperio
-		o2px .= 6
+	if iperio
+		o2pi .= 6
 	else
-		get_order_left(msk2p, 1, o2px)
+		get_order_left(msk2p, 1, o2pi)
 	end
-	if yperio
-		o2py .= 6
+	if jperio
+		o2pj .= 6
 	else
-		get_order_left(msk2p, nx, o2py)
+		get_order_left(msk2p, ni, o2pj)
 	end
 
 	#Dual
-	if xperio
-		o1dx .= 6
+	if iperio
+		o1di .= 6
 	else
-		get_order_right(msk1dx, 1, o1dx)
+		get_order_right(msk1di, 1, o1di)
 	end
-	if yperio
-		o1dy .= 6
+	if jperio
+		o1dj .= 6
 	else
-		get_order_right(msk1dy, nx, o1dy)
-	end
-
-	if xperio
-		o2dx .= 6
-	else
-		get_order_right(msk2d, 1, o2dx)
-	end
-	if yperio
-		o2dy .= 6
-	else
-		get_order_right(msk2d, nx, o2dy)
+		get_order_right(msk1dj, ni, o1dj)
 	end
 
-	return (o1px, o1py, o1dx, o1dy,
-		o2px, o2py, o2dx, o2dy)
+	if iperio
+		o2di .= 6
+	else
+		get_order_right(msk2d, 1, o2di)
+	end
+	if jperio
+		o2dj .= 6
+	else
+		get_order_right(msk2d, ni, o2dj)
+	end
+
+	return (o1pi, o1pj, o1di, o1dj,
+		o2pi, o2pj, o2di, o2dj)
 end
 
 function compute_msks(msk)
-	nx, ny = size(msk)
+	ni, nj = size(msk)
 
-	msk0p = zeros(nx, ny)
+	msk0p = zeros(ni, nj)
 	msk0d = msk
 	
-	msk1px = zeros(nx, ny)
-	msk1py = zeros(nx, ny)
-	msk1dx = zeros(nx, ny)
-	msk1dy = zeros(nx, ny)
+	msk1pi = zeros(ni, nj)
+	msk1pj = zeros(ni, nj)
+	msk1di = zeros(ni, nj)
+	msk1dj = zeros(ni, nj)
 
 	msk2p = msk
-	msk2d = zeros(nx, ny)
+	msk2d = zeros(ni, nj)
 
-	for i in 2:nx-1, j in 2:ny-1
+	for i in 2:ni-1, j in 2:nj-1
 		msk0p[i,j] = max(msk[i,j], msk[i-1,j], msk[i,j-1], msk[i-1,j-1])
 		
-		msk1px[i,j] = max(msk[i,j], msk[i,j-1])
-		msk1py[i,j] = max(msk[i,j], msk[i-1,j])
-		msk1dx[i,j] = msk[i,j] * msk[i-1,j]
-		msk1dy[i,j] = msk[i,j] * msk[i,j-1]
+		msk1pi[i,j] = max(msk[i,j], msk[i,j-1])
+		msk1pj[i,j] = max(msk[i,j], msk[i-1,j])
+		msk1di[i,j] = msk[i,j] * msk[i-1,j]
+		msk1dj[i,j] = msk[i,j] * msk[i,j-1]
 
 		msk2d[i,j] = msk[i,j] * msk[i-1,j] * msk[i,j-1] * msk[i-1,j-1] #TODO only for free-slip (null vorticity) (apparently, a whole lot to check there)
 	end
 	
-	return msk0p, msk0d, msk1px, msk1py, msk1dx, msk1dy, msk2p, msk2d
+	return msk0p, msk0d, msk1pi, msk1pj, msk1di, msk1dj, msk2p, msk2d
 end
 
 #The mesh. is terrible in this
@@ -202,82 +203,82 @@ A = ArrayVariable("mesh.A")
 
 msk0p = ArrayVariable("mesh.msk0p")
 msk0d = ArrayVariable("mesh.msk0d")
-msk1px = ArrayVariable("mesh.msk1px")
-msk1py = ArrayVariable("mesh.msk1py")
-msk1dx = ArrayVariable("mesh.msk1dx")
-msk1dy = ArrayVariable("mesh.msk1dy")
+msk1pi = ArrayVariable("mesh.msk1pi")
+msk1pj = ArrayVariable("mesh.msk1pj")
+msk1di = ArrayVariable("mesh.msk1di")
+msk1dj = ArrayVariable("mesh.msk1dj")
 msk2p = ArrayVariable("mesh.msk2p")
 msk2d = ArrayVariable("mesh.msk2d")
 
-o1px = ArrayVariable("mesh.o1px")
-o1py = ArrayVariable("mesh.o1py")
-o1dx = ArrayVariable("mesh.o1dx")
-o1dy = ArrayVariable("mesh.o1dy")
+o1pi = ArrayVariable("mesh.o1pi")
+o1pj = ArrayVariable("mesh.o1pj")
+o1di = ArrayVariable("mesh.o1di")
+o1dj = ArrayVariable("mesh.o1dj")
 
-o2px = ArrayVariable("mesh.o2px")
-o2py = ArrayVariable("mesh.o2py")
-o2dx = ArrayVariable("mesh.o2dx")
-o2dy = ArrayVariable("mesh.o2dy")
+o2pi = ArrayVariable("mesh.o2pi")
+o2pj = ArrayVariable("mesh.o2pj")
+o2di = ArrayVariable("mesh.o2di")
+o2dj = ArrayVariable("mesh.o2dj")
 
 
 """
-	CartesianMesh(nx, ny, nh, mgr, msk, Lx = 1, Ly = 1; xperio=false, yperio=false)
+	CartesianMesh(ni, nj, nh, mgr, msk, Lx = 1, Ly = 1; iperio=false, jperio=false)
 
 A rectangular mesh of extent `Lx`, `Ly`
 """
-function CartesianMesh(nx, ny, nh, mgr, msk, Lx = 1, Ly = 1; xperio=false, yperio=false)
+function CartesianMesh(ni, nj, nh, mgr, msk, Lx = 1, Ly = 1; xperio=false, yperio=false)
 		#Locations
-		xc, yc, xv, yv = compute_locations_cartesian(nx,ny,nh,Lx,Ly)
+		xc, yc, xv, yv = compute_locations_cartesian(ni,nj,nh,Lx,Ly)
 		
-		return Mesh(nx, ny, nh, mgr, msk, xc, yc, xv, yv; xperio = xperio, yperio=yperio)
+		return Mesh(ni, nj, nh, mgr, msk, xc, yc, xv, yv; iperio = xperio, jperio=yperio)
 end
 
-function compute_locations_cartesian(nx, ny, nh, Lx, Ly)
-	xc = zeros(nx,ny)
-	yc = zeros(nx,ny)
-	xv = zeros(nx,ny)
-	yv = zeros(nx,ny)
-	for i in 1:nx, j in 1:ny
-		xc[i,j] = (i-0.5-nh) * Lx/(nx-2*nh)
-		yc[i,j] = (j-0.5-nh) * Ly/(ny-2*nh)
-		xv[i,j] = (i-nh) * Lx/(nx-2*nh)
-		yv[i,j] = (j-nh) * Ly/(ny-2*nh)
+function compute_locations_cartesian(ni, nj, nh, Lx, Ly)
+	xc = zeros(ni,nj)
+	yc = zeros(ni,nj)
+	xv = zeros(ni,nj)
+	yv = zeros(ni,nj)
+	for i in 1:ni, j in 1:nj
+		xc[i,j] = (i-0.5-nh) * Lx/(ni-2*nh)
+		yc[i,j] = (j-0.5-nh) * Ly/(nj-2*nh)
+		xv[i,j] = (i-nh) * Lx/(ni-2*nh)
+		yv[i,j] = (j-nh) * Ly/(nj-2*nh)
 	end
 	
 	return xc, yc, xv, yv
 end
 
 """
-	PolarMesh(nx, ny, nh, mgr, msk, rin = 0.5, rout = 1.5)
+	PolarMesh(ni, nj, nh, mgr, msk, rin = 0.5, rout = 1.5)
 
 An annulus mesh with inner radius `rin` and outer radius `rout`
 
 The i/x direction is the radial, j/y orthoradial
 """
-function PolarMesh(nx, ny, nh, mgr, msk, rin = 0.5, rout = 1.5)
+function PolarMesh(ni, nj, nh, mgr, msk, rin = 0.5, rout = 1.5)
 		#Locations
-		xc, yc, xv, yv = compute_locations_polar(nx,ny,nh,rin, rout)
+		xc, yc, xv, yv = compute_locations_polar(ni,nj,nh,rin, rout)
 		
-		return Mesh(nx, ny, nh, mgr, msk, xc, yc, xv, yv; xperio = false, yperio=true)
+		return Mesh(ni, nj, nh, mgr, msk, xc, yc, xv, yv; iperio = false, jperio=true)
 end
 
 polar2cart(r, theta) = (r * cos(theta), r * sin(theta))
 
-function compute_locations_polar(nx, ny, nh, rin, rout)
-	xc = zeros(nx,ny)
-	yc = zeros(nx,ny)
-	xv = zeros(nx,ny)
-	yv = zeros(nx,ny)
+function compute_locations_polar(ni, nj, nh, rin, rout)
+	xc = zeros(ni,nj)
+	yc = zeros(ni,nj)
+	xv = zeros(ni,nj)
+	yv = zeros(ni,nj)
 
-	for i in 1:nx, j in 1:ny
-		r = rin + (i-0.5-nh) * (rout-rin) / (nx-2*nh)
-		theta = (j-0.5-nh) * 2*pi/(ny-2*nh)
+	for i in 1:ni, j in 1:nj
+		r = rin + (i-0.5-nh) * (rout-rin) / (ni-2*nh)
+		theta = (j-0.5-nh) * 2*pi/(nj-2*nh)
 		coords = polar2cart(r, theta)
 		xc[i,j] = coords[1] 
 		yc[i,j] = coords[2]
 
-		r = rin + (i-nh) * (rout-rin) / (nx-2*nh)
-		theta = (j-nh) * 2*pi/(ny-2*nh)
+		r = rin + (i-nh) * (rout-rin) / (ni-2*nh)
+		theta = (j-nh) * 2*pi/(nj-2*nh)
 		coords = polar2cart(r, theta)
 		xv[i,j] = coords[1] 
 		yv[i,j] = coords[2]

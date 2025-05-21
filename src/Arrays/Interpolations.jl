@@ -48,44 +48,44 @@ up5(qmmm::Expression, qmm::Expression, qm::Expression, qp::Expression, qpp::Expr
 
 function upinterp(U::Expression, a::Expression, lr::String, dir::String, o::Integer)
 	@assert lr in ["left", "right"]
-	@assert dir in ["x", "y"]
+	@assert dir in ["i", "j"]
 	if lr == "right" 
 		if o==1
-			if dir=="x"
+			if dir=="i"
 				return TernaryOperator(U>0, a[0,0], a[1,0])
-			elseif dir=="y"
+			elseif dir=="j"
 				return TernaryOperator(U>0, a[0,0], a[0,1])
 			end
 		elseif o==3
-			if dir=="x"
+			if dir=="i"
 				return TernaryOperator(U>0, up3(a[-1,0], a[0,0], a[1,0]), up3(a[2,0], a[1,0], a[0,0]))
-			elseif dir=="y"
+			elseif dir=="j"
 				return TernaryOperator(U>0, up3(a[0,-1], a[0,0], a[0,1]), up3(a[0,2], a[0,1], a[0,0]))
 			end
 		elseif o==5
-			if dir=="x"
+			if dir=="i"
 				return TernaryOperator(U>0, up5(a[-2,0], a[-1,0], a[0,0], a[1,0], a[2,0]), up5(a[3,0], a[2,0], a[1,0], a[0,0], a[-1,0]))
-			elseif dir=="y"
+			elseif dir=="j"
 				return TernaryOperator(U>0, up5(a[0,-2], a[0,-1], a[0,0], a[0,1], a[0,2]), up5(a[0,3], a[0,2], a[0,1], a[0,0], a[0,-1]))
 			end
 		end
 	elseif lr == "left"
 		if o==1
-                        if dir=="x"
+                        if dir=="i"
                                 return TernaryOperator(U>0, a[-1,0], a[0,0])
-                        elseif dir=="y"
+                        elseif dir=="j"
                                 return TernaryOperator(U>0, a[0,-1], a[0,0])
                         end
                 elseif o==3
-                        if dir=="x"
+                        if dir=="i"
                                 return TernaryOperator(U>0, up3(a[-2,0], a[-1,0], a[0,0]), up3(a[1,0], a[0,0], a[-1,0]))
-                        elseif dir=="y"
+                        elseif dir=="j"
                                 return TernaryOperator(U>0, up3(a[0,-2], a[0,-1], a[0,0]), up3(a[0,1], a[0,0], a[0,-1]))
                         end
                 elseif o==5
-                        if dir=="x"
+                        if dir=="i"
                                 return TernaryOperator(U>0, up5(a[-3,0], a[-2,0], a[-1,0], a[0,0], a[1,0]), up5(a[2,0], a[1,0], a[0,0], a[-1,0], a[-2,0]))
-                        elseif dir=="y"
+                        elseif dir=="j"
 				return TernaryOperator(U>0, up5(a[0,-3], a[0,-2], a[0,-1], a[0,0], a[0,1]), up5(a[0,2], a[0,1], a[0,0], a[0,-1], a[0,-2]))
                         end
                 end
@@ -105,18 +105,18 @@ Two point average (simple mean)
 """
 function avg2pt(U::Expression, a::Expression, o::Expression, lr::String, dir::String)
 	@assert lr in ["left", "right"]
-	@assert dir in ["x", "y"]
+	@assert dir in ["i", "j"]
 	
 	if lr == "right"
-		if dir == "x"
+		if dir == "i"
 			return 0.5 * (a[1,0]+a[0,0])
-		elseif dir == "y"
+		elseif dir == "j"
 			return 0.5 * (a[0,1]+a[0,0])
 		end
 	elseif lr == "left"
-		if dir == "x"
+		if dir == "i"
 			return 0.5 * (a[-1,0]+a[0,0])
-		elseif dir == "y"
+		elseif dir == "j"
 			return 0.5 * (a[0,-1]+a[0,0])
 		end
 	end
@@ -125,10 +125,10 @@ end
 #Weno
 function weno(U::Expression, a::Expression, o::Expression, lr::String, dir::String)
 	@assert lr in ["left", "right"]
-	@assert dir in ["x", "y"]
+	@assert dir in ["i", "j"]
 
 	if lr == "left" #TODO USE STENCIL HERE
-		if dir == "x"
+		if dir == "i"
 			qmmm = a[-3,0]
 			qmm = a[-2,0]
 			qm = a[-1,0]
@@ -144,7 +144,7 @@ function weno(U::Expression, a::Expression, o::Expression, lr::String, dir::Stri
 			qppp = a[0,2]
 		end
 	else
-		if dir == "x"
+		if dir == "j"
 			qmmm = a[-2,0]
 			qmm = a[-1,0]
 			qm = a
@@ -222,8 +222,8 @@ end
 
 #Averages :
 export avg4pt
-avg4pt(U::Expression, dx, dy) = 0.25 * (U[0,0] + U[dx,0] + U[0,dy] + U[dx,dy])
+avg4pt(U::Expression, di, dj) = 0.25 * (U[0,0] + U[di,0] + U[0,dj] + U[di,dj])
 
-interpx(a::Expression) = 0.5*(a[1,0]+a[0,0])
-interpy(a::Expression) = 0.5*(a[0,1]+a[0,0])
+interpi(a::Expression) = 0.5*(a[1,0]+a[0,0])
+interpj(a::Expression) = 0.5*(a[0,1]+a[0,0])
 interpdiag(a::Expression) = interpx(interpy(a))

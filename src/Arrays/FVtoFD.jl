@@ -1,15 +1,15 @@
 #TODO handle bc (more order arrays to check if on border ?)
 function fvtofd2(q::Expression, h::Expression, dir::String)
 	#Simple scaling by edge length
-	return q
+	return q# /h
 end
 
 #TODO separate division by h outside so the right one is used when composing two directions (and not h[i+1,j] or whatnot)
 #OR NOT ? IDK
 function fvtofd4(q::Expression, msk::Expression, dir::String)
-	@assert dir in ["x", "y"]
+	@assert dir in ["i", "j"]
 	#Interior
-	if dir == "x"
+	if dir == "i"
 		#=
 		return TernaryOperator(msk[-1,0] > 0,
 				TernaryOperator(msk[+1,0] > 0,
@@ -19,7 +19,7 @@ function fvtofd4(q::Expression, msk::Expression, dir::String)
 		=#
 		return ((13/12) * q[0,0] - (1/24) * (q[-1,0] + q[+1,0]))
 		
-	elseif dir == "y"
+	elseif dir == "j"
 		#=
 		return TernaryOperator(msk[0,-1] > 0,
 				TernaryOperator(msk[0,+1] > 0,

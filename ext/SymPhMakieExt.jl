@@ -33,14 +33,14 @@ function Makie.plot!(plotform::PlotForm)
 	max = Makie.@lift maximum($arr)
 	min = Makie.@lift minimum($arr)
 
-	nx = Makie.@lift getproperty($msh, :nx)
-	ny = Makie.@lift getproperty($msh, :ny)
+	ni = Makie.@lift getproperty($msh, :ni)
+	nj = Makie.@lift getproperty($msh, :nj)
 	nh = Makie.@lift getproperty($msh, :nh)
 
-	cols = Makie.@lift get(colorschemes[:balance], $arr[1+$nh:$nx-$nh, 1+$nh:$ny-$nh], ($min, $max))
+	cols = Makie.@lift get(colorschemes[:balance], $arr[1+$nh:$ni-$nh, 1+$nh:$nj-$nh], ($min, $max))
 
 	#TODO adapt "stencil" to form type, also, quiver for 1-forms
-	out = Makie.@lift curvilinear_grid_mesh($xc[$nh:$nx-$nh, $nh:$ny-$nh], $yc[$nh:$nx-$nh, $nh:$ny-$nh], zero($xc[$nh:$nx-$nh, $nh:$ny-$nh]), $arr[$nh+1:$nx-$nh, $nh+1:$ny-$nh])#$cols)
+	out = Makie.@lift curvilinear_grid_mesh($xc[$nh:$ni-$nh, $nh:$nj-$nh], $yc[$nh:$ni-$nh, $nh:$nj-$nh], zero($xc[$nh:$ni-$nh, $nh:$nj-$nh]), $arr[$nh+1:$ni-$nh, $nh+1:$nj-$nh])#$cols)
 	points = Makie.@lift $out[1]
 	faces = Makie.@lift $out[2]
 	colors = Makie.@lift $out[3]
@@ -159,8 +159,8 @@ function run!(model;
 
 		global ds = NCDataset(ncfname, "c")
 
-		defDim(ds,"x",mesh.nx)
-		defDim(ds,"y",mesh.ny)
+		defDim(ds,"x",mesh.ni)
+		defDim(ds,"y",mesh.nj)
 		defDim(ds,"time",Inf)
 
 		for sym in writevars
@@ -212,12 +212,12 @@ Stolen from https://github.com/MakieOrg/Makie.jl/issues/742
 Tesselates the grid defined by `xs` and `ys` in order to form a mesh with per-face coloring
 given by `colors`.
 
-The grid defined by `xs` and `ys` must have dimensions `(nx, ny) == size(colors) .+ 1`, as is the case for heatmap/image.
+The grid defined by `xs` and `ys` must have dimensions `(ni, nj) == size(colors) .+ 1`, as is the case for heatmap/image.
 """
 function curvilinear_grid_mesh(xs, ys, zs, colors = zs)
-	nx, ny = size(zs)
-	ni, nj = size(colors)
-	@assert (nx == ni+1) & (ny == nj+1) "Expected nx, ny = ni+1, nj+1; got nx=$nx, ny=$ny, ni=$ni, nj=$nj.  nx/y are size(zs), ni/j are size(colors)."
+	ni, nj = size(zs)
+	ni2, nj2 = size(colors)
+	@assert (ni == ni2+1) & (nj == nj2+1) "Expected ni, nj = ni2+1, nj2+1; got ni=$ni, nj=$nj, ni2=$ni2, nj2=$nj2.  ni/y are size(zs), ni/j are size(colors)."
 	input_points_vec = Makie.matrix_grid(identity, xs, ys, zs)
 	input_points = reshape(input_points_vec, size(colors) .+ 1)
 

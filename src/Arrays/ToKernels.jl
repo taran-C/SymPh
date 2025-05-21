@@ -45,8 +45,8 @@ function to_kernel(seq::Sequence, fill)
 			#Halo filling
 			for key in call[3]
 				if haskey(fill, key)
-					nx = mesh.nx
-					ny = mesh.ny
+					ni = mesh.ni
+					nj = mesh.nj
 					nh = mesh.nh
 					
 					if key in keys(var_repls)
@@ -55,11 +55,11 @@ function to_kernel(seq::Sequence, fill)
 						q = getproperty(state, Symbol(key))
 					end
 					
-					if mesh.xperio
-						copy_x!(q, nx, ny, nh, fill[key])
+					if mesh.iperio
+						copy_i!(q, ni, nj, nh, fill[key])
 					end
-					if mesh.yperio
-						copy_y!(q, nx, ny, nh, fill[key])
+					if mesh.jperio
+						copy_j!(q, ni, nj, nh, fill[key])
 					end
 				end
 			end
@@ -70,18 +70,18 @@ function to_kernel(seq::Sequence, fill)
 end
 
 #dec : (ldec, rdec, bdec, tdec) TODO only works for dual grid rn (need to be able to copy less than full halo for bigger grid)
-function copy_x!(q, nx, ny, nh, dec)
+function copy_i!(q, ni, nj, nh, dec)
         #horizontal edges
-        for i = 1:nh, j = 1:ny
-                q[i+dec[1],j] = q[i+nx-2*nh+dec[2], j]
-                q[nx-nh+i-dec[2],j] = q[i+nh+dec[1], j]
+        for i = 1:nh, j = 1:nj
+                q[i+dec[1],j] = q[i+ni-2*nh+dec[2], j]
+                q[ni-nh+i-dec[2],j] = q[i+nh+dec[1], j]
         end
 end
-function copy_y!(q, nx, ny, nh, dec)
+function copy_j!(q, ni, nj, nh, dec)
         #vertical edges
-        for i = 1:nx, j = 1:nh
-                q[i,j+dec[3]] = q[i, j+ny-2*nh+dec[4]]
-                q[i,ny-nh+j-dec[4]] = q[i, j+nh+dec[3]]
+        for i = 1:ni, j = 1:nh
+                q[i,j+dec[3]] = q[i, j+nj-2*nh+dec[4]]
+                q[i,nj-nh+j-dec[4]] = q[i, j+nh+dec[3]]
         end
 end
 
@@ -101,7 +101,7 @@ function generate_loop_call(seq, vars, block)
 	str = chop(str; tail = 2)
 	str = str * ")\n"
 
-	str = str * "\tlet (irange, jrange) = (1+mesh.nh:mesh.nx-mesh.nh, 1+mesh.nh:mesh.ny-mesh.nh)\n\t\t@vec for i in irange, j in jrange\n"
+	str = str * "\tlet (irange, jrange) = (1+mesh.nh:mesh.ni-mesh.nh, 1+mesh.nh:mesh.nj-mesh.nh)\n\t\t@vec for i in irange, j in jrange\n"
 			
 	for key in keys(block.exprs)
 		str = str * "\t\t\t" * key * "[i, j] = $(string(block.exprs[key]))\n"

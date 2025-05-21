@@ -17,21 +17,21 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 @Let dtomega = - ExteriorDerivative(InteriorProduct(U, omega)) #dtω = L(U,ω)
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.weno)
+explparams = ExplicitParam(; interp = Arrays.upwind)
 
 #Generating the RHS
-euler_rhs! = to_kernel(dtomega; save = ["U_x", "U_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega])
+euler_rhs! = to_kernel(dtomega; save = ["U_X", "U_Y", "ι_U_omega_i", "ι_U_omega_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega])
 
 #Testing the function
 
 #Defining the Mesh
-nx = 50
-ny = 50
+ni = 50
+nj = 50
 nh = 3
 
-msk = zeros(nx, ny)
-msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
-#msk[nx÷2-nx÷5:nx÷2+nx÷5, 2*ny÷10:4*ny÷10] .= 0
+msk = zeros(ni, nj)
+msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
+#msk[ni÷2-ni÷5:ni÷2+ni÷5, 2*nj÷10:4*nj÷10] .= 0
 
 
 #LoopManager
@@ -40,7 +40,7 @@ simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
-mesh = Arrays.CartesianMesh(nx, ny, nh, thsimd, msk)
+mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, msk)
 
 #Initial Conditions
 state = State(mesh)
@@ -49,7 +49,7 @@ gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 dipole(x,y,x0,y0,d,sigma) = gaussian(x, y, x0+d/2, y0, sigma) + gaussian(x, y, x0-d/2, y0, sigma)
 tripole(x,y,x0,y0,r,sigma) = gaussian(x, y, x0+r*cos(0*2pi/3), y0+r*sin(0*2pi/3), sigma) + gaussian(x, y, x0+r*cos(2pi/3), y0+r*sin(2pi/3), sigma) + gaussian(x, y, x0+r*cos(2*2pi/3), y0+r*sin(2*2pi/3), sigma)
 
-for i in nh+1:nx-nh, j in nh+1:ny-nh
+for i in nh+1:ni-nh, j in nh+1:nj-nh
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
 	state.omega[i,j] = dipole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]

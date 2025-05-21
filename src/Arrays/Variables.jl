@@ -6,7 +6,7 @@ Generic Expression
 """
 abstract type Expression end
 
-getindex(A::Expression, depx, depy) = A
+getindex(A::Expression, depi, depj) = A
 eval(expr::Expression) = eval(expr, Dict())
 
 """
@@ -47,12 +47,12 @@ end
 #Array object representing a variable name and a relative position
 struct ArrayVariable <: Variable
         name :: String
-        depx :: Integer
-        depy :: Integer
+        depi :: Integer
+        depj :: Integer
 end
-string(expr::ArrayVariable) = "$(expr.name)[$(expr.depx)+i,$(expr.depy)+j]"
+string(expr::ArrayVariable) = "$(expr.name)[$(expr.depi)+i,$(expr.depj)+j]"
 ArrayVariable(name :: String) = ArrayVariable(name, 0, 0)
-getindex(A::ArrayVariable, depx, depy) = ArrayVariable(A.name, A.depx+depx, A.depy+depy)
+getindex(A::ArrayVariable, depi, depj) = ArrayVariable(A.name, A.depi+depi, A.depj+depj)
 function eval(expr::ArrayVariable, vals::AbstractDict)
 	if !haskey(vals, expr.name)
 		return expr
@@ -60,7 +60,7 @@ function eval(expr::ArrayVariable, vals::AbstractDict)
 	if !haskey(vals, "i") | !haskey(vals, "j")
 		throw(ErrorException("Can't get an array without coordinates"))
 	end
-	return vals[expr.name][vals["i"]+expr.depx, vals["j"]+expr.depy]
+	return vals[expr.name][vals["i"]+expr.depi, vals["j"]+expr.depj]
 end
 
 

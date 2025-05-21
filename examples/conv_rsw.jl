@@ -51,7 +51,7 @@ g = 1
 
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd4)
+explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4)
 
 #Generating the RHS TODO change the way BCs are handled
 rhs! = to_kernel(dtu, dth; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, verbose = false)
@@ -72,19 +72,19 @@ Ly = 40
 #Defining the Mesh
 function get_mesh(pow)
 	nh = 3
-	nx = 2^pow + 2*nh
-	ny = 2^pow + 2*nh
+	ni = 2^pow + 2*nh
+	nj = 2^pow + 2*nh
 
-	msk = zeros(nx, ny)
-	msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
+	msk = zeros(ni, nj)
+	msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
 
 	#LoopManager
 	simd = VectorizedCPU(16)
 
-	return Arrays.CartesianMesh(nx, ny, nh, simd, msk, Lx, Ly)#; xperio = true, yperio = true)
+	return Arrays.CartesianMesh(ni, nj, nh, simd, msk, Lx, Ly)#; xperio = true, yperio = true)
 end
 function get_Umax(mesh)
-	interval = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
+	interval = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
 	U = c/minimum(mesh.dx[interval...])
 	V = c/minimum(mesh.dy[interval...])
 
@@ -98,26 +98,24 @@ function get_model(mesh)
 
 	spi = pyimport("scipy.integrate")
 	
-	#for i in nh+1:nx-nh, j in nh+1:ny-nh
-	for i in 2:mesh.nx-1, j in 2:mesh.ny-1
+	#for i in nh+1:ni-nh, j in nh+1:nj-nh
+	for i in 2:mesh.ni-1, j in 2:mesh.nj-1
 		x = mesh.xc[i,j]
 		y = mesh.yc[i,j]
 		r(x,y) = sqrt((x-Lx/2)^2+(y-Ly/2)^2)
 
 		#We integrate the initial conditions in order to have an actual finite volume solution TODO check how to handle curved coordinates (gfun argument in dblquad), use inverse hodge instead ?
-		func(x,y) = (H + h0 * gaussian(r(x,y), a))# * mesh.A[i,j] #* mesh.msk2p[i,j]
+		func(x,y) = H + h0 * gaussian(r(x,y), a)
 		state.h[i,j] = spi.dblquad(func, mesh.xv[i-1,j], mesh.xv[i,j], mesh.yv[i,j-1], mesh.yv[i,j], epsabs = 2e-14, epsrel = 2e-14)[1]
 	end
 	
-	#x0, y0 = Lx/2, Ly/2
-	#state.h[2:end, 2:end] .= H .+ (h0/4*a^4) .* ((mesh.xv[2:end, 2:end] .-x0) .* exp.(-a^2 .* (mesh.xv[2:end, 2:end] .-x0) .^2) .- (mesh.xv[1:end-1, 2:end] .-x0) .* exp.(-a^2 .* (mesh.xv[1:end-1, 2:end] .-x0) .^2)) .* ((mesh.yv[2:end, 2:end] .-y0) .* exp.(-a^2 .* (mesh.yv[2:end, 2:end] .-y0) .^2) .- (mesh.yv[2:end, 1:end-1] .-y0) .* exp.(-a^2 .* (mesh.yv[2:end, 1:end-1] .-y0) .^2)) 
 
 	#TODO ugly ugly ugly	
 	um = get_Umax(mesh)
 	Umax(model) = um
 
 	#Creating the Model
-	model = Model(rhs!, mesh, state, ["u_x", "u_y", "h"]; integratorstep! = rk4step!, cfl = 0.3, dtmax=0.15, Umax = Umax)
+	model = Model(rhs!, mesh, state, ["u_i", "u_j", "h"]; integratorstep! = rk4step!, cfl = 0.3, dtmax=0.15, Umax = Umax)
 end
 
 function get_analytical(mesh, t)
@@ -146,7 +144,7 @@ function test_conv(pow)
 
 	@time exact_height = get_analytical(model)
 	
-	inner = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
+	inner = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
 
 	Linf(A) = maximum(abs.(A))
 	rms(A) = sqrt(mean(A .^ 2)) #Root Mean Square
@@ -176,7 +174,6 @@ end
 function do_tests()
 	#TODO CHECK IF RK4 WORKS
 	pows = 6:8
-	#dAs = 1 ./ (2 .^ collect(pows)) .^2
 	h = 1 ./(2 .^collect(pows))
 	errs = zero(h)
 

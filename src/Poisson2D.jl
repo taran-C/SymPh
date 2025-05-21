@@ -20,7 +20,7 @@ function laplacian(mesh, msk, bc, location)
 	@assert bc in ["dirichlet", "neumann"]
 	@assert location in ["center", "vertex"]
 	
-	G = zeros(Int32, mesh.nx, mesh.ny)
+	G = zeros(Int32, mesh.ni, mesh.nj)
 	G[msk .> 0] .= collect(1:length(G[msk .> 0]))
 	G[msk .== 0] .= -1
 	
@@ -39,8 +39,8 @@ function laplacian(mesh, msk, bc, location)
 		return counter +1
 	end
 
-	for j in 1:mesh.ny
-		for i in 1:mesh.nx
+	for j in 1:mesh.nj
+		for i in 1:mesh.ni
 			I = G[i,j]
 		
 			#TODO explain why (someting to do with hodge in codif in laplacian i think)
@@ -50,10 +50,10 @@ function laplacian(mesh, msk, bc, location)
 			if I>-1
 				s = 0
 				#TODO doesn't handle the halo I think
-				west = i>1 ? G[i-1, j] : (mesh.xperio ? G[end, j] : -1)
-				east = i<mesh.nx-1 ? G[i+1, j] : (mesh.xperio ? G[0, j] : -1)
-				south = j>1 ? G[i, j-1] : (mesh.yperio ? G[i, end] : -1)
-				north = j<mesh.ny-1 ? G[i, j+1] : (mesh.yperio ? G[i, 0] : -1)
+				west = i>1 ? G[i-1, j] : (mesh.iperio ? G[end, j] : -1)
+				east = i<mesh.ni-1 ? G[i+1, j] : (mesh.iperio ? G[0, j] : -1)
+				south = j>1 ? G[i, j-1] : (mesh.jperio ? G[i, end] : -1)
+				north = j<mesh.nj-1 ? G[i, j+1] : (mesh.jperio ? G[i, 0] : -1)
 				
 				if west > -1
 					counter = add_entry(dx2, I, west, counter)

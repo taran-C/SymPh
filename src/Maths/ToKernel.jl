@@ -61,11 +61,11 @@ function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=fa
 			end
 		elseif degree(bc) == 1
 			if primality(bc) == Dual
-				fill[bc.name * "_x"] = (+1, 0, 0, 0)
-				fill[bc.name * "_y"] = (0, 0, +1, 0)
+				fill[bc.name * "_i"] = (+1, 0, 0, 0)
+				fill[bc.name * "_j"] = (0, 0, +1, 0)
 			elseif primality(bc) == Primal
-				fill[bc.name * "_x"] = (0, 0, -1, 0)
-				fill[bc.name * "_y"] = (-1, 0, 0, 0)
+				fill[bc.name * "_i"] = (0, 0, -1, 0)
+				fill[bc.name * "_j"] = (-1, 0, 0, 0)
 			end
 		elseif degree(bc) == 2
 			if primality(bc) == Dual

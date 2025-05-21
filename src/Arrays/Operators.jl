@@ -14,11 +14,11 @@ mutable struct FuncCall <: Operator
 	name::String
 	func#Figure out typing
 	args::Vector{Expression}
-	depx::Integer
-	depy::Integer
+	depi::Integer
+	depj::Integer
 end
 FuncCall(name, func, args) = FuncCall(name, func, args, 0, 0)
-getindex(expr::FuncCall, depx, depy) = FuncCall(expr.name, expr.func, expr.args, expr.depx + depx, expr.depy + depy)
+getindex(expr::FuncCall, depi, depj) = FuncCall(expr.name, expr.func, expr.args, expr.depi + depi, expr.depj + depj)
 function string(expr::FuncCall)
 	str = expr.name * "("
 	for arg in expr.args
@@ -33,8 +33,8 @@ end
 Unary Operators
 """
 abstract type UnaryOperator <: Operator end
-getindex(expr::UnaryOperator, depx, depy) = typeof(expr)(expr.name, expr.expr, expr.depx+depx, expr.depy+depy)
-string(expr::UnaryOperator) = "($(symbol(expr))($(string(expr.expr[expr.depx, expr.depy]))))"
+getindex(expr::UnaryOperator, depi, depj) = typeof(expr)(expr.name, expr.expr, expr.depi+depi, expr.depj+depj)
+string(expr::UnaryOperator) = "($(symbol(expr))($(string(expr.expr[expr.depi, expr.depj]))))"
 eval(expr::UnaryOperator, vals::AbstractDict) = op(expr)(eval(expr.expr, vals))
 
 """
@@ -43,8 +43,8 @@ Negative, represents the negation of an expression
 mutable struct Negative <: UnaryOperator
 	name::String
 	expr::Expression
-        depx::Integer
-        depy::Integer
+        depi::Integer
+        depj::Integer
 end
 symbol(expr::Negative) = "-"
 op(expr::Negative) = -
@@ -58,8 +58,8 @@ AbsoluteValue
 mutable struct AbsoluteValue <: UnaryOperator
 	name::String
 	expr::Expression
-	depx::Integer
-	depy::Integer
+	depi::Integer
+	depj::Integer
 end
 symbol(expr::AbsoluteValue) = "abs"
 op(expr::AbsoluteValue) = abs
@@ -71,8 +71,8 @@ abs(expr::Expression) = AbsoluteValue("abs_"*expr.name, expr)
 Binary Operators
 """
 abstract type BinaryOperator <: Operator end
-getindex(expr::BinaryOperator, depx, depy) = typeof(expr)(expr.name, expr.left, expr.right, expr.depx+depx, expr.depy+depy)
-string(expr::BinaryOperator) = "($(string(expr.left[expr.depx, expr.depy])))$(symbol(expr))($(string(expr.right[expr.depx, expr.depy])))"
+getindex(expr::BinaryOperator, depi, depj) = typeof(expr)(expr.name, expr.left, expr.right, expr.depi+depi, expr.depj+depj)
+string(expr::BinaryOperator) = "($(string(expr.left[expr.depi, expr.depj])))$(symbol(expr))($(string(expr.right[expr.depi, expr.depj])))"
 eval(expr::BinaryOperator, vals::AbstractDict) = op(expr)(eval(expr.left, vals), eval(expr.right, vals))
 
 """
@@ -82,8 +82,8 @@ mutable struct Addition <: BinaryOperator
 	name::String
 	left::Expression
 	right::Expression
-        depx :: Integer
-        depy :: Integer
+        depi :: Integer
+        depj :: Integer
 end
 symbol(expr::Addition) = "+"
 op(expr::Addition) = +
@@ -105,8 +105,8 @@ mutable struct Substraction <: BinaryOperator
 	name::String
 	left::Expression
 	right::Expression
-        depx :: Integer
-        depy :: Integer
+        depi :: Integer
+        depj :: Integer
 end
 symbol(expr::Substraction) = "-"
 op(expr::Substraction) = -
@@ -123,8 +123,8 @@ mutable struct Multiplication <: BinaryOperator
 	name::String
 	left::Expression
 	right::Expression
-        depx :: Integer
-        depy :: Integer
+        depi :: Integer
+        depj :: Integer
 end
 symbol(expr::Multiplication) = "*"
 op(expr::Multiplication) = *
@@ -148,8 +148,8 @@ mutable struct Division <: BinaryOperator
 	name::String
 	left::Expression
 	right::Expression
-        depx :: Integer
-        depy :: Integer
+        depi :: Integer
+        depj :: Integer
 end
 symbol(expr::Division) = "/"
 op(expr::Division) = /
@@ -166,8 +166,8 @@ mutable struct Exponentiation <: BinaryOperator
 	name::String
 	left::Expression
 	right::Expression
-	depx::Integer
-	depy::Integer
+	depi::Integer
+	depj::Integer
 end
 symbol(expr::Exponentiation) = "^"
 op(expr::Exponentiation) = ^
@@ -193,14 +193,14 @@ mutable struct TernaryOperator <: Operator
 	a::BooleanExpression
 	b::Expression
 	c::Expression
-	depx::Integer
-	depy::Integer
+	depi::Integer
+	depj::Integer
 end
 #TODO check with true if else cause i can't seem to find a way to override the ternary operator ?
 eval(expr::TernaryOperator, vals::AbstractDict) = eval(expr.a, vals) ? eval(expr.b, vals) : eval(expr.c, vals)
-string(expr::TernaryOperator) = "vifelse($(string(expr.a[expr.depx, expr.depy])), $(string(expr.b[expr.depx, expr.depy])), $(string(expr.c[expr.depx, expr.depy])))"
+string(expr::TernaryOperator) = "vifelse($(string(expr.a[expr.depi, expr.depj])), $(string(expr.b[expr.depi, expr.depj])), $(string(expr.c[expr.depi, expr.depj])))"
 prec(expr::TernaryOperator) = 10
-getindex(expr::TernaryOperator, depx, depy) = TernaryOperator(expr.name, expr.a, expr.b, expr.c, expr.depx+depx, expr.depy+depy)
+getindex(expr::TernaryOperator, depi, depj) = TernaryOperator(expr.name, expr.a, expr.b, expr.c, expr.depi+depi, expr.depj+depj)
 TernaryOperator(name, a, b, c) = TernaryOperator(name, a, b, c, 0, 0)
 TernaryOperator(a, b, c) = TernaryOperator("TA_" * a.name * "_" * b.name * "_" * c.name, a, b, c)
 
@@ -214,8 +214,8 @@ mutable struct GreaterThan <: BinaryBooleanOperator
 	name::String
 	left::Expression
 	right::Expression
-	depx::Integer
-	depy::Integer
+	depi::Integer
+	depj::Integer
 end
 symbol(expr::GreaterThan) = ">"
 op(expr::GreaterThan) = >

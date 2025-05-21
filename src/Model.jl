@@ -100,8 +100,8 @@ function run!(model;
 
 		global ds = NCDataset(ncfname, "c")
 
-		defDim(ds,"x",mesh.nx)
-		defDim(ds,"y",mesh.ny)
+		defDim(ds,"x",mesh.ni)
+		defDim(ds,"y",mesh.nj)
 		defDim(ds,"time",Inf)
 
 		for sym in writevars
@@ -148,7 +148,7 @@ function compute_dt(model)
 	dtmax = model.dtmax
 	Umax = model.Umax
 
-	interval = (mesh.nh+1:mesh.nx-mesh.nh, mesh.nh+1:mesh.ny-mesh.nh)
+	interval = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
 
 	if Umax == nothing
 		maxU = maximum(abs.(state.u_x[interval...] ./ mesh.dx[interval...])) + maximum(abs.(state.u_y[interval...] ./ mesh.dy[interval...]))+1e-10
