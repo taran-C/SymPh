@@ -7,10 +7,8 @@
 - Forcing terms
 
 # For the internship
-- Higher order differentiation
 - Automatic arbitrary order finite-diff + fvtofd
-- Create plots for any metric
-- Automatically separate diag and rhs in model ?
+- Create plots for any form type
 
 # Would be cool
 - MPI
@@ -23,5 +21,3 @@
 - ^ (and other) operator, more conditionals for ease of use ?
 - Automatic simplification which probably requires to :
 - Represent Expressions as a sum of products
-- Figure out time
-- Replace everything dx/dy by di/dj etc to clarify index coordinates (except in metric where we actually have dx/dy)

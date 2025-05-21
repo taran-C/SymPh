@@ -71,7 +71,7 @@ Ly = 40
 
 #Defining the Mesh
 function get_mesh(pow)
-	nh = 3
+	nh = 5 #Needed to be able to compose interp and fvtofd without going out of bounds TODO find a way to avoid halo exploding (from recursive useless values on the border, 3 should be enough here, needs to store more arrays I guess)
 	ni = 2^pow + 2*nh
 	nj = 2^pow + 2*nh
 
@@ -130,6 +130,27 @@ function get_analytical(mesh, t)
 end
 get_analytical(model::Model) = get_analytical(model.mesh, model.t)
 
+function get_fd_pressure(mesh, state)
+	dtv4(qm, q0, qp) = (13/12) * q0 - (1/24) * (qm + qp)
+	function fvtofd4(q, i, j, dir) #Only for present case
+		if dir == "i"
+			return dtv4(q[i-1,j], q[i,j], q[i+1,j])
+		elseif dir == "j"
+			return dtv4(q[i,j-1], q[i,j], q[i,j+1])
+		end
+	end
+	function full_fvtofd(mesh, h, p=zeros(mesh.ni, mesh.nj), work = zeros(mesh.ni, mesh.nj))
+		for i in mesh.nh:mesh.ni-mesh.nh+1, j in mesh.nh:mesh.nj-mesh.nh+1
+			work[i,j] = fvtofd4(h, i, j, "i")
+		end
+		for i in mesh.nh:mesh.ni-mesh.nh+1, j in mesh.nh:mesh.nj-mesh.nh+1
+			p[i,j] = fvtofd4(work, i, j, "j")
+		end
+		return p
+	end
+	return full_fvtofd(mesh, state.p)
+end
+
 #Running the simulation
 function test_conv(pow)
 	print("Init model...")
@@ -146,9 +167,10 @@ function test_conv(pow)
 	
 	inner = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
 
+	p_fd = get_fd_pressure(mesh, state)
 	Linf(A) = maximum(abs.(A))
 	rms(A) = sqrt(mean(A .^ 2)) #Root Mean Square
-	residue = (H .+ h0 .* exact_height[inner...]) .- state.p[inner...]#NOT GOOD, FORCES SECOND ORDER <- WHY ???
+	residue = (H .+ h0 .* exact_height[inner...]) .- p_fd[inner...]#NOT GOOD, FORCES SECOND ORDER, TODO FVtoFD in both directions to get FD pressure
 
 
 	error = Linf(residue)
@@ -172,7 +194,7 @@ function test_conv(pow)
 end
 
 function do_tests()
-	#TODO CHECK IF RK4 WORKS
+	#TODO ASSYMETRY IN ERROR - WTF
 	pows = 6:8
 	h = 1 ./(2 .^collect(pows))
 	errs = zero(h)
@@ -191,3 +213,4 @@ function do_tests()
 	display(fig)
 	save("convergence.png", fig)
 end
+do_tests()

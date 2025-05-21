@@ -117,12 +117,15 @@ end
 function explicit(form::ExteriorDerivative{1, Primal}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
 
-	expi = param.fvtofd(expr, Arrays.msk1p, "i")
-	expj = param.fvtofd(expr, Arrays.msk1p, "j")
+	#Finite diff in both direction
+	expi = param.fvtofd(expr, Arrays.msk0p, "i")
+	expj = param.fvtofd(expr, Arrays.msk0p, "j")
 
+	#Actual differentiation
 	d_i = (expi[1,0] - expi[0,0]) * Arrays.msk1pi
 	d_j = (expj[0,1] - expj[0,0]) * Arrays.msk1pj
 	
+	#Renaming
 	d_i.name = form.name * "_i"
 	d_j.name = form.name * "_j"
 
@@ -131,10 +134,17 @@ end
 
 function explicit(form::ExteriorDerivative{1, Dual}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
-	d_x = (expr[0,0] - expr[-1,0]) * Arrays.msk1di
-	d_x.name = form.name * "_i"
+	
+	#Finite diff in both direction
+	expi = param.fvtofd(expr, Arrays.msk0d, "i")
+	expj = param.fvtofd(expr, Arrays.msk0d, "j")
 
-	d_y = (expr[0,0] - expr[0,-1]) * Arrays.msk1dj
+	#Actual differentiation
+	d_x = (expi[0,0] - expi[-1,0]) * Arrays.msk1di
+	d_y = (expj[0,0] - expj[0,-1]) * Arrays.msk1dj
+	
+	#Renaming
+	d_x.name = form.name * "_i"
 	d_y.name = form.name * "_j"
 
 	return [d_x, d_y]
@@ -142,7 +152,15 @@ end
 
 function explicit(form::ExteriorDerivative{2, Primal}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
-	dq = ((exprs[2][1,0]-exprs[2][0,0])-(exprs[1][0,1]-exprs[1][0,0])) * Arrays.msk2p
+
+	#Finite diff in both direction
+	expi = param.fvtofd(exprs[1], Arrays.msk1di, "j")
+	expj = param.fvtofd(exprs[2], Arrays.msk1dj, "i")
+
+	#Actual differentiation
+	dq = ((expj[1,0]-expj[0,0])-(expi[0,1]-expi[0,0])) * Arrays.msk2p
+	
+	#Renaming
 	dq.name = form.name
 
 	return dq
@@ -150,7 +168,15 @@ end
 
 function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
-	dq = ((exprs[2][0,0]-exprs[2][-1,0])-(exprs[1][0,0]-exprs[1][0,-1])) * Arrays.msk2d
+	
+	#Finite diff in both direction
+	expi = param.fvtofd(exprs[1], Arrays.msk1di, "j")
+	expj = param.fvtofd(exprs[2], Arrays.msk1dj, "i")
+
+	#Actual differentiation
+	dq = ((expj[0,0]-expj[-1,0])-(expi[0,0]-expj[0,-1])) * Arrays.msk2d
+	
+	#Renaming
 	dq.name = form.name
 
 	return dq

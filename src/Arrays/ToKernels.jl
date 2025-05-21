@@ -6,7 +6,7 @@ export to_kernel
 """
 	Converts a sequence into a computing kernel
 """
-function to_kernel(seq::Sequence, fill)
+function to_kernel(seq::Sequence, fill; verbose = false)
 	calls = []
 
 	vars = get_terms(seq)
@@ -16,6 +16,9 @@ function to_kernel(seq::Sequence, fill)
 			push!(calls, (b.expr.func,:call, [b.name]))
 		elseif b isa LoopBlock
 			str, keys = generate_loop_call(seq, vars, b)
+			if verbose
+				println(str)
+			end
 			push!(calls, (eval(Meta.parse(str)), :loop, keys))
 		end
 	end
@@ -101,7 +104,7 @@ function generate_loop_call(seq, vars, block)
 	str = chop(str; tail = 2)
 	str = str * ")\n"
 
-	str = str * "\tlet (irange, jrange) = (1+mesh.nh:mesh.ni-mesh.nh, 1+mesh.nh:mesh.nj-mesh.nh)\n\t\t@vec for i in irange, j in jrange\n"
+	str = str * "\tlet (irange, jrange) = (mesh.nh:mesh.ni-mesh.nh+1, mesh.nh:mesh.nj-mesh.nh+1)\n\t\t@vec for i in irange, j in jrange\n"
 			
 	for key in keys(block.exprs)
 		str = str * "\t\t\t" * key * "[i, j] = $(string(block.exprs[key]))\n"

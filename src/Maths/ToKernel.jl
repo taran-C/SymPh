@@ -77,7 +77,10 @@ function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=fa
 	end
 	
 	#Generating the final function
-	func!,  vars = Arrays.to_kernel(seq, fill)
+	if verbose
+		println("Generated functions :\n")
+	end
+	func!,  vars = Arrays.to_kernel(seq, fill; verbose = verbose)
 
 	return func!
 end
