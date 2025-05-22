@@ -174,7 +174,7 @@ function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	expj = param.fvtofd(exprs[2], Arrays.msk1dj, "i")
 
 	#Actual differentiation
-	dq = ((expj[0,0]-expj[-1,0])-(expi[0,0]-expj[0,-1])) * Arrays.msk2d
+	dq = ((expj[0,0]-expj[-1,0])-(expi[0,0]-expi[0,-1])) * Arrays.msk2d
 	
 	#Renaming
 	dq.name = form.name
@@ -238,11 +238,8 @@ function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam(
 		interp = form.interp
 	end
 
-	finti = interp(uexpr, fexpr, Arrays.o1pi, "left", "i")
-	fintj = interp(vexpr, fexpr, Arrays.o1pj, "left", "j")
-
-	uout = -vexpr * fintj * Arrays.msk1pi
-	vout = uexpr * finti * Arrays.msk1pj
+	uout = -vexpr * interp(vexpr, fexpr, Arrays.o2pj, "left", "j") * Arrays.msk1pi
+	vout = uexpr * interp(uexpr, fexpr, Arrays.o2pi, "left", "i") * Arrays.msk1pj
 
 	uout.name = form.name*"_i"
 	vout.name = form.name*"_j"
@@ -267,8 +264,8 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 	#vdec = interp(vexpr, interp(uexpr, vexpr, Arrays.o1di, "left", "x"), Arrays.o1dj, "right", "y")
 
 	#TODO transp velocity dec or not
-	iout = -vdec * interp(vdec, fexpr, Arrays.o2dj, "right", "i") * Arrays.msk1di
-	jout = udec * interp(udec, fexpr, Arrays.o2di, "right", "j") * Arrays.msk1dj
+	iout = -vdec * interp(vdec, fexpr, Arrays.o2dj, "right", "j") * Arrays.msk1di
+	jout = udec * interp(udec, fexpr, Arrays.o2di, "right", "i") * Arrays.msk1dj
 	
 	iout.name = form.name*"_i"
 	jout.name = form.name*"_j"

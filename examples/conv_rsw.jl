@@ -65,8 +65,8 @@ a = 0.5
 c = sqrt(g*H)
 T = 2
 
-Lx = 40
-Ly = 40
+Lx = 50
+Ly = 50
 
 
 #Defining the Mesh
@@ -144,7 +144,7 @@ function get_fd_pressure(mesh, state)
 			work[i,j] = fvtofd4(h, i, j, "i")
 		end
 		for i in mesh.nh:mesh.ni-mesh.nh+1, j in mesh.nh:mesh.nj-mesh.nh+1
-			p[i,j] = fvtofd4(work, i, j, "j")
+			p[i,j] = fvtofd4(work, i, j, "j") 
 		end
 		return p
 	end
@@ -163,15 +163,15 @@ function test_conv(pow)
 	run!(model; tend = 100, maxite = 2^pow, writevars = [:h])
 	compute_p!(mesh, state)
 
-	@time exact_height = get_analytical(model)
+	@time exact_height = H .+ h0 .* get_analytical(model)
 	
 	inner = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
 
 	p_fd = get_fd_pressure(mesh, state)
 	Linf(A) = maximum(abs.(A))
 	rms(A) = sqrt(mean(A .^ 2)) #Root Mean Square
-	residue = (H .+ h0 .* exact_height[inner...]) .- p_fd[inner...]#NOT GOOD, FORCES SECOND ORDER, TODO FVtoFD in both directions to get FD pressure
-
+	
+	residue = exact_height[inner...] .- p_fd[inner...]
 
 	error = Linf(residue)
 	
@@ -180,7 +180,7 @@ function test_conv(pow)
 		fig = Figure()
 		ax1 = Axis(fig[1,1])
 		ax2 = Axis(fig[1,2])
-		ax3 = Axis(fig[2,1])
+		ax3 = Axis(fig[2,2])
 		plotform!(ax1, p, mesh, state)
 		hm1 = heatmap!(ax2, exact_height)
 		hm2 = heatmap!(ax3, residue) 		
@@ -194,8 +194,7 @@ function test_conv(pow)
 end
 
 function do_tests()
-	#TODO ASSYMETRY IN ERROR - WTF
-	pows = 6:8
+	pow = 6:8
 	h = 1 ./(2 .^collect(pows))
 	errs = zero(h)
 
@@ -205,12 +204,13 @@ function do_tests()
 
 	order = LinearRegression.slope(linregress(log.(h), log.(errs)))[1]
 	println("O = $order")
-
+	#=
 	fig = Figure()
 	ax = Axis(fig[1,1], xscale = log2, yscale = log2, title = (@sprintf "O(%.2f)" order))
 	lines!(ax, h, errs)
 
 	display(fig)
 	save("convergence.png", fig)
+	=#
 end
 do_tests()

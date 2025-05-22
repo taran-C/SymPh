@@ -4,8 +4,7 @@ function fvtofd2(q::Expression, h::Expression, dir::String)
 	return q# /h
 end
 
-#TODO separate division by h outside so the right one is used when composing two directions (and not h[i+1,j] or whatnot)
-#OR NOT ? IDK
+vtd4(qm, q0, qp) = (13/12) * q0 - (1/24) * (qm + qp)
 function fvtofd4(q::Expression, msk::Expression, dir::String)
 	@assert dir in ["i", "j"]
 	#Interior
@@ -17,8 +16,7 @@ function fvtofd4(q::Expression, msk::Expression, dir::String)
 				       (1/24) * (23*q[0,0] + q[-1,0])),
 			       (1/24) * (23*q[0,0] + q[+1,0]))
 		=#
-		return ((13/12) * q[0,0] - (1/24) * (q[-1,0] + q[+1,0]))
-		
+		return vtd4(q[-1,0], q, q[+1,0])
 	elseif dir == "j"
 		#=
 		return TernaryOperator(msk[0,-1] > 0,
@@ -27,7 +25,7 @@ function fvtofd4(q::Expression, msk::Expression, dir::String)
 				       (1/24) * (23*q[0,0] + q[0,-1])),
 			       (1/24) * (23*q[0,0] + q[0,+1]))
 		=#
-		return ((13/12) * q[0,0] - (1/24) * (q[0,-1] + q[0,+1]))
+		return vtd4(q[0,-1], q, q[0,+1])
 	end
 
         #TODO BC
