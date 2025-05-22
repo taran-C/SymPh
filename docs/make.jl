@@ -26,7 +26,9 @@ makedocs(sitename="SymPh.jl",
 			"Building an equation" => "man/equation.md",
 				 ],
 		 "Reference" => Any[
-			"Differential Geometry Operators" => "man/operators.md",
+			"Differential Geometry" => "man/diffgeom.md",
+			"Model" => "man/model.md",
+			"Kernel Generation" => "man/kernels.md"
 				    ]
 		 ]
 	)

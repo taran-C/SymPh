@@ -51,7 +51,7 @@ explparams = ExplicitParam(; interp = Arrays.weno)
 We can now use those objects to finally generate the function that will perform our computations.
 
 ```julia
-euler_rhs! = to_kernel(dtomega; save = ["u_x", "u_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams)
+euler_rhs! = to_kernel(dtomega; save = ["u_i", "u_j", "ι_U_omega_i", "ι_U_omega_j"], explparams = explparams)
 ```
 
 We have to pass the objects that we want to be computed, for example in the case of a time integration, our time derivative, as well as a list of intermediary values that we want saved and our numerical methods.
@@ -61,12 +61,12 @@ We have to pass the objects that we want to be computed, for example in the case
 We then define the parameters of a mesh, notably its size and a mask of its fluid cells
 
 ```julia
-nx = 100
-ny = 100
+ni = 100
+nj = 100
 nh = 3
 
-msk = zeros(nx, ny)
-msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
+msk = zeros(ni, nj)
+msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
 
 Lx, Ly = (1,1)
 ```
@@ -82,7 +82,7 @@ threads = MultiThread(scalar)
 And we can finally build our mesh object
 
 ```julia
-mesh = Arrays.Mesh(nx, ny, nh, thsimd, msk, Lx, Ly)
+mesh = Arrays.Mesh(ni, nj, nh, thsimd, msk, Lx, Ly)
 ```
 
 ## Defining the state and initial conditions
@@ -115,8 +115,8 @@ model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 100., dtmax = 5., integr
 
 ## Running the simulation
 
-We can now run our model for a certain time, and choose which variables should be written to disk or plotted.
+We can now run our model for a certain time, and choose which variables should be written to disk.
 
 ```julia
-run!(model; save_every = 5, plot = false, plot_var=state.omega, profiling = false, tend = 10000, maxite = 100, writevars = (:u_x, :u_y, :omega, :psi))
+run!(model; save_every = 5, profiling = false, tend = 10000, maxite = 100, writevars = (:u_i, :u_j, :omega, :psi))
 ```

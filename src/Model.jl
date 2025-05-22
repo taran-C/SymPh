@@ -5,9 +5,9 @@ using Printf
 export Model
 export run!, profile_model!, step!, plotrun!
 """
-Model
+	Model(rhs!, mesh, state, prognostics; integratorstep! = rk3step!, cfl = 0.6, dtmax = 1, Umax = nothing)
 
-	Represents an equation along with a mesh, its saved state and an integrator
+Represents an equation along with a mesh, its saved state and an integrator
 """
 mutable struct Model
 	rhs!
@@ -25,9 +25,9 @@ end
 Model(rhs!, mesh, state, prognostics; integratorstep! = rk3step!, cfl = 0.6, dtmax = 1, Umax = nothing) = Model(rhs!, mesh, state, integratorstep!, prognostics, cfl, 0, dtmax, Umax)
 
 """
-step!(model::Model; n=1)
+	step!(model::Model; n=1, tend=-1)
 
-	Performs n integration steps of the model
+Performs n integration steps of the model, and stops at `tend` if it is a strictly positive value
 """
 function step!(model::Model; n=1, tend=-1)
 	dt = model.dtmax
@@ -48,15 +48,13 @@ end
 
 """
 	plotrun!(model; ...)
-
-end
 """
 function plotrun!() end
 
 """
-run!(model; ...)
+	run!(model; ...)
 
-	TODO document
+TODO document
 """
 function run!(model;
 		#Saving / Visualization
@@ -159,6 +157,11 @@ function compute_dt(model)
 	return dt
 end
 
+"""
+	profile_model!(model)
+
+Runs PProf to profile `model`
+"""
 function profile_model!(model)
 	#blank step to force compiling
 	step!(model)

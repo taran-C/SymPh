@@ -2,6 +2,11 @@ export DepNode
 export addchild!, shave!, to_sequence!, to_deptree!
 
 #TODO check if AbstractTree.jl can be useful
+"""
+	DepNode(name::String, expr::Union{Nothing, Expression})
+
+A node of a dependency tree of expressions made of expressions
+"""
 mutable struct DepNode
 	name::String
 	expr::Union{Nothing, Expression}
