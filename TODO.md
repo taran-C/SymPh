@@ -1,14 +1,14 @@
 # To get a functional code
 - Replace strings by symbols/objects (would allow to actually pass function)
 - Ensure valid and unique names
-- Check placing for the 4 needed poisson solvers
+- Check placing for the 4 needed poisson solvers + periodicity
 - Check every possibility for every operator
-- Halo filling + periodic conditions
+- Fix halo filling (maybe fill them at beginning so it doesn't break if we start with something on the border) + periodic conditions
 - Forcing terms
 
 # For the internship
 - Automatic arbitrary order finite-diff + fvtofd
-- Create plots for any form type
+- Boussinesq
 
 # Would be cool
 - MPI

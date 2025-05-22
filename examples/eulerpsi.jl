@@ -20,14 +20,14 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 explparams = ExplicitParam(; interp = Arrays.upwind)
 
 #Generating the RHS
-euler_rhs! = to_kernel(dtomega; save = ["U_X", "U_Y", "ι_U_omega_i", "ι_U_omega_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega])
+euler_rhs! = to_kernel(dtomega; save = ["U_X", "U_Y", "u_i", "u_j", "ι_U_omega_i", "ι_U_omega_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega])
 
 #Testing the function
 
 #Defining the Mesh
 ni = 50
 nj = 50
-nh = 3
+nh = 4
 
 msk = zeros(ni, nj)
 msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
@@ -46,7 +46,7 @@ mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, msk)
 state = State(mesh)
 
 gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
-dipole(x,y,x0,y0,d,sigma) = gaussian(x, y, x0+d/2, y0, sigma) + gaussian(x, y, x0-d/2, y0, sigma)
+dipole(x,y,x0,y0,d,sigma) = gaussian(x, y, x0+d/2, y0, sigma) - gaussian(x, y, x0-d/2, y0, sigma)
 tripole(x,y,x0,y0,r,sigma) = gaussian(x, y, x0+r*cos(0*2pi/3), y0+r*sin(0*2pi/3), sigma) + gaussian(x, y, x0+r*cos(2pi/3), y0+r*sin(2pi/3), sigma) + gaussian(x, y, x0+r*cos(2*2pi/3), y0+r*sin(2*2pi/3), sigma)
 
 for i in nh+1:ni-nh, j in nh+1:nj-nh
@@ -59,8 +59,8 @@ for i in nh+1:ni-nh, j in nh+1:nj-nh
 end
 
 #Creating the Model
-model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 0.15, dtmax = 0.15, integratorstep! = rk4step!)
+model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 0.5, dtmax = 0.5, integratorstep! = rk4step!)
 
 #Running the simulation
-plotrun!(model; plot_every = 1, plot_var = omega, tend = 200, maxite = 5000)
+plotrun!(model; plot_every = 1, plot_var = omega, plot_vec = u, tend = 200, maxite = 500)
 #run!(model; save_every = 15, plot = true, plot_var=omega, profiling = false, tend = 20000, maxite = 5000, writevars = (:u_x, :u_y, :omega, :psi))

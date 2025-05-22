@@ -24,8 +24,8 @@ g = 9.81
 @Let dtu = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
 @Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
-#Defining the parameters needed to explicit TODO check if parameters actually DO ANYTHING ???
-explparams = ExplicitParam(; interp = Arrays.weno, fvtofd = Arrays.fvtofd4)
+#Defining the parameters needed to explicit 
+explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4)
 
 #Generating the RHS TODO change the way BCs are handled
 rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, bcs=[U, zeta, k, dtu, dth])
@@ -33,9 +33,9 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-ni = 200
+ni = 50
 nj = 200
-nh = 3
+nh = 5
 
 msk = zeros(ni, nj)
 msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
@@ -48,7 +48,7 @@ threads = MultiThread(scalar)
 Lx = 1
 Ly = 1
 
-mesh = Arrays.CartesianMesh(ni, nj, nh, simd, msk, Lx, Ly; xperio = true, yperio = true)
+mesh = Arrays.PolarMesh(ni, nj, nh, simd, msk)
 
 #Initial Conditions
 state = State(mesh)
@@ -69,7 +69,7 @@ function get_Umax(model)
 	return U+V
 end
 
-config = "plateau"
+config = "vortex"
 
 #for i in nh+1:ni-nh, j in nh+1:nj-nh
 for i in 1:ni, j in 1:nj
@@ -80,7 +80,7 @@ for i in 1:ni, j in 1:nj
 		d=0.05
 		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, sigma) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[i,j]
 	elseif config == "vortex"
-		state.h[i,j] = (H - h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
+		state.h[i,j] = (H - h0 * gaussian(x, y, 1, 0.2, sigma)) * mesh.A[i,j]
 		state.b[i,j] = 0 #(h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
 	elseif config == "straight_dam"
 		dh0 = h0 * tanh(100*(x-0.5))
@@ -100,4 +100,4 @@ println("first step")
 println("Done")
 
 #Running the simulation
-plotrun!(model; plot_every = 10, plot_var = p, tend = 2, maxite = 500)
+plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 2, maxite = 500)

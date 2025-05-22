@@ -183,7 +183,8 @@ function compute_msks(msk)
 	msk2d = zeros(ni, nj)
 
 	for i in 2:ni-1, j in 2:nj-1
-		msk0p[i,j] = max(msk[i,j], msk[i-1,j], msk[i,j-1], msk[i-1,j-1])
+		#msk0p[i,j] = max(msk[i,j], msk[i-1,j], msk[i,j-1], msk[i-1,j-1])
+		msk0p[i,j] = max(msk[i,j], msk[i+1,j], msk[i,j+1], msk[i+1,j+1])
 		
 		msk1pi[i,j] = max(msk[i,j], msk[i,j-1])
 		msk1pj[i,j] = max(msk[i,j], msk[i-1,j])

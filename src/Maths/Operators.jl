@@ -114,6 +114,7 @@ end
 	InteriorProduct{D, Pv, Pf}(name::String, X::Vect, omega::Form, interp = Nothing) <: Form{D, Pf}
 
 The contraction of a ``k``-form ``\\omega`` with a vector field ``\\mathbf{X}`` which gives us a ``k-1``-form ``\\iota_\\mathbf{X}\\omega``
+
 Possibility to specify interpolation function
 """
 mutable struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
@@ -129,7 +130,9 @@ mutable struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
 end
 
 """
-	Sharp
+	Sharp{P}(name::String, form::Form{1, P}) <: Vect{P}
+
+Corresponds to an application of the metric
 """
 mutable struct Sharp{P} <: Vect{P}
 	name::String
@@ -138,7 +141,9 @@ end
 Sharp(form::Form) = Sharp("#_"*form.name, form)
 
 """
-	Hodge
+	Hodge{D, P}(name::String, form::Form) <: Form{D, P}
+
+Brings a  ``k``-form to a ``n-k`` form and goes from dual to primal and inversely
 """
 mutable struct Hodge{D, P} <: Form{D, P}
 	name::String
@@ -154,6 +159,7 @@ mutable struct Hodge{D, P} <: Form{D, P}
 	Hodge(form) = Hodge("*_"*form.name, form)
 end
 
+#= TODO DO WE NEED IT ? DON'T THINK SO
 """
 	InnerProduct
 """
@@ -171,9 +177,12 @@ mutable struct InnerProduct{D, P} <: Form{D, P}
 	end
 	InnerProduct(left, right) = InnerProduct("IP_"*left.name*"_"*right.name, left, right)
 end
+=#
 
 """
-	RealProducts
+	RealProdForm{D, P}(name::String, real::Real, form::Form) <: Form{D, P}
+
+`real` time `form`
 """
 mutable struct RealProdForm{D, P} <: Form{D, P}
 	name::String

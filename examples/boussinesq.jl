@@ -31,20 +31,20 @@ explparams = ExplicitParam(; interp = Arrays.upwind)
 
 #Generating the RHS
 println("generating rhs")
-boussinesq_rhs! = to_kernel(dtu, dtrho; save = ["du", "b_x", "b_y", "k", "omega", "ι_U_rho_x", "ι_U_rho_y", "ι_U_omega_x", "ι_U_omega_y"], explparams = explparams, verbose = false, bcs=[rho, b, dtrho, dtu])
+boussinesq_rhs! = to_kernel(dtu, dtrho; save = ["du", "b_i", "b_j", "k", "omega", "ι_U_rho_i", "ι_U_rho_j", "ι_U_omega_i", "ι_U_omega_j"], explparams = explparams, verbose = false, bcs=[rho, b, dtrho, dtu])
 println("generated")
 
 #Testing the function
 
 #Defining the Mesh
-nx = 150
-ny = 75
-nh = 3
+nx = 100
+ny = 200
+nh = 4
 
 msk = zeros(nx, ny)
 msk[nh+1:nx-nh, nh+1:ny-nh] .= 1
 
-Lx, Ly = (2,1)
+Lx, Ly = (1,2)
 
 #LoopManager
 scalar = PlainCPU()
@@ -62,11 +62,11 @@ gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
-	#state.rho[i,j] = gaussian(x, y, 0.5,0.5,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
+	state.rho[i,j] = gaussian(x, y, 0.5,0.5,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
 	#state.rho[i,j] = (Int((y < 0.2)&(0.2<x<0.8)) * (1+ 1e-1*rand())) * mesh.msk2d[i,j] * mesh.A[i,j]
 end
 
-state.g_X .= 0.1
+state.g_X .= -0.1
 
 #forcing
 function bottom_temp(model)
@@ -95,7 +95,7 @@ function oscillator(model)
 end
 
 #Creating the Model
-model = Model(boussinesq_rhs!, mesh, state, ["rho", "u_x", "u_y"]; cfl = 0.06, dtmax = 0.5, integratorstep! = rk3step!)
+model = Model(boussinesq_rhs!, mesh, state, ["rho", "u_i", "u_j"]; cfl = 0.06, dtmax = 0.5, integratorstep! = rk3step!)
 
 #Force compilation
 println("First step")
@@ -103,5 +103,5 @@ step!(model)
 println("Done")
 
 #Running the simulation
-#run!(model; save_every = 10, plot = true, plot_var=state.rho, profiling = false, tend = 50, maxite = 2000, writevars = (:u_x, :u_y, :rho))
-plotrun!(model; plot_every = 1, plot_var = rho, tend = 1000, maxite = 1000, forcing = bottom_temp)
+#run!(model; save_every = 10, plot = true, plot_var=state.rho, profiling = false, tend = 50, maxite = 2000, writevars = (:u_i, :u_j, :rho))
+plotrun!(model; plot_every = 1, plot_var = rho, tend = 1000, maxite = 300)#, forcing = bottom_temp)

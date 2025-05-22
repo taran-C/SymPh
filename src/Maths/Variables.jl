@@ -14,10 +14,17 @@ abstract type Primal <: Primality end
 abstract type Dual <: Primality end
 
 """
-	VectorVariable
+	Vect{P<:Primality}
+
+A vector field
 """
 abstract type Vect{P<:Primality} end
 
+"""
+	VectorVariable{P}(name::String) <: Vect{P}
+
+A variable representing a named vector field
+"""
 struct VectorVariable{P} <: Vect{P}
 	name::String
 end
@@ -31,6 +38,11 @@ end
 """
 abstract type Form{D,P<:Primality} end
 
+"""
+	FormVariable{D,P}(name::String) <: Form{D,P}
+
+A variable representing a named differential form
+"""
 struct FormVariable{D,P} <: Form{D,P}
 	name::String
 end

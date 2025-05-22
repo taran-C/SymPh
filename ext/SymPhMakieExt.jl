@@ -3,7 +3,7 @@ module SymPhMakieExt
 using ColorSchemes
 using GeometryBasics
 using Printf
-import Makie
+using Makie
 using SymPh
 using SymPh.Maths
 import SymPh.Arrays
@@ -15,37 +15,70 @@ Makie.@recipe(PlotForm, form, mesh, state) do scene
 	)
 end
 
-function Makie.plot!(plotform::PlotForm)
-	form = plotform[:form]
-	msh = plotform[:mesh]
-	state = plotform[:state]
+function Makie.plot!(plotform::PlotForm) #TODO handle vector ? Change name to smthng like displayform ?
+	form = to_value(plotform[:form])
+	msh = to_value(plotform[:mesh])
+	state = to_value(plotform[:state])
 
-	#TODO handle form type
-	#D = Makie.@lift SymPh.Maths.degree($form)
-	#P = Makie.@lift SymPh.Maths.primality($form)
+	deg = degree(form)
+	prim = primality(form)
+	
+	fname = form.name
 
-	fname = Makie.@lift getproperty($form, :name)
-	arr = Makie.@lift getproperty($state, Symbol($fname))
+	#TODO scale forms to have correct appearance
+	xc = msh.xc
+	yc = msh.yc
+	xv = msh.xv
+	yv = msh.yv
 
-	xc = Makie.@lift SymPh.Arrays.get_x($msh)
-	yc = Makie.@lift SymPh.Arrays.get_y($msh)
+	ni = msh.ni
+	nj = msh.nj
+	nh = msh.nh
 
-	max = Makie.@lift maximum($arr)
-	min = Makie.@lift minimum($arr)
+	if deg == 1
+		inner = (nh+1:ni-nh, nh+1:nj-nh)
+		#TODO interpolation to centers, colors for vects, handle primality, scale arrows according to strength
+		arr_i = getproperty(state, Symbol(fname * "_i"))
+		arr_j = getproperty(state, Symbol(fname * "_j"))
+		
+		pts = []
+		dirs = []
+		strs = []
+		for (x,y, u,v) in zip(xc[inner...], yc[inner...], arr_i[inner...], arr_j[inner...])
+			push!(pts, Point(x,y))
+			push!(dirs, Point(u,v))
+			push!(strs, sqrt(u^2 + v^2))
+		end
 
-	ni = Makie.@lift getproperty($msh, :ni)
-	nj = Makie.@lift getproperty($msh, :nj)
-	nh = Makie.@lift getproperty($msh, :nh)
+		Makie.arrows!(plotform, pts, dirs)#; arrowcolor = strs, linecolor = strs)
+	else
+		arr = getproperty(state, Symbol(fname))
+		
+		max = maximum(arr)
+		min = minimum(arr)
+		
+		if ((deg == 0) & (prim == Dual)) || ((deg == 2) & (prim == Primal))
+			#Center of primal grid
+			cols = get(colorschemes[:balance], arr[1+nh:ni-nh, 1+nh:nj-nh], (min, max))
 
-	cols = Makie.@lift get(colorschemes[:balance], $arr[1+$nh:$ni-$nh, 1+$nh:$nj-$nh], ($min, $max))
+			out = curvilinear_grid_mesh(xv[nh:ni-nh, nh:nj-nh], yv[nh:ni-nh, nh:nj-nh], zero(xv[nh:ni-nh, nh:nj-nh]), arr[nh+1:ni-nh, nh+1:nj-nh])#$cols)
+		elseif (deg == 2) & (prim == Dual)
+			#Inner vertices of primal grid
+			cols = get(colorschemes[:balance], arr[2+nh:ni-nh, 2+nh:nj-nh], (min, max))
 
-	#TODO adapt "stencil" to form type, also, quiver for 1-forms
-	out = Makie.@lift curvilinear_grid_mesh($xc[$nh:$ni-$nh, $nh:$nj-$nh], $yc[$nh:$ni-$nh, $nh:$nj-$nh], zero($xc[$nh:$ni-$nh, $nh:$nj-$nh]), $arr[$nh+1:$ni-$nh, $nh+1:$nj-$nh])#$cols)
-	points = Makie.@lift $out[1]
-	faces = Makie.@lift $out[2]
-	colors = Makie.@lift $out[3]
+			out = curvilinear_grid_mesh(xc[1+nh:ni-nh, 1+nh:nj-nh], yc[1+nh:ni-nh, 1+nh:nj-nh], zero(xc[1+nh:ni-nh, 1+nh:nj-nh]), arr[nh+2:ni-nh, nh+2:nj-nh])#$cols)
+		elseif (deg == 0) & (prim == Primal)
+			#Outer vertices
+			cols = get(colorschemes[:balance], arr[1+nh:ni-nh+1, 1+nh:nj-nh+1], (min, max))
 
-	Makie.mesh!(plotform, points, faces; color = colors, shading = Makie.NoShading)
+			out = curvilinear_grid_mesh(xc[nh:ni-nh+1, nh:nj-nh+1], yc[nh:ni-nh+1, nh:nj-nh+1], zero(xc[nh:ni-nh+1, nh:nj-nh+1]), arr[nh+1:ni-nh+1, nh+1:nj-nh+1])#$cols)
+		end
+		points = out[1]
+		faces = out[2]
+		colors = out[3]
+
+		Makie.mesh!(plotform, points, faces; color = colors, shading = Makie.NoShading)
+	end
 
 	plotform
 end
@@ -61,6 +94,7 @@ function plotrun!(model;
 
 		#Plotting
 		plot_var = nothing,
+		plot_vec= nothing,
 		plot_args = (aspect_ratio=:equal,),
 		
 		#TimeLoop
@@ -77,7 +111,11 @@ function plotrun!(model;
 
 	fig = Makie.Figure()
 	ax = Makie.Axis(fig[1, 1])
+	ax.aspect = Makie.DataAspect()
 	plotform!(ax, plot_var, mesh, state)
+	if plot_vec != nothing
+		plotform!(ax, plot_vec, mesh, state)
+	end
 	display(fig)
 
 	#todo "borrowed" from fluids2d, check further
@@ -103,6 +141,10 @@ function plotrun!(model;
 			@printf "\rite : %i/%i, dt: %.2e, t : %.2f/%.2f            " ite maxite dt model.t tend
 			if ite%plot_every == 0
 				plotform!(ax, plot_var, mesh, state)
+				if plot_vec != nothing
+					plotform!(ax, plot_vec, mesh, state)
+				end
+
 				Makie.recordframe!(io)
 			end
 
