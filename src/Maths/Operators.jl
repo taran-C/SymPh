@@ -8,6 +8,7 @@ export InnerProduct
 export FuncCall
 export Codifferential
 export InverseLaplacian
+export Wedge
 #TODO
 #export InverseHodge
 #export Flat
@@ -74,6 +75,21 @@ mutable struct Division{D,P} <: Form{D,P}
 end
 /(name::String, left::Form, right::Form) = Division(name, left, right)
 
+"""
+	Wedge{Dl + Dr,P}(name::String, left::Form{Dl,P}, right::Form{Dr,P}) <: Form{Dl + Dr, P}
+
+Wedge product of two forms TODO Wedge between different primalities ?
+"""
+mutable struct Wedge{D, Dl, Dr, P} <: Form{D, P}
+	name::String
+	left::Form
+	right::Form
+
+	function Wedge(name::String, left::Form{Dl, P}, right::Form{Dr, P}) where {Dl, Dr, P}
+		return new{Dl+Dr, Dl, Dr, P}(name, left, right)
+	end
+end
+Wedge(left, right) = Wedge("WEDGE_"*left.name*"_"*right.name, left, right)
 
 """
 	ExteriorDerivative{D,P}(name::String, omega::Form{D-1,P}) <: Form{D,P}

@@ -25,6 +25,11 @@ VectorVariable
 
 These are the operators acting on our variables. Their type is the type of the result of the operation.
 
+### The Wedge product $$\wedge$$
+```@docs
+Wedge
+```
+
 ### The Exterior Derivative $$\mathrm{d}$$
 ```@docs
 ExteriorDerivative

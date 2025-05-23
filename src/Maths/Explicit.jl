@@ -113,6 +113,24 @@ function explicit(form::RealProdForm{2,D}; param = ExplicitParam()) where {D}
 	return res
 end
 
+#Wedge
+function explicit(form::Wedge{1, 0, 1, Dual}; param = ExplicitParam())
+	left = explicit(form.left; param = param)
+	righti, rightj = explicit(form.right; param = param)
+
+	#TODO use interp here !
+	li = 0.5 * (left[0,0] + left[-1,0])
+	lj = 0.5 * (left[0,0] + left[0,-1])
+
+	resi = li * righti
+	resj = lj * rightj
+	
+	resi.name = form.name*"_i"
+	resj.name = form.name*"_j"
+	
+	return [resi, resj]
+end
+
 #ExteriorDerivative
 function explicit(form::ExteriorDerivative{1, Primal}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
@@ -140,14 +158,14 @@ function explicit(form::ExteriorDerivative{1, Dual}; param = ExplicitParam())
 	expj = param.fvtofd(expr, Arrays.msk0d, "j")
 
 	#Actual differentiation
-	d_x = (expi[0,0] - expi[-1,0]) * Arrays.msk1di
-	d_y = (expj[0,0] - expj[0,-1]) * Arrays.msk1dj
+	d_i = (expi[0,0] - expi[-1,0]) * Arrays.msk1di
+	d_j = (expj[0,0] - expj[0,-1]) * Arrays.msk1dj
 	
 	#Renaming
-	d_x.name = form.name * "_i"
-	d_y.name = form.name * "_j"
+	d_i.name = form.name * "_i"
+	d_j.name = form.name * "_j"
 
-	return [d_x, d_y]
+	return [d_i, d_j]
 end
 
 function explicit(form::ExteriorDerivative{2, Primal}; param = ExplicitParam())

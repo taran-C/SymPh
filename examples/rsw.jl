@@ -80,7 +80,7 @@ for i in 1:ni, j in 1:nj
 		d=0.05
 		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, sigma) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[i,j]
 	elseif config == "vortex"
-		state.h[i,j] = (H - h0 * gaussian(x, y, 1, 0.2, sigma)) * mesh.A[i,j]
+		state.h[i,j] = (H - h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
 		state.b[i,j] = 0 #(h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
 	elseif config == "straight_dam"
 		dh0 = h0 * tanh(100*(x-0.5))

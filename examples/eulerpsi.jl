@@ -29,7 +29,7 @@ ni = 50
 nj = 50
 nh = 4
 
-msk = zeros(ni, nj)
+/bin/bash: ligne 1: qa : commande introuvable
 msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
 #msk[ni÷2-ni÷5:ni÷2+ni÷5, 2*nj÷10:4*nj÷10] .= 0
 
