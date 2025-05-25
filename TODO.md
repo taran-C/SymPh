@@ -22,3 +22,9 @@
 - ^ (and other) operator, more conditionals for ease of use ?
 - Automatic simplification which probably requires to :
 - Represent Expressions as a sum of products
+
+# Plotting
+- Handle NaN values without breaking
+- Replacing colors instead of overwriting
+- Variable size of arrows depending on intensity
+- Ability to define colormaps + Centered around a value to avoid flickering

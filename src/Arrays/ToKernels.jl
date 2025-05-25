@@ -14,6 +14,9 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 	for b in seq.blocks
 		if b isa CallBlock
 			push!(calls, (b.expr.func,:call, [b.name]))
+			if verbose
+				println("Function call to " * b.name)
+			end
 		elseif b isa LoopBlock
 			str, keys = generate_loop_call(seq, vars, b)
 			if verbose

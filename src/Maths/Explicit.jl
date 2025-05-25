@@ -29,6 +29,18 @@ function explicit(form::FormVariable{2,P}; param = ExplicitParam()) where {P}
 	return Arrays.ArrayVariable(form.name)
 end
 
+#FuncCall
+function explicit(form::FuncCall; param = ExplicitParam())
+	#Expliciting arguments
+	argexprs = []
+	for arg in form.args
+		push!(argexprs, explicit(arg; param))
+	end
+
+	call = Arrays.FuncCall(form.name, form.func, argexprs, 0, 0)
+	return call
+end
+
 #Addition
 function explicit(form::Addition{0,P}; param = ExplicitParam()) where {P}
 	return Arrays.Addition(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
