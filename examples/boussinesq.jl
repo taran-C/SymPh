@@ -7,8 +7,6 @@ import SymPh.Arrays
 using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 
 #Forcing (not the best way)
-var1 = rand(200)
-var2 = rand(200)
 function plume(mesh; kwargs...)
 	#=
 	for i in 1:mesh.ni, j in 1:mesh.nj
@@ -18,8 +16,8 @@ function plume(mesh; kwargs...)
 	end
 	=#
 	Q = 1
-	kwargs[:forcing][:, mesh.nh+1] .= Q .* (1 .+ 0.01 .*(var1 .-0.5)) ./ 2
-	kwargs[:forcing][:, mesh.nj-mesh.nh] .= -Q .* (1 .+ 0.01 .*(var2 .-0.5)) ./ 2
+	kwargs[:forcing][:, mesh.nh+1] .= Q
+	kwargs[:forcing][:, mesh.nj-mesh.nh] .= -Q
 	#kwargs[:forcing][:, mesh.nh+2:end] .= - Q /(mesh.nj-2*mesh.nh)
 end
 	
@@ -77,6 +75,7 @@ for i in 1:ni, j in 1:nj
 	y = mesh.yc[i,j]
 	#state.b[i,j] = 0.1 * gaussian(x, y, 0.5,0.3,0.04)# * mesh.msk0d[i,j]
 end
+state.b .= 0.001 .* rand(ni,nj)
 #=
 for i in 1:ni
 	state.b[i, nh+1:nh+2] .= 1.1 + 0.01*rand()
@@ -87,8 +86,8 @@ end
 state.dphi_j .= 1 .* mesh.dy #Technically dz but... eh. Defining personalized dimension names would be cool though
 
 #Creating the Model
-model = Model(rhs!, mesh, state, ["omega", "b"]; cfl = 0.05, dtmax = 0.01, integratorstep! = rk4step!)
+model = Model(rhs!, mesh, state, ["omega", "b"]; cfl = 0.05, dtmax = 0.001, integratorstep! = rk4step!)
 
 #Running the simulation
-plotrun!(model; plot_every = 1, plot_var = b, plot_vec = nothing, tend = 200, maxite = 600)
-#run!(model; save_every = 15, tend = 100, maxite = 20, writevars = (:u_i, :u_j, :omega, :psi, :b))
+#plotrun!(model; plot_every = 1, plot_var = b, plot_vec = nothing, tend = 200, maxite = 600)
+run!(model; save_every = 5, tend = 100, maxite = 500, writevars = (:u_i, :u_j, :omega, :b))
