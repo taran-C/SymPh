@@ -25,11 +25,12 @@ euler_rhs! = to_kernel(dtomega; save = ["U_X", "U_Y", "u_i", "u_j", "ι_U_omega_
 #Testing the function
 
 #Defining the Mesh
-ni = 50
-nj = 50
+pow = 5
 nh = 4
+ni = 2^pow + 2*nh
+nj = 2^pow + 2*nh
 
-/bin/bash: ligne 1: qa : commande introuvable
+msk = zeros(ni, nj)
 msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
 #msk[ni÷2-ni÷5:ni÷2+ni÷5, 2*nj÷10:4*nj÷10] .= 0
 
@@ -40,19 +41,19 @@ simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
-mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, msk)
+mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, msk; xperio=true, yperio=true)
 
 #Initial Conditions
 state = State(mesh)
 
 gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
-dipole(x,y,x0,y0,d,sigma) = gaussian(x, y, x0+d/2, y0, sigma) - gaussian(x, y, x0-d/2, y0, sigma)
+dipole(x,y,x0,y0,d,sigma) = gaussian(x, y, x0+d/2, y0-d/2, sigma) - gaussian(x, y, x0-d/2, y0+d/2, sigma)
 tripole(x,y,x0,y0,r,sigma) = gaussian(x, y, x0+r*cos(0*2pi/3), y0+r*sin(0*2pi/3), sigma) + gaussian(x, y, x0+r*cos(2pi/3), y0+r*sin(2pi/3), sigma) + gaussian(x, y, x0+r*cos(2*2pi/3), y0+r*sin(2*2pi/3), sigma)
 
 for i in nh+1:ni-nh, j in nh+1:nj-nh
-	x = mesh.xc[i,j]
-	y = mesh.yc[i,j]
-	state.omega[i,j] = dipole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
+	x = mesh.xv[i,j] - mesh.dx[i,j]
+	y = mesh.yv[i,j] - mesh.dy[i,j]
+	state.omega[i,j] = dipole(x, y, 0.5,0.5,0.15,0.05) * mesh.msk2d[i,j] * mesh.A[i,j]
 	#if 0.48<y<0.52
 	#	state.omega[i,j] = (1+0e-1*rand())* mesh.A[i,j]
 	#end
@@ -62,5 +63,11 @@ end
 model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 0.5, dtmax = 0.5, integratorstep! = rk4step!)
 
 #Running the simulation
-plotrun!(model; plot_every = 1, plot_var = omega, plot_vec = u, tend = 200, maxite = 500)
-#run!(model; save_every = 15, plot = true, plot_var=omega, profiling = false, tend = 20000, maxite = 5000, writevars = (:u_x, :u_y, :omega, :psi))
+#plotrun!(model; plot_every = 1, plot_var = omega, plot_vec = nothing, tend = 200, maxite = 400)
+run!(model; save_every = 15, profiling = false, tend = 20000, maxite = 4000, writevars = (:u_x, :u_y, :omega, :psi))
+
+fig = Figure()
+ax = Axis(fig[1,1])
+plt = plotform!(ax, omega, mesh, state)
+Colorbar(fig[1,2], plt)
+display(fig)

@@ -34,8 +34,8 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-ni = 50
-nj = 50
+ni = 100
+nj = 100
 nh = 5
 
 msk = zeros(ni, nj)
@@ -77,8 +77,12 @@ for i in 1:ni, j in 1:nj
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
 
-	n = 10
-	state.h[i,j] = (H + h0 * cos(n*x) * cos(n*y)) * mesh.A[i,j] * mesh.msk0p[i,j] #Single frequency
+	ns = [5]
+	state.h[i,j] = H * mesh.A[i,j] * mesh.msk0p[i,j] #Single frequency
+
+	for n in ns
+		state.h[i,j] += h0 * cos(n*x) * cos(n*y) * mesh.A[i,j] * mesh.msk0p[i,j]
+	end
 end
 
 state.f .= 0 .* ones((ni,nj)) .* mesh.A #.* mesh.msk2d
@@ -87,13 +91,21 @@ state.f .= 0 .* ones((ni,nj)) .* mesh.A #.* mesh.msk2d
 model = Model(rsw_rhs!, mesh, state, ["u_i", "u_j", "h"]; integratorstep! = rk4step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
 
 inner = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
-display(heatmap(dct(state.h[inner...] .- H .*mesh.A[inner...])))
+fig = Figure()
+ax = Axis(fig[1,1])
+hm = heatmap!(ax, dct(state.h[inner...] .- H .*mesh.A[inner...]))
+Colorbar(fig[1,2], hm)
+display(fig)
 println("first step")
 @time step!(model)
 println("Done")
 
 #Running the simulation
-#plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 2, maxite = 500)
-run!(model; tend=10, maxite = 400)
+plotrun!(model; plot_every = 1, plot_var = p, plot_vec = nothing, tend = 2, maxite = 500)
+#run!(model; tend=10, maxite = 100)
 #plotform(h, mesh, state)
-display(heatmap(dct(state.h[inner...] .- H .*mesh.A[inner...])))
+fig = Figure()
+ax = Axis(fig[1,1])
+hm = heatmap!(ax, dct(state.h[inner...] .- H .*mesh.A[inner...]))
+Colorbar(fig[1,2], hm)
+display(fig)

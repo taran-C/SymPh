@@ -49,11 +49,11 @@ function laplacian(mesh, msk, bc, location)
 			
 			if I>-1
 				s = 0
-				#TODO doesn't handle the halo I think
-				west = i>1 ? G[i-1, j] : (mesh.iperio ? G[end, j] : -1)
-				east = i<mesh.ni-1 ? G[i+1, j] : (mesh.iperio ? G[0, j] : -1)
-				south = j>1 ? G[i, j-1] : (mesh.jperio ? G[i, end] : -1)
-				north = j<mesh.nj-1 ? G[i, j+1] : (mesh.jperio ? G[i, 0] : -1)
+				#TODO Different halos for different forms
+				west = i>mesh.nh+3 ? G[i-1, j] : (mesh.iperio ? G[mesh.ni-mesh.nh, j] : -1)
+				east = i<mesh.ni-mesh.nh-1 ? G[i+1, j] : (mesh.iperio ? G[mesh.nh+2, j] : -1)
+				south = j>mesh.nh+3 ? G[i, j-1] : (mesh.jperio ? G[i, mesh.nj-mesh.nh] : -1)
+				north = j<mesh.nj-mesh.nh-1 ? G[i, j+1] : (mesh.jperio ? G[i, mesh.nh+2] : -1)
 				
 				if west > -1
 					counter = add_entry(dx2, I, west, counter)
@@ -89,7 +89,9 @@ function laplacian(mesh, msk, bc, location)
 		end
 	end
 
-	return factorize(sparse(rows, cols, vals, N, N))
+	A = factorize(sparse(rows, cols, vals, N, N))
+	#display(sparse(rows, cols, vals, N, N))
+	return A
 end
 
 """
