@@ -64,7 +64,7 @@ model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 0.5, dtmax = 0.5, integr
 
 #Running the simulation
 #plotrun!(model; plot_every = 1, plot_var = omega, plot_vec = nothing, tend = 200, maxite = 400)
-run!(model; save_every = 15, profiling = false, tend = 20000, maxite = 4000, writevars = (:u_x, :u_y, :omega, :psi))
+run!(model; save_every = 15, profiling = false, tend = 20000, maxite = 4000, writevars = (:u_i, :u_j, :omega, :psi))
 
 fig = Figure()
 ax = Axis(fig[1,1])

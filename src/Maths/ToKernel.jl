@@ -48,7 +48,9 @@ function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=fa
 		if bc isa Vect
 			if primality(bc) == Dual
 				fill[bc.name * "_X"] = (+1, 0, 0, 0)
+				#fill[bc.name * "_X"] = (0, 0, 0, 0)
 				fill[bc.name * "_Y"] = (0, 0, +1, 0)
+				#fill[bc.name * "_Y"] = (0, 0, 0, 0)
 			elseif primality(bc) == Primal
 				fill[bc.name * "_X"] = (0, 0, -1, 0)
 				fill[bc.name * "_Y"] = (-1, 0, 0, 0)
@@ -62,7 +64,9 @@ function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=fa
 		elseif degree(bc) == 1
 			if primality(bc) == Dual
 				fill[bc.name * "_i"] = (+1, 0, 0, 0)
+				#fill[bc.name * "_i"] = (0, 0, 0, 0)
 				fill[bc.name * "_j"] = (0, 0, +1, 0)
+				#fill[bc.name * "_j"] = (0, 0, 0, 0)
 			elseif primality(bc) == Primal
 				fill[bc.name * "_i"] = (0, 0, -1, 0)
 				fill[bc.name * "_j"] = (-1, 0, 0, 0)

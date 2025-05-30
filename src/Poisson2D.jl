@@ -50,10 +50,10 @@ function laplacian(mesh, msk, bc, location)
 			if I>-1
 				s = 0
 				#TODO Different halos for different forms
-				west = i>mesh.nh+3 ? G[i-1, j] : (mesh.iperio ? G[mesh.ni-mesh.nh, j] : -1)
-				east = i<mesh.ni-mesh.nh-1 ? G[i+1, j] : (mesh.iperio ? G[mesh.nh+2, j] : -1)
-				south = j>mesh.nh+3 ? G[i, j-1] : (mesh.jperio ? G[i, mesh.nj-mesh.nh] : -1)
-				north = j<mesh.nj-mesh.nh-1 ? G[i, j+1] : (mesh.jperio ? G[i, mesh.nh+2] : -1)
+				west = i>mesh.nh+1 ? G[i-1, j] : (mesh.iperio ? G[mesh.ni-mesh.nh, j] : -1)
+				east = i<mesh.ni-mesh.nh-1 ? G[i+1, j] : (mesh.iperio ? G[mesh.nh+1, j] : -1)
+				south = j>mesh.nh+1 ? G[i, j-1] : (mesh.jperio ? G[i, mesh.nj-mesh.nh] : -1)
+				north = j<mesh.nj-mesh.nh-1 ? G[i, j+1] : (mesh.jperio ? G[i, mesh.nh+1] : -1)
 				
 				if west > -1
 					counter = add_entry(dx2, I, west, counter)

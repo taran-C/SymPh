@@ -22,7 +22,7 @@ g = 9.81
 @Let pv = (f + zeta) / h #TODO check what pv should be
 
 #Time derivative
-@Let dtu = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p + k) #du = -i(U, ζ* + f*) - d(p + k)
+@Let dtu = -InteriorProduct(U, zeta + f) - ExteriorDerivative(p) #du = -i(U, ζ* + f*) - d(p + k)
 @Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Defining the parameters needed to explicit 
@@ -101,8 +101,8 @@ println("first step")
 println("Done")
 
 #Running the simulation
-plotrun!(model; plot_every = 1, plot_var = p, plot_vec = nothing, tend = 2, maxite = 500)
-#run!(model; tend=10, maxite = 100)
+#plotrun!(model; plot_every = 1, plot_var = p, plot_vec = nothing, tend = 2, maxite = 500)
+run!(model; tend=10, maxite = 400)
 #plotform(h, mesh, state)
 fig = Figure()
 ax = Axis(fig[1,1])

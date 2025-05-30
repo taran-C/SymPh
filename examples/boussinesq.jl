@@ -7,6 +7,7 @@ import SymPh.Arrays
 using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 
 #Forcing (not the best way)
+global t = 0
 function plume(mesh; kwargs...)
 	#=
 	for i in 1:mesh.ni, j in 1:mesh.nj
@@ -15,10 +16,21 @@ function plume(mesh; kwargs...)
 		kwargs[:forcing][i,j] = 0.05 * gaussian(x, y, 0.5,0.3,0.05) * mesh.msk0d[i,j]
 	end
 	=#
-	Q = 1
-	kwargs[:forcing][:, mesh.nh+1] .= Q
-	kwargs[:forcing][:, mesh.nj-mesh.nh] .= -Q
+	#Q = 1
+	#kwargs[:forcing][:, mesh.nh+1] .= Q
+	#kwargs[:forcing][:, mesh.nj-mesh.nh] .= -Q
 	#kwargs[:forcing][:, mesh.nh+2:end] .= - Q /(mesh.nj-2*mesh.nh)
+end
+function forc_u(mesh; kwargs...)
+	for i in 1:mesh.ni, j in 1:mesh.nj
+		#TODO check actual xc/yv or idk
+		period = 10
+		omega = 2pi/period
+		x = mesh.xv[i,j]
+		y = mesh.yc[i,j]
+		kwargs[:forcing_u_j][i,j] = 0.01 * sin(t*omega) * gaussian(x,y,1,0.5,0.01) * mesh.dx[i,j] * mesh.msk1di[i,j]
+	end
+	global t += 0.15/4
 end
 	
 
@@ -27,14 +39,16 @@ end
 @Let b = FormVariable{0, Dual}() #Buoyancy
 @Let dphi = FormVariable{1, Dual}() #dφ (d of geopotential)
 
-@Let forcing = FuncCall{0, Dual}(plume, [omega]) #IDK why it needs an argument... concerning
+@Let forcing_b = FuncCall{0, Dual}(plume, [omega]) #IDK why it needs an argument... concerning
+@Let forcing_u = FuncCall{1, Dual}([forc_u, (mesh; kwargs...)->nothing], [omega])
+
 @Let psi = InverseLaplacian(omega) #∇²ω = Ψ
 @Let u = Codifferential(psi) #u = δΨ
 @Let U = Sharp(u)
 
 #Time derivative
-@Let dtomega = - ExteriorDerivative(InteriorProduct(U, omega)) + ExteriorDerivative(Wedge(b, dphi)) #dtω = L(U,ω) - d(b∧dφ)
-@Let dtb = -InteriorProduct(U, ExteriorDerivative(b)) + forcing #dtb = L(U,b) + forcing term
+@Let dtomega = (- ExteriorDerivative(InteriorProduct(U, omega)) + ExteriorDerivative(Wedge(b, dphi))) + ExteriorDerivative(forcing_u) #dtω = L(U,ω) - d(b∧dφ)
+@Let dtb = -InteriorProduct(U, ExteriorDerivative(b))# + forcing_b #dtb = L(U,b) + forcing term
 
 #Defining the parameters needed to explicit
 explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4)
@@ -61,7 +75,7 @@ threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
 Lx, Ly = 2, 1
-mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, msk, Lx, Ly)
+mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, msk, Lx, Ly; xperio=true)
 
 #Initial Conditions
 state = State(mesh)
@@ -73,9 +87,11 @@ tripole(x,y,x0,y0,r,sigma) = gaussian(x, y, x0+r*cos(0*2pi/3), y0+r*sin(0*2pi/3)
 for i in 1:ni, j in 1:nj
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
-	#state.b[i,j] = 0.1 * gaussian(x, y, 0.5,0.3,0.04)# * mesh.msk0d[i,j]
+	
+	state.b[i,j] = y #* mesh.msk0d[i,j]
+	#state.b[i,j] += 0.01 * gaussian(x, y, 0.5,0.5,0.04)# * mesh.msk0d[i,j]
 end
-state.b .= 0.001 .* rand(ni,nj)
+#state.b .= 0.001 .* rand(ni,nj)
 #=
 for i in 1:ni
 	state.b[i, nh+1:nh+2] .= 1.1 + 0.01*rand()
@@ -86,8 +102,8 @@ end
 state.dphi_j .= 1 .* mesh.dy #Technically dz but... eh. Defining personalized dimension names would be cool though
 
 #Creating the Model
-model = Model(rhs!, mesh, state, ["omega", "b"]; cfl = 0.05, dtmax = 0.001, integratorstep! = rk4step!)
+model = Model(rhs!, mesh, state, ["omega", "b"]; cfl = 0.05, dtmax = 0.15, integratorstep! = rk4step!)
 
 #Running the simulation
 #plotrun!(model; plot_every = 1, plot_var = b, plot_vec = nothing, tend = 200, maxite = 600)
-run!(model; save_every = 5, tend = 100, maxite = 500, writevars = (:u_i, :u_j, :omega, :b))
+run!(model; save_every = 5, tend = 300, maxite = 1000, writevars = (:u_i, :u_j, :omega, :b))

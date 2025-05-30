@@ -30,7 +30,7 @@ function explicit(form::FormVariable{2,P}; param = ExplicitParam()) where {P}
 end
 
 #FuncCall
-function explicit(form::FuncCall; param = ExplicitParam())
+function explicit(form::FuncCall{0,P}; param = ExplicitParam()) where {P}
 	#Expliciting arguments
 	argexprs = []
 	for arg in form.args
@@ -38,6 +38,30 @@ function explicit(form::FuncCall; param = ExplicitParam())
 	end
 
 	call = Arrays.FuncCall(form.name, form.func, argexprs, 0, 0)
+	display(call)
+	return call
+end
+#TODO not great, find a way to only call one function
+function explicit(form::FuncCall{1,P}; param = ExplicitParam()) where {P}
+	#Expliciting arguments
+	argexprs = []
+	for arg in form.args
+		push!(argexprs, explicit(arg; param))
+	end
+
+	call_i = Arrays.FuncCall(form.name*"_i", form.func[1], argexprs, 0, 0)
+	call_j = Arrays.FuncCall(form.name*"_j", form.func[2], argexprs, 0, 0)
+	return (call_i, call_j)
+end
+function explicit(form::FuncCall{2,P}; param = ExplicitParam()) where {P}
+	#Expliciting arguments
+	argexprs = []
+	for arg in form.args
+		push!(argexprs, explicit(arg; param))
+	end
+
+	call = Arrays.FuncCall(form.name, form.func, argexprs, 0, 0)
+	display(call)
 	return call
 end
 
