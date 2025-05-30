@@ -50,7 +50,7 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 			
 			#Halo filling
 			for key in call[3]
-				if haskey(fill, key)
+				if key in fill
 					ni = mesh.ni
 					nj = mesh.nj
 					nh = mesh.nh
@@ -62,10 +62,10 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 					end
 					
 					if mesh.iperio
-						copy_i!(q, ni, nj, nh, fill[key])
+						copy_i!(q, ni, nj, nh)
 					end
 					if mesh.jperio
-						copy_j!(q, ni, nj, nh, fill[key])
+						copy_j!(q, ni, nj, nh)
 					end
 				end
 			end
@@ -76,20 +76,18 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 end
 
 #dec : (ldec, rdec, bdec, tdec) TODO only works for dual grid rn (need to be able to copy less than full halo for bigger grid)
-function copy_i!(q, ni, nj, nh, dec)
+function copy_i!(q, ni, nj, nh)
         #horizontal edges
-	dec = (0,0,0,0)
         for i = 1:nh, j = 1:nj
-                q[i+dec[1],j] = q[i+ni-2*nh+dec[2], j]
-                q[ni-nh+i-dec[2],j] = q[i+nh+dec[1], j]
+                q[i,j] = q[i+ni-2*nh, j]
+                q[ni-nh+i,j] = q[i+nh, j]
         end
 end
-function copy_j!(q, ni, nj, nh, dec)
+function copy_j!(q, ni, nj, nh)
         #vertical edges
-	dec = (0,0,0,0)
         for i = 1:ni, j = 1:nh
-                q[i,j+dec[3]] = q[i, j+nj-2*nh+dec[4]]
-                q[i,nj-nh+j-dec[4]] = q[i, j+nh+dec[3]]
+                q[i,j] = q[i, j+nj-2*nh]
+                q[i,nj-nh+j] = q[i, j+nh]
         end
 end
 

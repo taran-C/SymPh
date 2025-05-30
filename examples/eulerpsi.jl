@@ -30,18 +30,13 @@ nh = 4
 ni = 2^pow + 2*nh
 nj = 2^pow + 2*nh
 
-msk = zeros(ni, nj)
-msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
-#msk[ni÷2-ni÷5:ni÷2+ni÷5, 2*nj÷10:4*nj÷10] .= 0
-
-
 #LoopManager
 scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
-mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, msk; xperio=true, yperio=true)
+mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd; xperio=true, yperio=true)
 
 #Initial Conditions
 state = State(mesh)
@@ -66,8 +61,10 @@ model = Model(euler_rhs!, mesh, state, ["omega"]; cfl = 0.5, dtmax = 0.5, integr
 #plotrun!(model; plot_every = 1, plot_var = omega, plot_vec = nothing, tend = 200, maxite = 400)
 run!(model; save_every = 15, profiling = false, tend = 20000, maxite = 4000, writevars = (:u_i, :u_j, :omega, :psi))
 
+#=
 fig = Figure()
 ax = Axis(fig[1,1])
 plt = plotform!(ax, omega, mesh, state)
 Colorbar(fig[1,2], plt)
 display(fig)
+=#

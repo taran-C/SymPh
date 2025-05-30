@@ -28,7 +28,7 @@ function forc_u(mesh; kwargs...)
 		omega = 2pi/period
 		x = mesh.xv[i,j]
 		y = mesh.yc[i,j]
-		kwargs[:forcing_u_j][i,j] = 0.01 * sin(t*omega) * gaussian(x,y,1,0.5,0.01) * mesh.dx[i,j] * mesh.msk1di[i,j]
+		kwargs[:forcing_u_j][i,j] = 0.01 * sin(t*omega) * gaussian(x,y,0.5,0.5,0.01) * mesh.dx[i,j] * mesh.msk1di[i,j]
 	end
 	global t += 0.15/4
 end
@@ -47,7 +47,7 @@ end
 @Let U = Sharp(u)
 
 #Time derivative
-@Let dtomega = (- ExteriorDerivative(InteriorProduct(U, omega)) + ExteriorDerivative(Wedge(b, dphi))) + ExteriorDerivative(forcing_u) #dtω = L(U,ω) - d(b∧dφ)
+@Let dtomega = (- ExteriorDerivative(InteriorProduct(U, omega)) + ExteriorDerivative(Wedge(b, dphi)))# + ExteriorDerivative(forcing_u) #dtω = L(U,ω) - d(b∧dφ)
 @Let dtb = -InteriorProduct(U, ExteriorDerivative(b))# + forcing_b #dtb = L(U,b) + forcing term
 
 #Defining the parameters needed to explicit
@@ -59,14 +59,9 @@ rhs! = to_kernel(dtomega, dtb; save = ["U_X", "U_Y", "u_i", "u_j", "ι_U_omega_i
 #Testing the function
 
 #Defining the Mesh
-ni = 200
-nj = 100
+ni = 100
+nj = 200
 nh = 4
-
-msk = zeros(ni, nj)
-msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
-#msk[ni÷2-ni÷5:ni÷2+ni÷5, 2*nj÷10:4*nj÷10] .= 0
-
 
 #LoopManager
 scalar = PlainCPU()
@@ -74,8 +69,8 @@ simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 thsimd = MultiThread(simd)
 
-Lx, Ly = 2, 1
-mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, msk, Lx, Ly; xperio=true)
+Lx, Ly = 1, 2
+mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, Lx, Ly; xperio=true)
 
 #Initial Conditions
 state = State(mesh)
@@ -88,8 +83,8 @@ for i in 1:ni, j in 1:nj
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
 	
-	state.b[i,j] = y #* mesh.msk0d[i,j]
-	#state.b[i,j] += 0.01 * gaussian(x, y, 0.5,0.5,0.04)# * mesh.msk0d[i,j]
+	#state.b[i,j] = y #* mesh.msk0d[i,j]
+	state.b[i,j] += 0.01 * gaussian(x, y, 0.5,0.5,0.04)# * mesh.msk0d[i,j]
 end
 #state.b .= 0.001 .* rand(ni,nj)
 #=
@@ -105,5 +100,5 @@ state.dphi_j .= 1 .* mesh.dy #Technically dz but... eh. Defining personalized di
 model = Model(rhs!, mesh, state, ["omega", "b"]; cfl = 0.05, dtmax = 0.15, integratorstep! = rk4step!)
 
 #Running the simulation
-#plotrun!(model; plot_every = 1, plot_var = b, plot_vec = nothing, tend = 200, maxite = 600)
+#plotrun!(model; plot_every = 1, plot_var = omega, plot_vec = nothing, tend = 200, maxite = 600)
 run!(model; save_every = 5, tend = 300, maxite = 1000, writevars = (:u_i, :u_j, :omega, :b))

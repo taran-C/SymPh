@@ -43,40 +43,15 @@ function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=fa
 	end
 
 	#Handling the BCs
-	fill = Dict()
+	fill = []
 	for bc in bcs
 		if bc isa Vect
-			if primality(bc) == Dual
-				fill[bc.name * "_X"] = (+1, 0, 0, 0)
-				#fill[bc.name * "_X"] = (0, 0, 0, 0)
-				fill[bc.name * "_Y"] = (0, 0, +1, 0)
-				#fill[bc.name * "_Y"] = (0, 0, 0, 0)
-			elseif primality(bc) == Primal
-				fill[bc.name * "_X"] = (0, 0, -1, 0)
-				fill[bc.name * "_Y"] = (-1, 0, 0, 0)
-			end
-		elseif degree(bc) == 0
-			if primality(bc) == Dual
-				fill[bc.name] = (0, 0, 0, 0) # second part : (ldec, rdec, bdec, tdec), offset wrt main msk, eh 
-			elseif primality(bc) == Primal
-				fill[bc.name] = (-1, 0, -1, 0)
-			end
+			push!(fill, bc.name * "_X")
+			push!(fill, bc.name * "_Y")
+		elseif degree(bc) in (0, 2)
+			push!(fill, bc.name)
 		elseif degree(bc) == 1
-			if primality(bc) == Dual
-				fill[bc.name * "_i"] = (+1, 0, 0, 0)
-				#fill[bc.name * "_i"] = (0, 0, 0, 0)
-				fill[bc.name * "_j"] = (0, 0, +1, 0)
-				#fill[bc.name * "_j"] = (0, 0, 0, 0)
-			elseif primality(bc) == Primal
-				fill[bc.name * "_i"] = (0, 0, -1, 0)
-				fill[bc.name * "_j"] = (-1, 0, 0, 0)
-			end
-		elseif degree(bc) == 2
-			if primality(bc) == Dual
-				fill[bc.name] = (+1, 0, +1, 0)
-			elseif primality(bc) == Primal
-				fill[bc.name] = (0, 0, 0, 0)
-			end
+			push!(fill, bc.name)
 		end
 	end
 	
