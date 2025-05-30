@@ -28,7 +28,7 @@ g = 9.81
 explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4)
 
 #Generating the RHS TODO change the way BCs are handled
-rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, bcs=[U, zeta, k, dtu, dth])
+rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, bcs=[U, zeta, k, p, dtu, dth])
 
 #Testing the function
 
@@ -37,18 +37,12 @@ ni = 50
 nj = 200
 nh = 5
 
-msk = zeros(ni, nj)
-msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
-
 #LoopManager
 scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 
-Lx = 1
-Ly = 1
-
-mesh = Arrays.PolarMesh(ni, nj, nh, simd, msk)
+mesh = Arrays.PolarMesh(ni, nj, nh, simd)#; xperio = true, yperio=true)
 
 #Initial Conditions
 state = State(mesh)
@@ -80,7 +74,7 @@ for i in 1:ni, j in 1:nj
 		d=0.05
 		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, sigma) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[i,j]
 	elseif config == "vortex"
-		state.h[i,j] = (H - h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
+		state.h[i,j] = (H + h0 * gaussian(x, y, 0.8, 0.1, sigma)) * mesh.A[i,j]
 		state.b[i,j] = 0 #(h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
 	elseif config == "straight_dam"
 		dh0 = h0 * tanh(100*(x-0.5))
@@ -96,8 +90,8 @@ state.f .= 0 .* ones((ni,nj)) .* mesh.A #.* mesh.msk2d
 model = Model(rsw_rhs!, mesh, state, ["u_i", "u_j", "h"]; integratorstep! = rk4step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
 
 println("first step")
-@time step!(model)
+@time step!(model; n=1)
 println("Done")
 
 #Running the simulation
-plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 2, maxite = 500)
+plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 2, maxite = 200)

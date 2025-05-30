@@ -78,6 +78,7 @@ end
 #dec : (ldec, rdec, bdec, tdec) TODO only works for dual grid rn (need to be able to copy less than full halo for bigger grid)
 function copy_i!(q, ni, nj, nh, dec)
         #horizontal edges
+	dec = (0,0,0,0)
         for i = 1:nh, j = 1:nj
                 q[i+dec[1],j] = q[i+ni-2*nh+dec[2], j]
                 q[ni-nh+i-dec[2],j] = q[i+nh+dec[1], j]
@@ -85,6 +86,7 @@ function copy_i!(q, ni, nj, nh, dec)
 end
 function copy_j!(q, ni, nj, nh, dec)
         #vertical edges
+	dec = (0,0,0,0)
         for i = 1:ni, j = 1:nh
                 q[i,j+dec[3]] = q[i, j+nj-2*nh+dec[4]]
                 q[i,nj-nh+j-dec[4]] = q[i, j+nh+dec[3]]
@@ -106,7 +108,6 @@ function generate_loop_call(seq, vars, block)
 
 	str = chop(str; tail = 2)
 	str = str * ")\n"
-
 	str = str * "\tlet (irange, jrange) = (mesh.nh:mesh.ni-mesh.nh+1, mesh.nh:mesh.nj-mesh.nh+1)\n\t\t@vec for i in irange, j in jrange\n"
 			
 	for key in keys(block.exprs)

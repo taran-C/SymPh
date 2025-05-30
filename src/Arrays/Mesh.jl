@@ -119,50 +119,16 @@ function compute_orders(msks, iperio, jperio)
 	o2dj = zeros(ni,nj)
 
 	#Primal
-	if iperio
-		o1pi .= 6
-	else
-		get_order_left(msk1pi, 1, o1pi)
-	end
-	if jperio
-		o1pj .= 6
-	else
-		get_order_left(msk1pj, ni, o1pj)
-	end
-
-	if iperio
-		o2pi .= 6
-	else
-		get_order_left(msk2p, 1, o2pi)
-	end
-	if jperio
-		o2pj .= 6
-	else
-		get_order_left(msk2p, ni, o2pj)
-	end
+	get_order_left(msk1pi, 1, o1pi)
+	get_order_left(msk1pj, ni, o1pj)
+	get_order_left(msk2p, 1, o2pi)
+	get_order_left(msk2p, ni, o2pj)
 
 	#Dual
-	if iperio
-		o1di .= 6
-	else
-		get_order_right(msk1di, 1, o1di)
-	end
-	if jperio
-		o1dj .= 6
-	else
-		get_order_right(msk1dj, ni, o1dj)
-	end
-
-	if iperio
-		o2di .= 6
-	else
-		get_order_right(msk2d, 1, o2di)
-	end
-	if jperio
-		o2dj .= 6
-	else
-		get_order_right(msk2d, ni, o2dj)
-	end
+	get_order_right(msk1di, 1, o1di)
+	get_order_right(msk1dj, ni, o1dj)
+	get_order_right(msk2d, 1, o2di)
+	get_order_right(msk2d, ni, o2dj)
 
 	return (o1pi, o1pj, o1di, o1dj,
 		o2pi, o2pj, o2di, o2dj)
@@ -190,8 +156,11 @@ function compute_msks(msk)
 		msk1pj[i,j] = max(msk[i,j], msk[i-1,j])
 		msk1di[i,j] = msk[i,j] * msk[i-1,j]
 		msk1dj[i,j] = msk[i,j] * msk[i,j-1]
+		msk1pi[i,j] = msk1dj[i,j]
+		msk1pj[i,j] = msk1di[i,j]
 
 		msk2d[i,j] = msk[i,j] * msk[i-1,j] * msk[i,j-1] * msk[i-1,j-1] #TODO only for free-slip (null vorticity) (apparently, a whole lot to check there)
+		msk0p[i,j] = msk2d[i,j]
 	end
 	
 	return msk0p, msk0d, msk1pi, msk1pj, msk1di, msk1dj, msk2p, msk2d
@@ -227,9 +196,20 @@ o2dj = ArrayVariable("mesh.o2dj")
 
 A rectangular mesh of extent `Lx`, `Ly`
 """
-function CartesianMesh(ni, nj, nh, mgr, msk, Lx = 1, Ly = 1; xperio=false, yperio=false)
+function CartesianMesh(ni, nj, nh, mgr, Lx = 1, Ly = 1; xperio=false, yperio=false)
 		#Locations
 		xc, yc, xv, yv = compute_locations_cartesian(ni,nj,nh,Lx,Ly)
+		msk = zeros(ni, nj)
+
+		if xperio & yperio
+			msk .= 1
+		elseif xperio
+			msk[1:ni, nh+1:nj-nh] .= 1
+		elseif yperio
+			msk[nh+1:ni-nh, 1:nj] .= 1
+		else
+			msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
+		end
 		
 		return Mesh(ni, nj, nh, mgr, msk, xc, yc, xv, yv; iperio = xperio, jperio=yperio)
 end
@@ -256,9 +236,11 @@ An annulus mesh with inner radius `rin` and outer radius `rout`
 
 The i/x direction is the radial, j/y orthoradial
 """
-function PolarMesh(ni, nj, nh, mgr, msk, rin = 0.5, rout = 1.5)
+function PolarMesh(ni, nj, nh, mgr, rin = 0.5, rout = 1.5)
 		#Locations
 		xc, yc, xv, yv = compute_locations_polar(ni,nj,nh,rin, rout)
+		msk = zeros(ni, nj)
+		msk[nh+1:ni-nh, :] .= 1
 		
 		return Mesh(ni, nj, nh, mgr, msk, xc, yc, xv, yv; iperio = false, jperio=true)
 end
