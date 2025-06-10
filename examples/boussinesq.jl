@@ -51,7 +51,7 @@ end
 @Let dtb = -InteriorProduct(U, ExteriorDerivative(b))# + forcing_b #dtb = L(U,b) + forcing term
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4)
+explparams = ExplicitParam(; interp = Arrays.avg2pt, fvtofd = Arrays.fvtofd2)
 
 #Generating the RHS
 rhs! = to_kernel(dtomega, dtb; save = ["U_X", "U_Y", "u_i", "u_j", "ι_U_omega_i", "ι_U_omega_j", "ι_U_db", "db_i", "db_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega, dtb])

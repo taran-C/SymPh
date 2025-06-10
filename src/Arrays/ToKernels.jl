@@ -63,18 +63,23 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 					
 					
 					if key == "dtb"
-						neumann_i_center(q, 0, 0, ni, nj, nh)
-						neumann_j_center(q, 0, 0, ni, nj, nh)
+						neumann_center(q, ni, nj, nh)
 					end
 					
-					
 					if key == "dhb_j"
-						dirichlet_jedge_dual(q, ni, nj, nh; t = 0.03125, b = 0.03125)
+						dirichlet_jedge_dual(q, ni, nj, nh; t = 0.03125, b = 0.03125, l = 0.03125, r = 0.03125)
 					end
 					if key == "dhb_i"
 						dirichlet_iedge_dual(q, 0, 0, ni, nj, nh)
 					end
-					
+
+					if key == "u_i"
+						neumann_iedge_dual(q, ni, nj, nh)
+					end
+					if key == "u_j"
+						neumann_jedge_dual(q, ni, nj, nh)
+					end
+
 
 					if mesh.iperio
 						copy_i!(q, ni, nj, nh)
@@ -92,13 +97,13 @@ end
 
 #Boundary Conditions-------------------------------------------------------
 #TODO dispatch on form types, separate left from right and top from bottom
-function dirichlet_i_center(q, a, b, ni, nj, nh)
+function dirichlet_i_center(q, ni, nj, nh; l=0, r=0, t=0, b=0)
+	#i
 	for j in nh+1:nj-nh
 		q[nh, j] = 2*a - q[nh+1, j]
 		q[ni-nh+1,j] = 2*b - q[ni-nh, j]
 	end
-end
-function dirichlet_j_center(q, a, b, ni, nj, nh)
+	#j
 	for i in nh+1:ni-nh
 		q[i,nh] = 2*a - q[i, nh+1]
 		q[i,nj-nh+1] = 2*b - q[i,nj-nh]
@@ -126,20 +131,21 @@ function dirichlet_jedge_dual(q, ni, nj, nh; l = 0, r = 0, t = 0, b=0)
 	end
 end
 
-function neumann_i_center(q, a, b, ni, nj, nh)
+function neumann_center(q, ni, nj, nh; l = 0, r = 0, t = 0, b = 0)
+	#i
 	for j in nh+1:nj-nh
-		q[1:nh, j] .= q[nh+1, j] - a
-		q[ni-nh+1:end,j] .= q[ni-nh, j] + b
+		q[1:nh, j] .= q[nh+1, j] - l
+		q[ni-nh+1:end,j] .= q[ni-nh, j] + r
 	end
-end
-function neumann_j_center(q, a, b, ni, nj, nh)
+
+	#j
 	for i in nh+1:ni-nh
-		q[i,1:nh] .= q[i, nh+1] - a
-		q[i,nj-nh+1:end] .= q[i,nj-nh] + b
+		q[i,1:nh] .= q[i, nh+1] - b
+		q[i,nj-nh+1:end] .= q[i,nj-nh] + t
 	end
 end
 
-function neumann_iedge_dual(q, a, b, ni, nj, nh)
+function neumann_iedge_dual(q, ni, nj, nh; a=0, b=0)
 	for i in nh+1:ni-nh
 		q[i,1:nh] .= q[i, nh+1] - a
 		q[i,nj-nh+1:end] .= q[i,nj-nh] + b

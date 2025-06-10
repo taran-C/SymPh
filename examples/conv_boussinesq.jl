@@ -18,9 +18,10 @@ using Statistics
 @Let psi = InverseLaplacian(omega) #∇²ω = Ψ
 @Let u = Codifferential(psi) #u = δΨ
 @Let U = Sharp(u)
-@Let dhb = ExteriorDerivative(b + stratif)
+@Let dhb = ExteriorDerivative(stratif)
 #Time derivative
-@Let dtomega = ExteriorDerivative(Wedge(b + stratif,dphi)) #dtω = L(U,ω) - d(b∧dφ)
+@Let w = Wedge(b,dphi)
+@Let dtomega = ExteriorDerivative(w) #dtω = L(U,ω) - d(b∧dφ)
 @Let dtb = -InteriorProduct(U, dhb) #dtb = L(U,b) + forcing term #TODO there is a boundary problem here
 
 #Defining the parameters needed to explicit
@@ -32,6 +33,7 @@ explparams = ExplicitParam(; interp = Arrays.avg2pt, fvtofd = Arrays.fvtofd2)
 N = 1 #Brunt Vaiasala Frequency, we set N,g, dphi etc to 1, easier
 
 inner(mesh) = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh) 
+
 #ANALYTICAL SOLUTION --------------------------------------------
 function ics(hhat, mesh)
 	hhat[inner(mesh)...] .= FFTW.r2r(hhat[inner(mesh)...], FFTW.REDFT10)
@@ -63,20 +65,31 @@ function sol_at_t(hhat, omega, t, mesh)
 end
 #----------------------------------------------------------------
 
-function check_symmetry(q, mesh; anti = false, way = "xy")
+function check_symmetry(q, mesh; anti = false, way = "xy", loc="c")
 	ass = zero(q)
 	if anti
 		c = -1
 	else
 		c = 1
 	end
-	for i in 1:mesh.ni, j in 1:mesh.nj
+
+	if loc==:c
+		local deci, decj = 0,0
+	elseif loc==:j
+		local deci, decj = 0,1
+	elseif loc==:i
+		deci, decj = 1,0
+	elseif loc==:v
+		deci, decj = 1,1
+	end
+	
+	for i in 1+deci:mesh.ni, j in 1+decj:mesh.nj
 		if way == "xy"
-			ass[i,j] = q[i,j] - c* q[mesh.ni-i+1, mesh.nj-j+1]
+			ass[i,j] = q[i,j] - c* q[mesh.ni-i+1+deci, mesh.nj-j+1+decj]
 		elseif way == "x"
-			ass[i,j] = q[i,j] - c* q[mesh.ni-i+1, j]
+			ass[i,j] = q[i,j] - c* q[mesh.ni-i+1+deci, j]
 		elseif way == "y"
-			ass[i,j] = q[i,j] - c* q[i, mesh.nj-j+1]
+			ass[i,j] = q[i,j] - c* q[i, mesh.nj-j+1+decj]
 		end
 	end
 	return ass
@@ -90,7 +103,7 @@ errs = zero(h)
 
 for (i,pow) in enumerate(pows)
 	#Regenerate the kernel, lame, needs a way to just reset Poisson solver
-	rhs! = to_kernel(dtomega, dtb; save = ["U_X", "U_Y", "u_i", "u_j", "dhb_i", "dhb_j", "ι_U_omega_i", "ι_U_omega_j", "ι_U_db", "db_i", "db_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega, dtb, dhb])
+	rhs! = to_kernel(dtomega, dtb; save = ["U_X", "U_Y", "u_i", "u_j", "dhb_i", "dhb_j", "ι_U_omega_i", "ι_U_omega_j", "ι_U_db", "dhb_i", "dhb_j", "w_i", "w_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega, dtb, dhb, u])
 	
 	#Defining the Mesh
 	nh = 4
@@ -124,10 +137,10 @@ for (i,pow) in enumerate(pows)
 	model = Model(rhs!, mesh, state, ["omega", "b"]; cfl = 0.001, dtmax = 1/(2^pow), integratorstep! = euler_forwardstep!)
 
 	#Running the simulation
-	T = 15
-	nite = 2^(pow) * T
+	T = 4
+	nite = 2#2^(pow) * T
 	#display(sum(state.omega))
-	run!(model; save_every = 1, tend = 1500, maxite = nite, writevars = (:u_i, :u_j, :omega, :b, :psi, :db_i, :db_j, :dtb))
+	run!(model; save_every = 1, tend = 1500, maxite = nite, writevars = (:u_i, :u_j, :omega, :b, :psi, :dhb_i, :dhb_j, :dtb, :w_i, :w_j, :dtomega))
 	
 	#getting spectral solution
 	state.h_th[inner(mesh)...] .= sol_at_t(state.hhat, get_disp(mesh), model.t, mesh)
@@ -151,18 +164,17 @@ for (i,pow) in enumerate(pows)
 		maxint = max(maximum(abs.(state.b)), maximum(abs.(state.h_th)))
 		crange = (-maxint, maxint)
 
-		
 		if hms
-			hm1 = heatmap!(ax1, state.b; colormap=:balance, colorrange = crange)
+			hm1 = heatmap!(ax1, state.b .* mesh.msk0d; colormap=:balance, colorrange = crange)
 			Colorbar(fig[1,2], hm1)
 			
-			hm2 = heatmap!(ax2, state.h_th; colormap=:balance, colorrange = crange)
+			hm2 = heatmap!(ax2, state.psi; colormap=:balance, colorrange = crange)
 			Colorbar(fig[1,4], hm2)
 
 			hm3 = heatmap!(ax3, residue; colormap=:balance, colorrange = (-maximum(abs.(residue)), maximum(abs.(residue))))
 			Colorbar(fig[2,2], hm3)
 			
-			hm4 = heatmap!(ax4, check_symmetry(state.b, mesh; anti = false, way="y"); colormap=:balance)
+			hm4 = heatmap!(ax4, check_symmetry(state.psi, mesh; anti = true, loc = :v, way="xy"))#; colormap=:balance)
 			Colorbar(fig[2,4], hm4)
 
 		else
