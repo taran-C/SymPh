@@ -10,118 +10,197 @@ end
 Poisson2D(bc, form_type) = Poisson2D(bc, form_type, nothing)
 function solve_poisson(poisson::Poisson2D, mesh, out, b)
 	if poisson.poisson_solver == nothing
-		poisson.poisson_solver = get_poisson_solver(mesh, poisson.bc, poisson.form_type)
+		poisson.poisson_solver = get_poisson_solver(mesh, b, poisson.bc, poisson.form_type)
 	end
 	poisson.poisson_solver(out, b)
 end
-
-
-function laplacian(mesh, msk, bc, location)
-	@assert bc in ["dirichlet", "neumann"]
-	@assert location in ["center", "vertex"]
-	
-	G = zeros(Int32, mesh.ni, mesh.nj)
-	G[msk .> 0] .= collect(1:length(G[msk .> 0]))
-	G[msk .== 0] .= -1
-	
-	
-	N = sum(G .> -1)
-
-	vals = zeros(0)
-	rows = zeros(0)
-	cols = zeros(0)
-	counter = 1
-
-	function add_entry(val, r, c, counter)
-		push!(vals, val)
-		push!(rows, r)
-		push!(cols, c)
-		return counter +1
-	end
-
-	for j in 1:mesh.nj
-		for i in 1:mesh.ni
-			I = G[i,j]
-		
-			#TODO explain why (someting to do with hodge in codif in laplacian i think)
-			dx2 = mesh.dy[i,j] / mesh.dx[i,j]
-			dy2 = mesh.dx[i,j] / mesh.dy[i,j]
-			
-			if I>-1
-				s = 0
-				#TODO Different halos for different forms
-				west = i>mesh.nh+1 ? G[i-1, j] : (mesh.iperio ? G[mesh.ni-mesh.nh, j] : -1)
-				east = i<mesh.ni-mesh.nh-1 ? G[i+1, j] : (mesh.iperio ? G[mesh.nh+1, j] : -1)
-				south = j>mesh.nh+1 ? G[i, j-1] : (mesh.jperio ? G[i, mesh.nj-mesh.nh] : -1)
-				north = j<mesh.nj-mesh.nh-1 ? G[i, j+1] : (mesh.jperio ? G[i, mesh.nh+1] : -1)
-				
-				if west > -1
-					counter = add_entry(dx2, I, west, counter)
-					s += dx2
-				end
-
-				if east > -1
-					counter = add_entry(dx2, I, east, counter)
-					s += dx2
-				end
-
-				if north > -1
-					counter = add_entry(dy2, I, north, counter)
-					s += dy2
-				end
-
-				if south > -1
-					counter = add_entry(dy2, I, south, counter)
-					s += dy2
-				end
-
-				if bc == "dirichlet" #Closed border
-					if location == "vertex"
-						counter = add_entry(-2*(dx2+dy2), I, I, counter)
-					elseif location == "center"
-						#TODO check (mostly for different grids)
-						counter = add_entry(-4*(dx2+dy2) + s, I, I, counter)
-					end
-				elseif bc == "neumann" #Open border
-					counter = add_entry(-s, I, I, counter)
-				end
-			end
-		end
-	end
-
-	A = factorize(sparse(rows, cols, vals, N, N))
-	#display(sparse(rows, cols, vals, N, N))
-	return A
+function ap_op!(A, q, mesh; out = zero(q), idx = nothing)
+    #Only apply to inner points (desingularize)
+    if idx == nothing
+        @views out .= A * q
+    else
+        @views out[idx] .= A * q[idx]
+    end
+    return out
 end
+using LinearSolve
+using Statistics
+function ap_inv!(A, q, mesh; out = zero(q), idx = nothing)
+    	#Only apply to inner points (desingularize)
+    	if idx == nothing
+        	@views out .= A \ q
+    	else
+		#TODO ALLOCATES, BAD, use a workspace
+		out[idx] .= Krylov.solution(workspace)
+	end
+	#display(mean(out[idx]))
+	#out[idx] .-= mean(out[idx])
+	return out
+end
+function desingularize_op(A)
+    idx = findall(!=(0),diag(A))
+    N = size(A)[1]
+    N1 = length(idx)
+    
+    row = idx
+    col = collect(1:N1)
+    data = ones(N1)
+    
+    J = sparse(row, col, data, N, N1)
+
+    return J' * A * J, idx
+end
+
+function get_op_from_coeffs(mesh, coeffs; factor=nothing)
+    ni,nj,nh = mesh.ni, mesh.nj, mesh.nh
+    N = ni * nj
+    Is = zeros(0)
+    Js = zeros(0)
+    Vs = zeros(0)
+
+    
+    function add_entry(I, J, V)
+        push!(Is, I)
+        push!(Js, J)
+        push!(Vs, V)
+    end
+    ijtoI(i,j) = (j-1) * ni + i
+    
+    for i in 1:ni, j in 1:nj
+        I = ijtoI(i,j)
+
+        #Check if all points in domain
+        all_in = true
+        for point in coeffs
+            if ((i + point[1][1] < nh+1) & !mesh.iperio) || 
+                ((j + point[1][2] < nh+1) & !mesh.jperio) || 
+                ((i + point[1][1] > ni-nh) & !mesh.iperio) || 
+                ((j + point[1][2] > nj-nh) & !mesh.jperio)
+                all_in = false
+            end
+            
+        end
+
+        #Add the points (no need to check periodicity here, it is taken into account higher)
+        if all_in
+            for point in coeffs
+                if (i + point[1][1] > nh) & (i + point[1][1] < ni-nh+1)
+                    ieff = i + point[1][1]
+                elseif i + point[1][1]<= nh
+                    ieff = i + point[1][1] + (ni-2*nh)
+                elseif i + point[1][1] >= ni-nh+1
+                    ieff = i + point[1][1] - (ni-2*nh)
+                end
+                if (j + point[1][2] > nh) & (j + point[1][2] < nj-nh+1)
+                    jeff = j + point[1][2]
+                elseif j + point[1][2] <= nh
+                    jeff = j + point[1][2] + (nj-2*nh)
+                elseif j + point[1][2] >= nj-nh+1
+                    jeff = j + point[1][2] - (nj-2*nh)
+                end
+                
+                JJ = (jeff-1) * ni + ieff
+                
+		if factor == nothing
+			fac = 1
+		else
+			fac = factor[i,j]
+		end
+                add_entry(I, JJ, fac * point[2])
+            end
+        end
+    end
+    return sparse(Is, Js, Vs, N, N)
+end
+
+#FVtoFD TODO allow choice
+Ii(mesh) = get_op_from_coeffs(mesh, Dict((-1,0)=>0, (0,0)=>1, (1,0)=>0))
+Iim(mesh) = get_op_from_coeffs(mesh, Dict((-1,0)=>-1/24, (0,0)=>25/24))
+Iip(mesh) = get_op_from_coeffs(mesh, Dict((1,0)=>-1/24, (0,0)=>25/24))
+
+Ij(mesh) = get_op_from_coeffs(mesh, Dict((0,-1)=>0, (0,0)=>1, (0,1)=>0))
+Ijm(mesh) = get_op_from_coeffs(mesh, Dict((0,-1)=>-1/24, (0,0)=>25/24))
+Ijp(mesh) = get_op_from_coeffs(mesh, Dict((0,1)=>-1/24, (0,0)=>25/24))
+
+get_fvtofd_i(mesh) = Iip(mesh) + Iim(mesh) - Ii(mesh)
+get_fvtofd_j(mesh) = Ijp(mesh) + Ijm(mesh) - Ij(mesh)
+
+get_fvtofd_ij(mesh) = get_fvtofd_j(mesh) * get_fvtofd_i(mesh)
+
+#Differential TODO figure out non periodic
+get_diff_i(mesh; factor = nothing) = get_op_from_coeffs(mesh, Dict((-1,0) => -1, (0,0) => 1))
+get_diff_j(mesh; factor = nothing) = get_op_from_coeffs(mesh, Dict((0,-1) => -1, (0,0) => 1))
+
+#Codifferential TODO idem
+get_codiff_i(mesh; factor = ones(mesh.ni, mesh.nj)) = get_op_from_coeffs(mesh, Dict((0,0)=>-1, (1,0)=>1); factor)
+get_codiff_j(mesh; factor = ones(mesh.ni, mesh.nj)) = get_op_from_coeffs(mesh, Dict((0,0)=>-1, (0,1)=>1); factor)
+
+function get_laplacian(mesh; o=2)
+	if mesh.iperio & mesh.jperio
+		return (get_codiff_i(mesh; factor=mesh.dy ./mesh.dx) * get_fvtofd_i(mesh)) * (get_diff_i(mesh) * get_fvtofd_i(mesh)) .* (mesh.dy/mesh.dx) + (get_codiff_j(mesh; factor=mesh.dx ./mesh.dy) * get_fvtofd_j(mesh)) * (get_diff_j(mesh) * get_fvtofd_j(mesh)) .* (mesh.dx/mesh.dy) #WORKS FOR PERIODIC
+	elseif o==4 
+		return (get_diff_i(mesh; factor=mesh.dy ./mesh.dx)' * get_fvtofd_i(mesh)) * (get_diff_i(mesh) * get_fvtofd_i(mesh)) + (get_diff_j(mesh; factor = mesh.dx./mesh.dy)' * get_fvtofd_j(mesh)) * (get_diff_j(mesh) * get_fvtofd_j(mesh)) 
+		#WORKS FOR NON PERIODIC but is of order 0
+	else
+		return get_diff_i(mesh; factor=mesh.dy ./ mesh.dx)' * get_diff_i(mesh) + get_diff_j(mesh; factor = mesh.dx ./mesh.dy)' * get_diff_j(mesh) 
+		#WORKS FOR NON PERIODIC (order 2) 
+	end
+end
+
+laplacian(mesh, msk, bc, location) = get_laplacian(mesh)
 
 """
 	solve_poisson(out, b)
 
 Solves the poisson problem Ax = b and sets out to be x
 """
-function get_poisson_solver(mesh, bc, form_type)
+function get_poisson_solver(mesh, b, bc, form_type)
 	@assert bc in ["dirichlet", "neumann"]
 	@assert form_type in ["0p", "0d", "2p", "2d"]
 
 	if form_type == "0p" #TODO check
-		location = "center"
+		location = "vertex"
 		msk = mesh.msk0p
 	elseif form_type == "0d"
-		location = "vertex"
+		location = "center"
 		msk = mesh.msk0d
 	elseif form_type == "2p"
-		location = "vertex"
+		location = "center"
 		msk = mesh.msk2p
 	elseif form_type == "2d"
-		location = "center"
+		location = "vertex"
 		msk = mesh.msk2d
 	end
 
-	A = laplacian(mesh, msk, bc, location)
+	A,idx = desingularize_op(laplacian(mesh, msk, bc, location))
+	A = -A#factorize(A)#lu(-A)
+	prob = LinearProblem(A, b[idx])
+	linsolve = init(prob, KrylovJL_CRAIGMR())
 
+	if bc=="dirichlet"
+		if location == "vertex"
+			#Only for dirichlet BC at vertices
+			A[A .== -2] .= -4
+			A[A .== -3] .= -4
+		elseif location == "center"
+			#Dirichlet centers
+			A[A .== -2] .= -6
+			A[A .== -3] .= -5
+		end
+	end
+
+	A = lu(A)
 	#Create a function that solves Ax = b
 	function func!(out, b)
-		out[msk .> 0] = A\b[msk .> 0]
+		#ap_inv!(linsolve, b, mesh; out, idx)
+		#=linsolve.b = b[idx]
+		sol = solve!(linsolve)
+		out[idx] .= sol.u
+		=#
+		@views out[idx] .= A \ b[idx]
+		
+		#println(mean(out[idx]))
+		#out[idx] .-= mean(out[idx])
 	end
 
 	return func!

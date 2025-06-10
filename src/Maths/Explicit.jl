@@ -154,12 +154,20 @@ function explicit(form::Wedge{1, 0, 1, Dual}; param = ExplicitParam())
 	left = explicit(form.left; param = param)
 	righti, rightj = explicit(form.right; param = param)
 
+	if true #form.interp == Nothing
+		interp = param.interp
+	else
+		interp = form.interp
+	end
+
 	#TODO use interp here !
 	li = 0.5 * (left[0,0] + left[-1,0])
 	lj = 0.5 * (left[0,0] + left[0,-1])
-
-	resi = li * righti
-	resj = lj * rightj
+	#li = interp(righti, left, Arrays.o2di, "left", "i")
+	#lj = interp(rightj, left, Arrays.o2dj, "left", "j")
+	
+	resi = li * righti * Arrays.msk1di
+	resj = lj * rightj * Arrays.msk1dj
 	
 	resi.name = form.name*"_i"
 	resj.name = form.name*"_j"
@@ -272,8 +280,8 @@ function explicit(form::InteriorProduct{0, Dual, Dual}; param = ExplicitParam())
 		interp = form.interp
 	end
 	
-	Uint = interp(U[0,0] + U[1,0], fu, Arrays.o1di, "right", "i")
-	Vint = interp(V[0,0] + V[0,1], fv, Arrays.o1dj, "right", "j")
+	Uint = interp(U[0,0], fu, Arrays.o1di, "right", "i")
+	Vint = interp(V[0,0], fv, Arrays.o1dj, "right", "j")
 	
 	qout = (Uint + Vint) * Arrays.msk0d
 	

@@ -156,6 +156,7 @@ function compute_msks(msk)
 		msk1pj[i,j] = max(msk[i,j], msk[i-1,j])
 		msk1di[i,j] = msk[i,j] * msk[i-1,j]
 		msk1dj[i,j] = msk[i,j] * msk[i,j-1]
+		
 		msk1pi[i,j] = msk1dj[i,j]
 		msk1pj[i,j] = msk1di[i,j]
 

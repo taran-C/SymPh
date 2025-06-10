@@ -51,7 +51,8 @@ function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=fa
 		elseif degree(bc) in (0, 2)
 			push!(fill, bc.name)
 		elseif degree(bc) == 1
-			push!(fill, bc.name)
+			push!(fill, bc.name * "_i")
+			push!(fill, bc.name * "_j")
 		end
 	end
 	

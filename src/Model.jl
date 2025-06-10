@@ -79,7 +79,7 @@ function run!(model;
 		#Physical stuff
 		forcing = nothing
 	)
-	println("here")
+	#println("here") TODO someday figure out overwriting function thx to extension for makie
 	mesh = model.mesh
 	state = model.state
 	prognostics = model.prognostics

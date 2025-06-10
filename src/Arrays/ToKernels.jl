@@ -61,6 +61,21 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 						q = getproperty(state, Symbol(key))
 					end
 					
+					
+					if key == "dtb"
+						neumann_i_center(q, 0, 0, ni, nj, nh)
+						neumann_j_center(q, 0, 0, ni, nj, nh)
+					end
+					
+					
+					if key == "dhb_j"
+						dirichlet_jedge_dual(q, ni, nj, nh; t = 0.03125, b = 0.03125)
+					end
+					if key == "dhb_i"
+						dirichlet_iedge_dual(q, 0, 0, ni, nj, nh)
+					end
+					
+
 					if mesh.iperio
 						copy_i!(q, ni, nj, nh)
 					end
@@ -75,7 +90,76 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 	return kernel!, vars
 end
 
-#dec : (ldec, rdec, bdec, tdec) TODO only works for dual grid rn (need to be able to copy less than full halo for bigger grid)
+#Boundary Conditions-------------------------------------------------------
+#TODO dispatch on form types, separate left from right and top from bottom
+function dirichlet_i_center(q, a, b, ni, nj, nh)
+	for j in nh+1:nj-nh
+		q[nh, j] = 2*a - q[nh+1, j]
+		q[ni-nh+1,j] = 2*b - q[ni-nh, j]
+	end
+end
+function dirichlet_j_center(q, a, b, ni, nj, nh)
+	for i in nh+1:ni-nh
+		q[i,nh] = 2*a - q[i, nh+1]
+		q[i,nj-nh+1] = 2*b - q[i,nj-nh]
+	end
+end
+
+function dirichlet_iedge_dual(q, a, b, ni, nj, nh)
+	for i in nh+1:ni-nh
+		q[i,1:nh] .= 2*a - q[i, nh+1]
+		q[i,nj-nh+1:end] .= 2*b - q[i,nj-nh]
+	end
+	for j in nh+1:nj-nh
+		q[1:nh+1, j] .= 2*a - q[nh+2, j]
+		q[ni-nh+1:end,j] .= 2*b - q[ni-nh, j]
+	end
+end
+function dirichlet_jedge_dual(q, ni, nj, nh; l = 0, r = 0, t = 0, b=0)
+	for i in nh+1:ni-nh
+		q[i,1:nh+1] .= 2*b - q[i, nh+2]
+		q[i,nj-nh+1:end] .= 2*t - q[i,nj-nh]
+	end
+	for j in nh+1:nj-nh
+		q[1:nh, j] .= 2*l - q[nh+1, j]
+		q[ni-nh+1:end,j] .= 2*r - q[ni-nh, j]
+	end
+end
+
+function neumann_i_center(q, a, b, ni, nj, nh)
+	for j in nh+1:nj-nh
+		q[1:nh, j] .= q[nh+1, j] - a
+		q[ni-nh+1:end,j] .= q[ni-nh, j] + b
+	end
+end
+function neumann_j_center(q, a, b, ni, nj, nh)
+	for i in nh+1:ni-nh
+		q[i,1:nh] .= q[i, nh+1] - a
+		q[i,nj-nh+1:end] .= q[i,nj-nh] + b
+	end
+end
+
+function neumann_iedge_dual(q, a, b, ni, nj, nh)
+	for i in nh+1:ni-nh
+		q[i,1:nh] .= q[i, nh+1] - a
+		q[i,nj-nh+1:end] .= q[i,nj-nh] + b
+	end
+	for j in nh+1:nj-nh
+		q[1:nh+1, j] .= q[nh+2, j] - a
+		q[ni-nh+1:end,j] .= q[ni-nh, j] + b
+	end
+end
+function neumann_jedge_dual(q, ni, nj, nh; l = 0, r = 0, t = 0, b=0)
+	for i in nh+1:ni-nh
+		q[i,1:nh+1] .= q[i, nh+2] - b
+		q[i,nj-nh+1:end] .= q[i,nj-nh] + t
+	end
+	for j in nh+1:nj-nh
+		q[1:nh, j] .= q[nh+1, j] - l
+		q[ni-nh+1:end,j] .= q[ni-nh, j] + r
+	end
+end
+
 function copy_i!(q, ni, nj, nh)
         #horizontal edges
         for i = 1:nh, j = 1:nj
@@ -90,6 +174,7 @@ function copy_j!(q, ni, nj, nh)
                 q[i,nj-nh+j] = q[i, j+nh]
         end
 end
+#--------------------------------------------------------------------
 
 
 """
