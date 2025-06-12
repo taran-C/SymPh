@@ -51,66 +51,68 @@ function desingularize_op(A)
     return J' * A * J, idx
 end
 
-function get_op_from_coeffs(mesh, coeffs; factor=nothing)
-    ni,nj,nh = mesh.ni, mesh.nj, mesh.nh
-    N = ni * nj
-    Is = zeros(0)
-    Js = zeros(0)
-    Vs = zeros(0)
+function get_op_from_coeffs(mesh, coeffs; factor=nothing, idec = 0, jdec = 0)
+	ni,nj,nh = mesh.ni, mesh.nj, mesh.nh
+	N = ni * nj
+	Is = zeros(0)
+	Js = zeros(0)
+	Vs = zeros(0)
 
+	#ONLY FOR VERTICES, REARRANGE TO ACTUALLY PASS MASK TO LAPLACIAN
+	idec = 1
+	jdec = 1
+
+	function add_entry(I, J, V)
+		push!(Is, I)
+		push!(Js, J)
+		push!(Vs, V)
+	end
+	ijtoI(i,j) = (j-1) * ni + i
     
-    function add_entry(I, J, V)
-        push!(Is, I)
-        push!(Js, J)
-        push!(Vs, V)
-    end
-    ijtoI(i,j) = (j-1) * ni + i
-    
-    for i in 1:ni, j in 1:nj
-        I = ijtoI(i,j)
+	for i in 1:ni, j in 1:nj
+		I = ijtoI(i,j)
 
-        #Check if all points in domain
-        all_in = true
-        for point in coeffs
-            if ((i + point[1][1] < nh+1) & !mesh.iperio) || 
-                ((j + point[1][2] < nh+1) & !mesh.jperio) || 
-                ((i + point[1][1] > ni-nh) & !mesh.iperio) || 
-                ((j + point[1][2] > nj-nh) & !mesh.jperio)
-                all_in = false
-            end
-            
-        end
-
-        #Add the points (no need to check periodicity here, it is taken into account higher)
-        if all_in
-            for point in coeffs
-                if (i + point[1][1] > nh) & (i + point[1][1] < ni-nh+1)
-                    ieff = i + point[1][1]
-                elseif i + point[1][1]<= nh
-                    ieff = i + point[1][1] + (ni-2*nh)
-                elseif i + point[1][1] >= ni-nh+1
-                    ieff = i + point[1][1] - (ni-2*nh)
-                end
-                if (j + point[1][2] > nh) & (j + point[1][2] < nj-nh+1)
-                    jeff = j + point[1][2]
-                elseif j + point[1][2] <= nh
-                    jeff = j + point[1][2] + (nj-2*nh)
-                elseif j + point[1][2] >= nj-nh+1
-                    jeff = j + point[1][2] - (nj-2*nh)
-                end
-                
-                JJ = (jeff-1) * ni + ieff
-                
-		if factor == nothing
-			fac = 1
-		else
-			fac = factor[i,j]
+		#Check if all points in domain
+		all_in = true
+		for point in coeffs
+			if ((i + point[1][1] < nh+1 + idec) & !mesh.iperio) || 
+				((j + point[1][2] < nh+1 + jdec) & !mesh.jperio) || 
+				((i + point[1][1] > ni-nh) & !mesh.iperio) || 
+				((j + point[1][2] > nj-nh) & !mesh.jperio)
+				all_in = false
+			end
 		end
-                add_entry(I, JJ, fac * point[2])
-            end
-        end
-    end
-    return sparse(Is, Js, Vs, N, N)
+
+		#Add the points (no need to check periodicity here, it is taken into account higher)
+		if all_in
+			for point in coeffs
+				if (i + point[1][1] > nh) & (i + point[1][1] < ni-nh+1)
+					ieff = i + point[1][1]
+				elseif i + point[1][1]<= nh
+					ieff = i + point[1][1] + (ni-2*nh)
+				elseif i + point[1][1] >= ni-nh+1
+					ieff = i + point[1][1] - (ni-2*nh)
+				end
+				if (j + point[1][2] > nh) & (j + point[1][2] < nj-nh+1)
+					jeff = j + point[1][2]
+				elseif j + point[1][2] <= nh
+					jeff = j + point[1][2] + (nj-2*nh)
+				elseif j + point[1][2] >= nj-nh+1
+					jeff = j + point[1][2] - (nj-2*nh)
+				end
+                
+				JJ = (jeff-1) * ni + ieff
+                
+				if factor == nothing
+					fac = 1
+				else
+					fac = factor[i,j]
+				end
+				add_entry(I, JJ, fac * point[2])
+			end
+		end
+	end
+	return sparse(Is, Js, Vs, N, N)
 end
 
 #FVtoFD TODO allow choice
@@ -180,8 +182,8 @@ function get_poisson_solver(mesh, b, bc, form_type)
 	if bc=="dirichlet"
 		if location == "vertex"
 			#Only for dirichlet BC at vertices
-			A[A .== -2] .= -4
-			A[A .== -3] .= -4
+			A[A .== -2] .= -6
+			A[A .== -3] .= -5
 		elseif location == "center"
 			#Dirichlet centers
 			A[A .== -2] .= -6

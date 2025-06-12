@@ -3,12 +3,9 @@
 - Ensure valid and unique names
 - Check placing for the 4 needed poisson solvers + periodicity
 - Check every possibility for every operator
-- Fix halo filling (maybe fill them at beginning so it doesn't break if we start with something on the border) + periodic conditions (specific conditions per form type)
-- Forcing terms
 
 # For the internship
 - Automatic arbitrary order finite-diff + fvtofd
-- Boussinesq
 - Test convergence on polar mesh
 
 # Would be cool

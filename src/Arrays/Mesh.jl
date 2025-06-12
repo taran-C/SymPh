@@ -223,8 +223,8 @@ function compute_locations_cartesian(ni, nj, nh, Lx, Ly)
 	for i in 1:ni, j in 1:nj
 		xc[i,j] = (i-0.5-nh) * Lx/(ni-2*nh)
 		yc[i,j] = (j-0.5-nh) * Ly/(nj-2*nh)
-		xv[i,j] = (i-nh) * Lx/(ni-2*nh)
-		yv[i,j] = (j-nh) * Ly/(nj-2*nh)
+		xv[i,j] = (i-1-nh) * Lx/(ni-2*nh)
+		yv[i,j] = (j-1-nh) * Ly/(nj-2*nh)
 	end
 	
 	return xc, yc, xv, yv

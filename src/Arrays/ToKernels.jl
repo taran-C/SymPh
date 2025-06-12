@@ -61,7 +61,7 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 						q = getproperty(state, Symbol(key))
 					end
 					
-					
+					#=	
 					if key == "dtb"
 						neumann_center(q, ni, nj, nh)
 					end
@@ -79,7 +79,13 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 					if key == "u_j"
 						neumann_jedge_dual(q, ni, nj, nh)
 					end
-
+					if key == "U_X"
+						neumann_iedge_dual(q, ni, nj, nh)
+					end
+					if key == "U_Y"
+						neumann_jedge_dual(q, ni, nj, nh)
+					end
+					=#
 
 					if mesh.iperio
 						copy_i!(q, ni, nj, nh)

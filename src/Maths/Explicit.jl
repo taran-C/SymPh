@@ -161,10 +161,10 @@ function explicit(form::Wedge{1, 0, 1, Dual}; param = ExplicitParam())
 	end
 
 	#TODO use interp here !
-	#li = 0.5 * (left[0,0] + left[-1,0])
-	#lj = 0.5 * (left[0,0] + left[0,-1])
-	li = interp(righti, left, Arrays.o2di, "left", "i")
-	lj = interp(rightj, left, Arrays.o2dj, "left", "j")
+	li = 0.5 * (left[0,0] + left[-1,0])
+	lj = 0.5 * (left[0,0] + left[0,-1])
+	#li = interp(righti, left, Arrays.o2di, "left", "i")
+	#lj = interp(rightj, left, Arrays.o2dj, "left", "j")
 	
 	resi = li * righti * Arrays.msk1di
 	resj = lj * rightj * Arrays.msk1dj
