@@ -193,7 +193,7 @@ o2dj = ArrayVariable("mesh.o2dj")
 
 
 """
-	CartesianMesh(ni, nj, nh, mgr, msk, Lx = 1, Ly = 1; iperio=false, jperio=false)
+	CartesianMesh(ni, nj, nh, mgr, Lx = 1, Ly = 1; xperio=false, yperio=false)
 
 A rectangular mesh of extent `Lx`, `Ly`
 """

@@ -26,9 +26,6 @@ using Statistics
 #Defining the parameters needed to explicit
 explparams = ExplicitParam(; interp = Arrays.avg2pt, fvtofd = Arrays.fvtofd4)
 
-#Generating the RHS
-#rhs! = to_kernel(dtomega, dtb; save = ["U_X", "U_Y", "u_i", "u_j", "ι_U_omega_i", "ι_U_omega_j", "ι_U_db", "db_i", "db_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega, dtb])
-
 N = 1 #Brunt Vaiasala Frequency, we set N,g, dphi etc to 1, easier
 
 centers(mesh) = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh) 
@@ -100,7 +97,7 @@ end
 
 
 #Testing the function
-pows = 5:8
+pows = 5:7
 h = 1 ./(2 .^collect(pows))
 errs = zero(h)
 

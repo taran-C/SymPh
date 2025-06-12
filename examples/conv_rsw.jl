@@ -75,13 +75,10 @@ function get_mesh(pow)
 	ni = 2^pow + 2*nh
 	nj = 2^pow + 2*nh
 
-	msk = zeros(ni, nj)
-	msk[nh+1:ni-nh, nh+1:nj-nh] .= 1
-
 	#LoopManager
 	simd = VectorizedCPU(16)
 
-	return Arrays.CartesianMesh(ni, nj, nh, simd, msk, Lx, Ly)#; xperio = true, yperio = true)
+	return Arrays.CartesianMesh(ni, nj, nh, simd, Lx, Ly)#; xperio = true, yperio = true)
 end
 function get_Umax(mesh)
 	interval = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
@@ -106,7 +103,7 @@ function get_model(mesh)
 
 		#We integrate the initial conditions in order to have an actual finite volume solution TODO check how to handle curved coordinates (gfun argument in dblquad), use inverse hodge instead ?
 		func(x,y) = H + h0 * gaussian(r(x,y), a)
-		state.h[i,j] = spi.dblquad(func, mesh.xv[i-1,j], mesh.xv[i,j], mesh.yv[i,j-1], mesh.yv[i,j], epsabs = 2e-14, epsrel = 2e-14)[1]
+		state.h[i,j] = spi.dblquad(func, mesh.xv[i,j], mesh.xv[i+1,j], mesh.yv[i,j], mesh.yv[i,j+1], epsabs = 2e-14, epsrel = 2e-14)[1]
 	end
 	
 
@@ -173,7 +170,7 @@ function test_conv(pow)
 	
 	residue = exact_height[inner...] .- p_fd[inner...]
 
-	error = Linf(residue)
+	error = rms(residue)
 	
 	plot = true
 	if plot
@@ -194,10 +191,9 @@ function test_conv(pow)
 end
 
 function do_tests()
-	pow = 6:8
+	pows = 6:8
 	h = 1 ./(2 .^collect(pows))
 	errs = zero(h)
-
 	for (i, pow) in enumerate(pows)
 		errs[i] = test_conv(pow)
 	end
