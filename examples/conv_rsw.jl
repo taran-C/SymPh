@@ -51,7 +51,7 @@ g = 1
 
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4)
+explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4, fdtofv = Arrays.fdtofv4)
 
 #Generating the RHS TODO change the way BCs are handled
 rhs! = to_kernel(dtu, dth; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, verbose = false)
@@ -164,11 +164,11 @@ function test_conv(pow)
 	
 	inner = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
 
-	p_fd = get_fd_pressure(mesh, state)
+	#p_fd = get_fd_pressure(mesh, state)
 	Linf(A) = maximum(abs.(A))
 	rms(A) = sqrt(mean(A .^ 2)) #Root Mean Square
 	
-	residue = exact_height[inner...] .- p_fd[inner...]
+	residue = exact_height[inner...] .- state.p[inner...]
 
 	error = rms(residue)
 	

@@ -4,9 +4,10 @@ export explicit, ExplicitParam
 struct ExplicitParam
 	interp
 	fvtofd
+	fdtofv
 
-	function ExplicitParam(;interp = Arrays.upwind, fvtofd = Arrays.fvtofd2)
-		return new(interp, fvtofd)
+	function ExplicitParam(;interp = Arrays.upwind, fvtofd = Arrays.fvtofd2, fdtofv = Arrays.fdtofv2)
+		return new(interp, fvtofd, fdtofv)
 	end
 end
 
@@ -180,12 +181,12 @@ function explicit(form::ExteriorDerivative{1, Primal}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
 
 	#Finite diff in both direction
-	expi = param.fvtofd(expr, Arrays.msk0p, "i")
-	expj = param.fvtofd(expr, Arrays.msk0p, "j")
+	#expi = param.fvtofd(expr, Arrays.msk0p, "i")
+	#expj = param.fvtofd(expr, Arrays.msk0p, "j")
 
 	#Actual differentiation
-	d_i = (expi[1,0] - expi[0,0]) * Arrays.msk1pi
-	d_j = (expj[0,1] - expj[0,0]) * Arrays.msk1pj
+	d_i = (exp[1,0] - exp[0,0]) * Arrays.msk1pi
+	d_j = (exp[0,1] - exp[0,0]) * Arrays.msk1pj
 	
 	#Renaming
 	d_i.name = form.name * "_i"
@@ -198,12 +199,12 @@ function explicit(form::ExteriorDerivative{1, Dual}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
 	
 	#Finite diff in both direction
-	expi = param.fvtofd(expr, Arrays.msk0d, "i")
-	expj = param.fvtofd(expr, Arrays.msk0d, "j")
+	#expi = param.fvtofd(expr, Arrays.msk0d, "i")
+	#expj = param.fvtofd(expr, Arrays.msk0d, "j")
 
 	#Actual differentiation
-	d_i = (expi[0,0] - expi[-1,0]) * Arrays.msk1di
-	d_j = (expj[0,0] - expj[0,-1]) * Arrays.msk1dj
+	d_i = (expr[0,0] - expr[-1,0]) * Arrays.msk1di
+	d_j = (expr[0,0] - expr[0,-1]) * Arrays.msk1dj
 	
 	#Renaming
 	d_i.name = form.name * "_i"
@@ -216,8 +217,8 @@ function explicit(form::ExteriorDerivative{2, Primal}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
 
 	#Finite diff in both direction
-	expi = param.fvtofd(exprs[1], Arrays.msk1di, "j")
-	expj = param.fvtofd(exprs[2], Arrays.msk1dj, "i")
+	expi = exprs[1] #param.fvtofd(exprs[1], Arrays.msk1di, "j")
+	expj = exprs[2] #param.fvtofd(exprs[2], Arrays.msk1dj, "i")
 
 	#Actual differentiation
 	dq = ((expj[1,0]-expj[0,0])-(expi[0,1]-expi[0,0])) * Arrays.msk2p
@@ -232,8 +233,8 @@ function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
 	
 	#Finite diff in both direction
-	expi = param.fvtofd(exprs[1], Arrays.msk1di, "j")
-	expj = param.fvtofd(exprs[2], Arrays.msk1dj, "i")
+	expi = exprs[1] #param.fvtofd(exprs[1], Arrays.msk1di, "j")
+	expj = exprs[2] #param.fvtofd(exprs[2], Arrays.msk1dj, "i")
 
 	#Actual differentiation
 	dq = ((expj[0,0]-expj[-1,0])-(expi[0,0]-expi[0,-1])) * Arrays.msk2d
@@ -340,11 +341,11 @@ function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate
 	iexpr, jexpr = explicit(vec.form; param = param)
 
 	#TODO per object configurable fvtofd function
-	#xout = param.fvtofd(iexpr, Arrays.msk1di, "i") / Arrays.dx / Arrays.dx * Arrays.msk1di 
-	#yout = param.fvtofd(jexpr, Arrays.msk1dj, "j") / Arrays.dy / Arrays.dy * Arrays.msk1dj
+	xout = param.fdtofv(param.fvtofd(iexpr, Arrays.msk1di, "i"), Arrays.msk1di, "j") / Arrays.dx / Arrays.dx * Arrays.msk1di 
+	yout = param.fdtofv(param.fvtofd(jexpr, Arrays.msk1dj, "j"), Arrays.msk1dj, "i") / Arrays.dy / Arrays.dy * Arrays.msk1dj
 
-	xout = iexpr / Arrays.dx / Arrays.dx
-	yout = jexpr / Arrays.dy / Arrays.dy
+	#xout = iexpr / Arrays.dx / Arrays.dx
+	#yout = jexpr / Arrays.dy / Arrays.dy
 
 	xout.name = vec.name*"_X"
 	yout.name = vec.name*"_Y"
@@ -355,8 +356,8 @@ end
 function explicit(form::Hodge{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
-	#res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2p, "i"), Arrays.msk2p, "j") / Arrays.dx /Arrays.dy * Arrays.msk0d
-	res = fexpr / Arrays.dx / Arrays.dy
+	res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2p, "i"), Arrays.msk2p, "j") / Arrays.dx /Arrays.dy * Arrays.msk0d
+	#res = fexpr / Arrays.dx / Arrays.dy
 	res.name = form.name
 	return res
 end
