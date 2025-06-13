@@ -1,6 +1,13 @@
 #TODO check if this is compatible with multi-threading (should be) (since the array is gathered before being used in the subfunction parameters)
 export State
+export reset_state
 
+"""
+	State(mesh)
+
+Initializes a State object that holds a list of arrays corresponding to the characteristics of mesh.
+Whenever trying to access a field, the state checks if the object is in its fields, in which case it returns it, and otherwise it allocates it and then returns it.
+"""
 mutable struct State
 	mesh
 	fields::Dict{Symbol, Array{Float64,2}}
@@ -24,8 +31,11 @@ function Base.getproperty(obj::State, sym::Symbol)
 	end
 end
 
-export reset_state
+"""
+	reset_state(state::State)
 
+Deletes all the fields in state
+"""
 function reset_state(state::State)
 	state.fields = Dict{Symbol, Array{Float64,2}}()
 end

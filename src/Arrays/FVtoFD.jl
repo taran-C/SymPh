@@ -1,10 +1,19 @@
-#TODO handle bc (more order arrays to check if on border ?)
+"""
+	fvtofd2(q, msk, dir)
+
+A second order function to take a finite volume quantity `q` to finite difference in the direction `dir`, using `msk` to detect borders
+"""
 function fvtofd2(q::Expression, h::Expression, dir::String)
 	#Simple scaling by edge length
 	return q# /h
 end
 
 vtd4(qm, q0, qp) = (13/12) * q0 - (1/24) * (qm + qp)
+"""
+	fvtofd4(q, msk, dir)
+
+A fourth order function to take a finite volume quantity `q` to finite difference in the direction `dir`, using `msk` to detect borders
+"""
 function fvtofd4(q::Expression, msk::Expression, dir::String)
 	@assert dir in ["i", "j"]
 	#Interior
@@ -34,6 +43,11 @@ function fvtofd4(q::Expression, msk::Expression, dir::String)
 end
 
 #TODO handle bc (more order arrays to check if on border ?)
+"""
+	fdtofv2(q, msk, dir)
+
+A second order function to take a finite difference quantity `q` to finite volume in the direction `dir`, using `msk` to detect borders
+"""
 function fdtofv2(q::Expression, h::Expression, dir::String)
 	#Simple scaling by edge length
 	return q# /h
@@ -41,6 +55,11 @@ end
 
 #TODO are the bc 4th order ? Use [0,1,2] which leads to [25/24, -1/12, 1/24] weights ?
 dtv4(qm, q0, qp) = (11/12) * q0 + (1/24) * (qm + qp)
+"""
+	fdtofv4(q, msk, dir)
+
+A fourth order function to take a finite difference quantity `q` to finite volume in the direction `dir`, using `msk` to detect borders
+"""
 function fdtofv4(q::Expression, msk::Expression, dir::String)
 	@assert dir in ["i", "j"]
 	if dir == "i"

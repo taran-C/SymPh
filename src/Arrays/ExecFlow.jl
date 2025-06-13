@@ -1,25 +1,25 @@
 export Block, Sequence
 
 """
-Block
+	Block
 	
-	Any operation or block of operations that can be done at once
+Any operation or block of operations that can be done at once
 """
 abstract type Block end
 
 """
-LoopBlock
+	LoopBlock
 	
-	A block of operations to be computed in a loop on our domain
+A block of operations to be computed in a loop on our domain
 """
 struct LoopBlock
 	exprs::Dict{String, Expression}
 end
 
 """
-get_terms(b::LoopBlock)
+	get_terms(b::LoopBlock)
 
-	Get a set of string representing the arrays being assigned in the loop
+Get a set of string representing the arrays being assigned in the loop
 """
 function get_terms(b::LoopBlock)
 	return unique(collect(keys(b.exprs)))
@@ -38,9 +38,9 @@ function string(b::LoopBlock)
 end
 
 """
-CallBlock
+	CallBlock
 	
-	A block representing a single function call
+A block representing a single function call
 """
 struct CallBlock
 	name::String
@@ -54,9 +54,9 @@ end
 string(b::CallBlock) = "[" * string(b.expr) * "]"
 
 """
-Sequence
+	Sequence
 	
-	A sequence of blocks of operations
+A sequence of blocks of operations
 """
 struct Sequence
 	vars::Vector{String}

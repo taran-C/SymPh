@@ -1,14 +1,16 @@
 """
-Operators
+	Operator <: Expression
+	
+Generic operation on an expression
 """
 abstract type Operator <: Expression end
 
 export FuncCall
 """
-FuncCall
+	FuncCall(name::String, func, args::Vector{Expression}, depi::Integer, depj::Integer) <: Operator
 
-	Forces computation of its arguments, then calls a function on them
-	For now the function must have signature `f(out, args...)` where out will be replaced by the name assigned to the operator
+Forces computation of its arguments, then calls a function on them
+For now the function must have signature `f(out, args...)` where out will be replaced by the name assigned to the operator
 """
 mutable struct FuncCall <: Operator
 	name::String
@@ -30,7 +32,9 @@ function string(expr::FuncCall)
 end
 
 """
-Unary Operators
+	UnaryOperator
+	
+Any operator of a single argument
 """
 abstract type UnaryOperator <: Operator end
 getindex(expr::UnaryOperator, depi, depj) = typeof(expr)(expr.name, expr.expr, expr.depi+depi, expr.depj+depj)
@@ -38,7 +42,9 @@ string(expr::UnaryOperator) = "($(symbol(expr))($(string(expr.expr[expr.depi, ex
 eval(expr::UnaryOperator, vals::AbstractDict) = op(expr)(eval(expr.expr, vals))
 
 """
-Negative, represents the negation of an expression
+	Negative
+	
+Represents the negation of an expression
 """
 mutable struct Negative <: UnaryOperator
 	name::String
@@ -53,7 +59,7 @@ Negative(name, expr) = Negative(name, expr, 0, 0)
 -(expr::Expression) = Negative(expr.name*"_neg", expr)
 
 """
-AbsoluteValue
+	AbsoluteValue
 """
 mutable struct AbsoluteValue <: UnaryOperator
 	name::String
@@ -68,7 +74,9 @@ AbsoluteValue(name, expr) = AbsoluteValue(name, expr, 0, 0)
 abs(expr::Expression) = AbsoluteValue("abs_"*expr.name, expr)
 
 """
-Binary Operators
+	BinaryOperator
+
+Any operator on two expressions
 """
 abstract type BinaryOperator <: Operator end
 getindex(expr::BinaryOperator, depi, depj) = typeof(expr)(expr.name, expr.left, expr.right, expr.depi+depi, expr.depj+depj)
@@ -76,7 +84,7 @@ string(expr::BinaryOperator) = "($(string(expr.left[expr.depi, expr.depj])))$(sy
 eval(expr::BinaryOperator, vals::AbstractDict) = op(expr)(eval(expr.left, vals), eval(expr.right, vals))
 
 """
-Addition
+	Addition
 """
 mutable struct Addition <: BinaryOperator
 	name::String
@@ -99,7 +107,7 @@ Addition(name, left::Expression, right::Real) = Addition(name, left, RealValue(r
 +(left::Expression, right::Real) = Addition("p_"*left.name*"_"*string(right), left, right)
 
 """
-Substraction
+	Substraction
 """
 mutable struct Substraction <: BinaryOperator
 	name::String
@@ -117,7 +125,7 @@ Substraction(name, left, right) = Substraction(name, left, right, 0,0)
 -(left::Real, right::Expression) = Substraction(RealValue(left), right)
 
 """
-Multiplication
+	Multiplication
 """
 mutable struct Multiplication <: BinaryOperator
 	name::String
@@ -140,7 +148,7 @@ Multiplication(name, left::Expression, right::Real) = Multiplication(name, left,
 *(left::Expression, right::Real) = Multiplication("t_"*left.name*"_"*string(right), left, right)
 
 """
-Division
+	Division
 
 TODO error handling
 """
@@ -160,7 +168,7 @@ Division(name, left, right) = Division(name, left, right, 0,0)
 /(left::Real, right::Expression) = RealValue(left) / right
 
 """
-Exponentiation
+	Exponentiation
 """
 mutable struct Exponentiation <: BinaryOperator
 	name::String
@@ -177,16 +185,25 @@ Exponentiation(name, left, right) = Exponentiation(name, left, right, 0,0)
 ^(left::Expression, right::Real) = left ^ RealValue(right)
 ^(left::Real, right::Expression) = RealValue(left) ^ right
 
+"""
+	BinaryBooleanOperator
+"""
 abstract type BinaryBooleanOperator <: BinaryOperator end
+"""
+	UnaryBooleanOperator
+"""
 abstract type UnaryBooleanOperator <: UnaryOperator end
 
+"""
+	BooleanExpression
+"""
 BooleanExpression = Union{UnaryBooleanOperator, BinaryBooleanOperator}
 
 export TernaryOperator
 """
-TernaryOperator
+	TernaryOperator
 
-	symbolic representation of a ? b : c
+Symbolic representation of a ? b : c
 """
 mutable struct TernaryOperator <: Operator
 	name::String
@@ -206,9 +223,9 @@ TernaryOperator(a, b, c) = TernaryOperator("TA_" * a.name * "_" * b.name * "_" *
 
 #Conditionals
 """
-GreaterThan
+	GreaterThan
 
-	tests if left > right
+tests if left > right
 """
 mutable struct GreaterThan <: BinaryBooleanOperator
 	name::String

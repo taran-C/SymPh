@@ -103,7 +103,7 @@ errs = zero(h)
 
 for (i,pow) in enumerate(pows)
 	#Regenerate the kernel, lame, needs a way to just reset Poisson solver
-	rhs! = to_kernel(dtomega, dtb; save = ["U_X", "U_Y", "u_i", "u_j", "dhb_i", "dhb_j", "ι_U_omega_i", "ι_U_omega_j", "ι_U_db", "dhb_i", "dhb_j", "w_i", "w_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega, dtb, dhb, u])
+	rhs! = to_kernel(dtomega, dtb; save = ["U_X", "U_Y", "u_i", "u_j", "dhb_i", "dhb_j", "ι_U_omega_i", "ι_U_omega_j", "ι_U_db", "dhb_i", "dhb_j", "w_i", "w_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega, dtb, u])
 		
 	#Defining the Mesh
 	nh = 5

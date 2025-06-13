@@ -1,3 +1,8 @@
+"""
+	Mesh(ni, nj, nh, mgr, msk, xc, yc, xv, yv; iperio=false, jperio=false)
+
+TODO document
+"""
 struct Mesh
 	#Grid
 	ni::Int64

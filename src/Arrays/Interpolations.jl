@@ -94,6 +94,18 @@ end
 
 
 #TODO Specific interpolations for forms (choosing the right orders, directions...)
+"""
+	upwind(U::Expression, a::Expression, o::Expression, lr::String, dir::String)
+
+Five point upwind interpolation
+
+# Arguments
+- U : The transportant velocity
+- a : The object to upwind
+- o : The order of interpolation at that point
+- lr : If `lr==\"left\"`, compute `a[i-0.5]`, else `a[i+0.5]`
+- dir : along `i` or `j`
+"""
 upwind(U::Expression, a::Expression, o::Expression, lr::String, dir::String) = TernaryOperator(o > 4, upinterp(U, a, lr, dir, 5), 
 						       TernaryOperator(o > 2, upinterp(U, a, lr, dir, 3),
 						       TernaryOperator(o > 0, upinterp(U, a, lr, dir, 1), RealValue(0.0))))
@@ -101,7 +113,14 @@ upwind(U::Expression, a::Expression, o::Expression, lr::String, dir::String) = T
 """
 	avg2pt(U::Expression, a::Expression, o::Expression, lr::String, dir::String)
 
-Two point average (simple mean)
+Two point average interpolation
+
+# Arguments
+- U : The transportant velocity, unused
+- a : The object to interpolate
+- o : The order of interpolation at that point, unused
+- lr : If `lr==\"left\"`, compute `a[i-0.5]`, else `a[i+0.5]`
+- dir : along `i` or `j`
 """
 function avg2pt(U::Expression, a::Expression, o::Expression, lr::String, dir::String)
 	@assert lr in ["left", "right"]
@@ -123,6 +142,18 @@ function avg2pt(U::Expression, a::Expression, o::Expression, lr::String, dir::St
 end
 
 #Weno TODO BROKEN
+"""
+	weno(U::Expression, a::Expression, o::Expression, lr::String, dir::String)
+
+Weno interpolation of fifth order
+
+# Arguments
+- U : The transportant velocity
+- a : The object to upwind
+- o : The order of interpolation at that point
+- lr : If `lr==\"left\"`, compute `a[i-0.5]`, else `a[i+0.5]`
+- dir : along `i` or `j`
+"""
 function weno(U::Expression, a::Expression, o::Expression, lr::String, dir::String)
 	@assert lr in ["left", "right"]
 	@assert dir in ["i", "j"]

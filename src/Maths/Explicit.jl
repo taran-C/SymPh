@@ -1,6 +1,11 @@
 import ..Arrays
 export explicit, ExplicitParam
 
+"""
+	ExplicitParam(;interp = Arrays.upwind, fvtofd = Arrays.fvtofd2, fdtofv = Arrays.fdtofv2)
+	
+The parameters used when necessary to choose numerical methods
+"""
 struct ExplicitParam
 	interp
 	fvtofd
@@ -13,6 +18,11 @@ end
 
 
 #Vectors
+"""
+	explicit(expr::Expression, param = ExplicitParam())
+
+Returns a `SymPh.Arrays` `Expression` representing the operation `expr` on an array, pulling numerical methods from `param`
+"""
 function explicit(vect::VectorVariable{P}; param = ExplicitParam()) where {P}
 	return [Arrays.ArrayVariable(vect.name*"_X"), Arrays.ArrayVariable(vect.name*"_Y")]
 end

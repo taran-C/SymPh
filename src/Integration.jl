@@ -1,12 +1,13 @@
 export rk3step!, rk4step!, euler_forwardstep!
 
 """
-rk3step!(dt, mesh, state, progs)
-	
-	dt : time increment
-	mesh : Mesh object
-	state : State object
-	progs : Name of prognostic variables
+	rk3step!(dt, mesh, state, progs)
+
+# Arguments
+- dt : time increment
+- mesh : Mesh object
+- state : State object
+- progs : Name of prognostic variables
 """
 function rk3step!(rhs!, dt, mesh, state, progs)	
 	
@@ -30,12 +31,13 @@ function rk3step!(rhs!, dt, mesh, state, progs)
 end
 
 """
-rk4step!(dt, mesh, state, progs)
+	rk4step!(dt, mesh, state, progs)
 	
-	dt : time increment
-	mesh : Mesh object
-	state : State object
-	progs : Name of prognostic variables
+# Arguments
+- dt : time increment
+- mesh : Mesh object
+- state : State object
+- progs : Name of prognostic variables
 """
 function rk4step!(rhs!, dt, mesh, state, progs)	
 	
@@ -66,12 +68,13 @@ function rk4step!(rhs!, dt, mesh, state, progs)
 end
 
 """
-euler_forwardstep!(dt, mesh, state, progs)
+	euler_forwardstep!(dt, mesh, state, progs)
 
-	dt : time increment
-	mesh : Mesh object
-	state : State object
-	progs : Name of prognostic variables
+# Arguments
+- dt : time increment
+- mesh : Mesh object
+- state : State object
+- progs : Name of prognostic variables
 """
 function euler_forwardstep!(rhs!, dt, mesh, state, progs)
 	rhs!(mesh, state)

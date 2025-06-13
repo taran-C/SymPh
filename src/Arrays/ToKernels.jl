@@ -4,7 +4,9 @@ using SIMD
 export to_kernel
 
 """
-	Converts a sequence into a computing kernel
+	to_kernel(seq::Sequence, fill; verbose = false)
+
+Converts `seq` into a computing kernel, `fill` is the list of names of value that need their halo filled.
 """
 function to_kernel(seq::Sequence, fill; verbose = false)
 	calls = []
@@ -190,9 +192,9 @@ end
 
 
 """
-generate_loop_call(seq, block)
+	generate_loop_call(seq, vars, block)
 
-	Generate a function performing one of our blocks
+Generate a function performing one of our blocks
 """
 function generate_loop_call(seq, vars, block)
 	str = "@loops function compute_$(join(keys(block.exprs), "_"))(_, mesh::Mesh, "

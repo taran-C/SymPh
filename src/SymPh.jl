@@ -8,7 +8,11 @@ include("Integration.jl")
 include("Model.jl")
 include("plotform.jl")
 
-#Arrays
+"""
+	Arrays
+
+A module containing symbolic representations of arrays, and operations on them, and a way to convert them to computational kernels
+"""
 module Arrays
 import Base: +,*,^,-,/,<,>,!, string, getindex, abs
 
@@ -22,8 +26,11 @@ include("Arrays/Interpolations.jl")
 include("Arrays/FVtoFD.jl")
 end
 
+"""
+	Maths
 
-#Maths
+A module containing symbolic representations of differential forms, and operations on them, and a way to convert them to array operations
+"""
 module Maths
 
 import ..Arrays

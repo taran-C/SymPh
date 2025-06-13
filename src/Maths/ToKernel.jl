@@ -1,5 +1,17 @@
 export to_kernel
 
+"""
+	to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=false, bcs = [])
+
+Takes one or multiple expressions and returns a kernel that computes them.
+The kernel has signature `compute!(mesh::Mesh, state::State)`.
+
+# Keyword Arguments
+- `save` : A list of the intermediary value to save (not inline) into the state
+- `explparams::ExplicitParam` : An object holding the parameters like which interpolation to use, etc... (see [`ExplicitParam`](@ref))
+- `verbose::Bool` : Wether or not to print the functions being generated, the dependency tree, etc...
+- `bcs` : A list of objects representing our boundary conditions (WIP)
+"""
 function to_kernel(exprs...; save = [], explparams = ExplicitParam(), verbose=false, bcs = [])
 	#Transforming the Forms expression into an Expression on arrays (TODO probably a more elegant way to do this)
 	math_exprs = []

@@ -2,6 +2,8 @@ export RealValue
 export ScalarVariable, ArrayVariable
 
 """
+	Expression
+
 Generic Expression
 """
 abstract type Expression end
@@ -10,16 +12,25 @@ getindex(A::Expression, depi, depj) = A
 eval(expr::Expression) = eval(expr, Dict())
 
 """
+	Atom <: Expression
+
 An atom is a singular element holding a value (Variable or not)
 """
 abstract type Atom <: Expression end
 prec(expr::Atom) = 10
 
 """
-Literals (literal constant value)
+	Literal <: Atom
+
+Literal constant value
 """
 abstract type Literal <: Atom end
 
+"""
+	RealValue(name::String, val::Real) <: Literal
+
+A constant real value
+"""
 struct RealValue <: Literal
 	name::String
 	val::Real
@@ -29,10 +40,17 @@ eval(expr::RealValue, vals::AbstractDict) = expr.val
 RealValue(val::Real) = RealValue(string(val), val)
 
 """
-Variables
+	Variable <: Atom
+
+Any variable value
 """
 abstract type Variable <: Atom end
 
+"""
+	ScalarVariable(name::String) <: Variable
+
+A variable holding a single scalar value
+"""
 struct ScalarVariable <: Variable
 	name::String
 end
@@ -44,7 +62,11 @@ function eval(expr::ScalarVariable, vals::AbstractDict)
 	return vals[expr.name]
 end
 
-#Array object representing a variable name and a relative position
+"""
+	ArrayVariable(name::String, depi::Integer, depj::Integer) <: Variable
+
+Array object representing a variable name and a relative position
+"""
 struct ArrayVariable <: Variable
         name :: String
         depi :: Integer

@@ -1,7 +1,10 @@
 ```@meta
 CurrentModule = SymPh.Maths
 ```
-# Differential Geometry
+# Maths
+```@docs
+Maths
+```
 
 ## Abstract Objects
 
@@ -102,4 +105,11 @@ Negative
 FuncCall
 Division
 RealProdForm
+```
+
+## From Forms to Arrays
+```@docs
+to_kernel
+explicit
+ExplicitParam
 ```
