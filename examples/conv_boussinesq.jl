@@ -24,7 +24,7 @@ using Statistics
 @Let dtb = -InteriorProduct(U, ExteriorDerivative(stratif)) #dtb = L(U,b) + forcing term #TODO there is a boundary problem here
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.avg2pt, fvtofd = Arrays.fvtofd4)
+explparams = ExplicitParam(; interp = Arrays.avg2pt, fvtofd = Arrays.fvtofd4, fdtofv = Arrays.fdtofv4)
 
 N = 1 #Brunt Vaiasala Frequency, we set N,g, dphi etc to 1, easier
 

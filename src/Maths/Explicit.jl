@@ -180,13 +180,9 @@ end
 function explicit(form::ExteriorDerivative{1, Primal}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
 
-	#Finite diff in both direction
-	#expi = param.fvtofd(expr, Arrays.msk0p, "i")
-	#expj = param.fvtofd(expr, Arrays.msk0p, "j")
-
 	#Actual differentiation
-	d_i = (exp[1,0] - exp[0,0]) * Arrays.msk1pi
-	d_j = (exp[0,1] - exp[0,0]) * Arrays.msk1pj
+	d_i = (expr[1,0] - expr[0,0]) * Arrays.msk1pi
+	d_j = (expr[0,1] - expr[0,0]) * Arrays.msk1pj
 	
 	#Renaming
 	d_i.name = form.name * "_i"
@@ -198,10 +194,6 @@ end
 function explicit(form::ExteriorDerivative{1, Dual}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
 	
-	#Finite diff in both direction
-	#expi = param.fvtofd(expr, Arrays.msk0d, "i")
-	#expj = param.fvtofd(expr, Arrays.msk0d, "j")
-
 	#Actual differentiation
 	d_i = (expr[0,0] - expr[-1,0]) * Arrays.msk1di
 	d_j = (expr[0,0] - expr[0,-1]) * Arrays.msk1dj
@@ -216,12 +208,8 @@ end
 function explicit(form::ExteriorDerivative{2, Primal}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
 
-	#Finite diff in both direction
-	expi = exprs[1] #param.fvtofd(exprs[1], Arrays.msk1di, "j")
-	expj = exprs[2] #param.fvtofd(exprs[2], Arrays.msk1dj, "i")
-
 	#Actual differentiation
-	dq = ((expj[1,0]-expj[0,0])-(expi[0,1]-expi[0,0])) * Arrays.msk2p
+	dq = ((exprs[2][1,0]-exprs[2][0,0])-(exprs[1][0,1]-exprs[1][0,0])) * Arrays.msk2p
 	
 	#Renaming
 	dq.name = form.name
@@ -232,12 +220,8 @@ end
 function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
 	
-	#Finite diff in both direction
-	expi = exprs[1] #param.fvtofd(exprs[1], Arrays.msk1di, "j")
-	expj = exprs[2] #param.fvtofd(exprs[2], Arrays.msk1dj, "i")
-
 	#Actual differentiation
-	dq = ((expj[0,0]-expj[-1,0])-(expi[0,0]-expi[0,-1])) * Arrays.msk2d
+	dq = ((exprs[2][0,0]-exprs[2][-1,0])-(exprs[1][0,0]-exprs[1][0,-1])) * Arrays.msk2d
 	
 	#Renaming
 	dq.name = form.name
@@ -245,7 +229,7 @@ function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	return dq
 end
 
-#Codifferential #TODO handle FV to FD for codifferential
+#Codifferential
 function explicit(form::Codifferential{0, Dual}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
 
@@ -310,6 +294,7 @@ function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam(
 	return [uout, vout]
 end
 
+#TODO better interp here to have 4th order rsw
 function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 	uexpr, vexpr = explicit(form.vect; param = param)
@@ -344,9 +329,6 @@ function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate
 	xout = param.fdtofv(param.fvtofd(iexpr, Arrays.msk1di, "i"), Arrays.msk1di, "j") / Arrays.dx / Arrays.dx * Arrays.msk1di 
 	yout = param.fdtofv(param.fvtofd(jexpr, Arrays.msk1dj, "j"), Arrays.msk1dj, "i") / Arrays.dy / Arrays.dy * Arrays.msk1dj
 
-	#xout = iexpr / Arrays.dx / Arrays.dx
-	#yout = jexpr / Arrays.dy / Arrays.dy
-
 	xout.name = vec.name*"_X"
 	yout.name = vec.name*"_Y"
 	return [xout, yout]
@@ -357,12 +339,21 @@ function explicit(form::Hodge{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
 	res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2p, "i"), Arrays.msk2p, "j") / Arrays.dx /Arrays.dy * Arrays.msk0d
-	#res = fexpr / Arrays.dx / Arrays.dy
+	
 	res.name = form.name
 	return res
 end
 
-#InverseLaplacian
+function explicit(form::Hodge{2, Primal}; param = ExplicitParam())
+	fexpr = explicit(form.form; param = param)
+
+	res = param.fdtofv(param.fdtofv(fexpr, Arrays.msk0d, "i"), Arrays.msk0d, "j") * Arrays.dx * Arrays.dy * Arrays.msk2p
+	
+	res.name = form.name
+	return res
+end
+
+#InverseLaplacian TODO have bcs influence that
 function explicit(form::InverseLaplacian{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
@@ -378,7 +369,7 @@ end
 
 function explicit(form::InverseLaplacian{2, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
-	#TODO check with periodic condition +bc
+	
 	poisson = Poisson2D("dirichlet", "2d")
 
 	function poiss_dirich_2d(mesh;kwargs...)

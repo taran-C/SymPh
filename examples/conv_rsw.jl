@@ -1,27 +1,9 @@
 #For the analytical solution
 using SpecialFunctions
-#import QuadGK
-using PyCall
 using BenchmarkTools
 using Printf
-using DelimitedFiles
 using LinearRegression
 using FunctionZeros
-
-""" 
-        Quasi-discrete Hankel transform 
- 
-from https://doi.org/10.1364/OL.23.000409 
-""" 
-function hankel(f, r, R, N) 
-        res = zero(r) 
-
-        for n in 1:N 
-                print("$n\r") 
-                res += f(besselj_zero(0, n)/(2*pi*R)) /(besselj1(besselj_zero(0,n))^2) .* besselj0.(besselj_zero(0,n) .*r ./(2pi * R)) 
-        end 
-        return res ./ (2*pi^2*R^2) 
-end
 
 #To use plotrun
 using GLMakie
@@ -55,7 +37,7 @@ explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4, fd
 
 #Generating the RHS TODO change the way BCs are handled
 rhs! = to_kernel(dtu, dth; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, verbose = false)
-compute_p! = to_kernel(p; explparams=explparams, verbose = false)
+compute_p! = to_kernel(p; explparams, verbose = false)
 
 #Testing the function
 
@@ -91,21 +73,25 @@ end
 function get_model(mesh)
 	state = State(mesh)
 
-	gaussian(r,a) = exp(-r^2 * a^2)
+	#Pressure initialization
+	local @Let p = FormVariable{0, Dual}()
+	local @Let h = Hodge(p)
 
-	spi = pyimport("scipy.integrate")
+	h_from_p! = to_kernel(h; explparams)
+
+	gaussian(r,a) = exp(-r^2 * a^2)
+	r(x,y) = sqrt((x-Lx/2)^2+(y-Ly/2)^2)
+	func(x,y) = H + h0 * gaussian(r(x,y), a)
 	
-	#for i in nh+1:ni-nh, j in nh+1:nj-nh
-	for i in 2:mesh.ni-1, j in 2:mesh.nj-1
+	for i in mesh.nh+1:mesh.ni-mesh.nh, j in mesh.nh+1:mesh.nj-mesh.nh
 		x = mesh.xc[i,j]
 		y = mesh.yc[i,j]
-		r(x,y) = sqrt((x-Lx/2)^2+(y-Ly/2)^2)
 
-		#We integrate the initial conditions in order to have an actual finite volume solution TODO check how to handle curved coordinates (gfun argument in dblquad), use inverse hodge instead ?
-		func(x,y) = H + h0 * gaussian(r(x,y), a)
-		state.h[i,j] = spi.dblquad(func, mesh.xv[i,j], mesh.xv[i+1,j], mesh.yv[i,j], mesh.yv[i,j+1], epsabs = 2e-14, epsrel = 2e-14)[1]
+		state.p[i,j] = func(x,y)
 	end
-	
+
+	#Getting FV h
+	Base.invokelatest(h_from_p!,mesh,state)
 
 	#TODO ugly ugly ugly	
 	um = get_Umax(mesh)
@@ -114,6 +100,22 @@ function get_model(mesh)
 	#Creating the Model
 	model = Model(rhs!, mesh, state, ["u_i", "u_j", "h"]; integratorstep! = rk4step!, cfl = 0.3, dtmax=0.15, Umax = Umax)
 end
+
+""" 
+        Quasi-discrete Hankel transform 
+ 
+from https://doi.org/10.1364/OL.23.000409 
+""" 
+function hankel(f, r, R, N) 
+        res = zero(r) 
+
+        for n in 1:N 
+                print("$n\r") 
+                res += f(besselj_zero(0, n)/(2*pi*R)) /(besselj1(besselj_zero(0,n))^2) .* besselj0.(besselj_zero(0,n) .*r ./(2pi * R)) 
+        end 
+        return res ./ (2*pi^2*R^2) 
+end
+
 
 function get_analytical(mesh, t)
 	xs = mesh.xc
@@ -127,27 +129,6 @@ function get_analytical(mesh, t)
 end
 get_analytical(model::Model) = get_analytical(model.mesh, model.t)
 
-function get_fd_pressure(mesh, state)
-	dtv4(qm, q0, qp) = (13/12) * q0 - (1/24) * (qm + qp)
-	function fvtofd4(q, i, j, dir) #Only for present case
-		if dir == "i"
-			return dtv4(q[i-1,j], q[i,j], q[i+1,j])
-		elseif dir == "j"
-			return dtv4(q[i,j-1], q[i,j], q[i,j+1])
-		end
-	end
-	function full_fvtofd(mesh, h, p=zeros(mesh.ni, mesh.nj), work = zeros(mesh.ni, mesh.nj))
-		for i in mesh.nh:mesh.ni-mesh.nh+1, j in mesh.nh:mesh.nj-mesh.nh+1
-			work[i,j] = fvtofd4(h, i, j, "i")
-		end
-		for i in mesh.nh:mesh.ni-mesh.nh+1, j in mesh.nh:mesh.nj-mesh.nh+1
-			p[i,j] = fvtofd4(work, i, j, "j") 
-		end
-		return p
-	end
-	return full_fvtofd(mesh, state.p)
-end
-
 #Running the simulation
 function test_conv(pow)
 	print("Init model...")
@@ -156,7 +137,6 @@ function test_conv(pow)
 	state = model.state
 	print("\rDone !        \r")
 	
-	#run!(model; tend = T, maxite = 10000, writevars = [:h])
 	run!(model; tend = 100, maxite = 2^pow, writevars = [:h])
 	compute_p!(mesh, state)
 
@@ -164,7 +144,6 @@ function test_conv(pow)
 	
 	inner = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh)
 
-	#p_fd = get_fd_pressure(mesh, state)
 	Linf(A) = maximum(abs.(A))
 	rms(A) = sqrt(mean(A .^ 2)) #Root Mean Square
 	
