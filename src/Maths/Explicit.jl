@@ -10,14 +10,16 @@ struct ExplicitParam
 	interp
 	fvtofd
 	fdtofv
+	laporder
 
-	function ExplicitParam(;interp = Arrays.upwind, fvtofd = Arrays.fvtofd2, fdtofv = Arrays.fdtofv2)
-		return new(interp, fvtofd, fdtofv)
+	function ExplicitParam(;interp = Arrays.upwind, fvtofd = Arrays.fvtofd2, fdtofv = Arrays.fdtofv2, laporder = 2)
+		return new(interp, fvtofd, fdtofv, laporder)
 	end
 end
 
 
-#Vectors
+#------------------------Vectors----------------------------------------------------------------
+
 """
 	explicit(expr::Expression, param = ExplicitParam())
 
@@ -27,7 +29,8 @@ function explicit(vect::VectorVariable{P}; param = ExplicitParam()) where {P}
 	return [Arrays.ArrayVariable(vect.name*"_X"), Arrays.ArrayVariable(vect.name*"_Y")]
 end
 
-#FormVariables
+#----------------------FormVariables---------------------------------------------------------------
+
 function explicit(form::FormVariable{0, P}; param = ExplicitParam()) where {P}
 	return Arrays.ArrayVariable(form.name)
 end
@@ -40,7 +43,8 @@ function explicit(form::FormVariable{2,P}; param = ExplicitParam()) where {P}
 	return Arrays.ArrayVariable(form.name)
 end
 
-#FuncCall
+#----------------------FuncCall-----------------------------------------------------------------------
+
 function explicit(form::FuncCall{0,P}; param = ExplicitParam()) where {P}
 	#Expliciting arguments
 	argexprs = []
@@ -76,7 +80,7 @@ function explicit(form::FuncCall{2,P}; param = ExplicitParam()) where {P}
 	return call
 end
 
-#Addition
+#-----------------------------Addition-----------------------------------------------------------------------------
 function explicit(form::Addition{0,P}; param = ExplicitParam()) where {P}
 	return Arrays.Addition(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
 end
@@ -92,7 +96,7 @@ function explicit(form::Addition{2,P}; param = ExplicitParam()) where {P}
 	return Arrays.Addition(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
 end
 
-#Substraction
+#-----------------------------Substraction---------------------------------------------------------------------------
 function explicit(form::Substraction{0,P}; param = ExplicitParam()) where {P}
 	return Arrays.Addition(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
 end
@@ -108,7 +112,7 @@ function explicit(form::Substraction{2,P}; param = ExplicitParam()) where {P}
 	return Arrays.Substraction(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
 end
 
-#Negative
+#----------------------Negative---------------------------------------------------------------------------------------
 function explicit(form::Negative{0,P}; param = ExplicitParam()) where {P}
 	return Arrays.Negative(form.name, explicit(form.form; param = param))
 end
@@ -122,7 +126,7 @@ function explicit(form::Negative{2,P}; param = ExplicitParam()) where {P}
 	return Arrays.Negative(form.name, explicit(form.form; param = param))
 end
 
-#Division
+#------------------------Division------------------------------------------------------------------------
 function explicit(form::Division{2,Dual}; param = ExplicitParam())
 	left = explicit(form.left; param = param)
 	right = explicit(form.right; param = param)
@@ -133,7 +137,7 @@ function explicit(form::Division{2,Dual}; param = ExplicitParam())
 	return res
 end
 
-#RealProducts
+#----------------------RealProducts---------------------------------------------------------------------
 function explicit(form::RealProdForm{0,D}; param = ExplicitParam()) where {D}
 	res = form.real * explicit(form.form; param = param)
 	res.name = form.name
@@ -160,7 +164,7 @@ function explicit(form::RealProdForm{2,D}; param = ExplicitParam()) where {D}
 	return res
 end
 
-#Wedge
+#--------------------------------------Wedge--------------------------------------------------------------------
 function explicit(form::Wedge{1, 0, 1, Dual}; param = ExplicitParam())
 	left = explicit(form.left; param = param)
 	righti, rightj = explicit(form.right; param = param)
@@ -186,7 +190,7 @@ function explicit(form::Wedge{1, 0, 1, Dual}; param = ExplicitParam())
 	return [resi, resj]
 end
 
-#ExteriorDerivative
+#------------------------------ExteriorDerivative--------------------------------------------------------------
 function explicit(form::ExteriorDerivative{1, Primal}; param = ExplicitParam())
 	expr = explicit(form.form; param = param)
 
@@ -239,7 +243,7 @@ function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	return dq
 end
 
-#Codifferential
+#---------------------------------Codifferential-----------------------------------------------------
 function explicit(form::Codifferential{0, Dual}; param = ExplicitParam())
 	exprs = explicit(form.form; param = param)
 
@@ -261,7 +265,8 @@ function explicit(form::Codifferential{1, Dual}; param = ExplicitParam())
 	return[du, dv]
 end
 
-#InteriorProduct
+#----------------------------------InteriorProduct---------------------------------------------------------
+
 function explicit(form::InteriorProduct{0, Dual, Dual}; param = ExplicitParam())
 	fx, fy = explicit(form.form; param = param)
 	U, V = explicit(form.vect; param = param)
@@ -331,7 +336,8 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 	return [iout, jout]
 end
 
-#Sharp
+#---------------------------------Sharp---------------------------------------------------------------------
+
 function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate Primal and dual areas (could be very different, especially for non square grids)
 	iexpr, jexpr = explicit(vec.form; param = param)
 
@@ -344,11 +350,22 @@ function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate
 	return [xout, yout]
 end
 
-#Hodge
+#--------------------------------Hodge-------------------------------------------------------------------
+
+#UNTESTED
+function explicit(form::Hodge{0, Primal}; param = ExplicitParam())
+	fexpr = explicit(form.form; param = param)
+
+	res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2d, "i"), Arrays.msk2d, "j") / Arrays.dx / Arrays.dy * Arrays.msk0p
+	
+	res.name = form.name
+	return res
+end
+
 function explicit(form::Hodge{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
-	res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2p, "i"), Arrays.msk2p, "j") / Arrays.dx /Arrays.dy * Arrays.msk0d
+	res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2p, "i"), Arrays.msk2p, "j") / Arrays.dx / Arrays.dy * Arrays.msk0d
 	
 	res.name = form.name
 	return res
@@ -363,11 +380,23 @@ function explicit(form::Hodge{2, Primal}; param = ExplicitParam())
 	return res
 end
 
-#InverseLaplacian TODO have bcs influence that
+#UNTESTED
+function explicit(form::Hodge{2, Dual}; param = ExplicitParam())
+	fexpr = explicit(form.form; param = param)
+
+	res = param.fdtofv(param.fdtofv(fexpr, Arrays.msk0p, "i"), Arrays.msk0p, "j") * Arrays.dx * Arrays.dy * Arrays.msk2d
+	
+	res.name = form.name
+	return res
+end
+
+#----------------------------------InverseLaplacian---------------------------------------------------------------
+#TODO have bcs influence that
+
 function explicit(form::InverseLaplacian{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
-	poisson = Poisson2D("dirichlet", "0d")
+	poisson = Poisson2D("dirichlet", "0d"; order = param.laporder)
 
 	function poiss_dirich_0d(mesh;kwargs...)
 		#args = Dict(kwargs)
@@ -380,7 +409,7 @@ end
 function explicit(form::InverseLaplacian{2, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 	
-	poisson = Poisson2D("dirichlet", "2d")
+	poisson = Poisson2D("dirichlet", "2d"; order = param.laporder)
 
 	function poiss_dirich_2d(mesh;kwargs...)
 		#args = Dict(kwargs)

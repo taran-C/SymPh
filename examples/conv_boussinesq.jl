@@ -24,7 +24,7 @@ using Statistics
 @Let dtb = -InteriorProduct(U, ExteriorDerivative(stratif)) #dtb = L(U,b) + forcing term #TODO there is a boundary problem here
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.avg2pt, fvtofd = Arrays.fvtofd4, fdtofv = Arrays.fdtofv4)
+explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4, fdtofv = Arrays.fdtofv4, laporder=4)
 
 N = 1 #Brunt Vaiasala Frequency, we set N,g, dphi etc to 1, easier
 
@@ -97,7 +97,7 @@ end
 
 
 #Testing the function
-pows = 5:7
+pows = 3:3
 h = 1 ./(2 .^collect(pows))
 errs = zero(h)
 
@@ -195,7 +195,7 @@ for (i,pow) in enumerate(pows)
 
 		with_theme(theme) do
 			fig = Figure()
-			hm1 = heatmap(fig[1,1], impvar[vertices(mesh)...]; colormap, colorrange = crange)
+			hm1 = heatmap(fig[1,1], impvar[vertices(mesh)...]; colormap)#, colorrange = crange)
 			#Colorbar(fig[1,2], hm1)
 			
 			hm2 = heatmap(fig[1,2], state.h_th[vertices(mesh)...]; colormap, colorrange = crange)

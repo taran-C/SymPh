@@ -6,11 +6,12 @@ mutable struct Poisson2D
 	bc
 	form_type
 	poisson_solver
+	order
 end
-Poisson2D(bc, form_type) = Poisson2D(bc, form_type, nothing)
+Poisson2D(bc, form_type; order = 2) = Poisson2D(bc, form_type, nothing, order)
 function solve_poisson(poisson::Poisson2D, mesh, out, b)
 	if poisson.poisson_solver == nothing
-		poisson.poisson_solver = get_poisson_solver(mesh, b, poisson.bc, poisson.form_type)
+		poisson.poisson_solver = get_poisson_solver(mesh, b, poisson.bc, poisson.form_type; o = poisson.order)
 	end
 	poisson.poisson_solver(out, b)
 end
@@ -130,8 +131,9 @@ get_fvtofd_j(mesh) = Ijp(mesh) + Ijm(mesh) - Ij(mesh)
 get_fvtofd_ij(mesh) = get_fvtofd_j(mesh) * get_fvtofd_i(mesh)
 
 #Differential TODO figure out non periodic
-get_diff_i(mesh; factor = nothing) = get_op_from_coeffs(mesh, Dict((-1,0) => -1, (0,0) => 1))
-get_diff_j(mesh; factor = nothing) = get_op_from_coeffs(mesh, Dict((0,-1) => -1, (0,0) => 1))
+get_diff_i(mesh; factor = nothing) = get_op_from_coeffs(mesh, Dict((-1,0) => -1)) + get_op_from_coeffs(mesh, Dict((0,0) => 1))
+get_diff_j(mesh; factor = nothing) = get_op_from_coeffs(mesh, Dict((0,-1) => -1)) + get_op_from_coeffs(mesh, Dict((0,0) => 1))
+#get_diff_j(mesh; factor = nothing) = get_op_from_coeffs(mesh, Dict((0,-1) => -1, (0,0) => 1))
 
 #Codifferential TODO idem
 get_codiff_i(mesh; factor = ones(mesh.ni, mesh.nj)) = get_op_from_coeffs(mesh, Dict((0,0)=>-1, (1,0)=>1); factor)
@@ -149,14 +151,14 @@ function get_laplacian(mesh; o=2)
 	end
 end
 
-laplacian(mesh, msk, bc, location) = get_laplacian(mesh)
+laplacian(mesh, msk, bc, location; o) = get_laplacian(mesh; o)
 
 """
 	solve_poisson(out, b)
 
 Solves the poisson problem Ax = b and sets out to be x
 """
-function get_poisson_solver(mesh, b, bc, form_type)
+function get_poisson_solver(mesh, b, bc, form_type; o = 2)
 	@assert bc in ["dirichlet", "neumann"]
 	@assert form_type in ["0p", "0d", "2p", "2d"]
 
@@ -174,23 +176,24 @@ function get_poisson_solver(mesh, b, bc, form_type)
 		msk = mesh.msk2d
 	end
 
-	A,idx = desingularize_op(laplacian(mesh, msk, bc, location))
+	A,idx = desingularize_op(laplacian(mesh, msk, bc, location; o))
+	display(Matrix(A))
 	A = -A#factorize(A)#lu(-A)
 	prob = LinearProblem(A, b[idx])
 	linsolve = init(prob, KrylovJL_CRAIGMR())
-
+	#=
 	if bc=="dirichlet"
 		if location == "vertex"
 			#Only for dirichlet BC at vertices
-			A[A .== -2] .= -6
-			A[A .== -3] .= -5
+			A[A .== -2] .= -4
+			A[A .== -3] .= -4
 		elseif location == "center"
 			#Dirichlet centers
 			A[A .== -2] .= -6
 			A[A .== -3] .= -5
 		end
 	end
-
+	=#
 	A = lu(A)
 	#Create a function that solves Ax = b
 	function func!(out, b)

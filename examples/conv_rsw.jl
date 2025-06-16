@@ -1,9 +1,27 @@
 #For the analytical solution
 using SpecialFunctions
+#import QuadGK
+using PyCall
 using BenchmarkTools
 using Printf
+using DelimitedFiles
 using LinearRegression
 using FunctionZeros
+
+""" 
+        Quasi-discrete Hankel transform 
+ 
+from https://doi.org/10.1364/OL.23.000409 
+""" 
+function hankel(f, r, R, N) 
+        res = zero(r) 
+
+        for n in 1:N 
+                print("$n\r") 
+                res += f(besselj_zero(0, n)/(2*pi*R)) /(besselj1(besselj_zero(0,n))^2) .* besselj0.(besselj_zero(0,n) .*r ./(2pi * R)) 
+        end 
+        return res ./ (2*pi^2*R^2) 
+end
 
 #To use plotrun
 using GLMakie
@@ -77,21 +95,17 @@ function get_model(mesh)
 	local @Let p = FormVariable{0, Dual}()
 	local @Let h = Hodge(p)
 
-	h_from_p! = to_kernel(h; explparams)
+	hfromp! = to_kernel(h; explparams)
 
-	gaussian(r,a) = exp(-r^2 * a^2)
-	r(x,y) = sqrt((x-Lx/2)^2+(y-Ly/2)^2)
-	func(x,y) = H + h0 * gaussian(r(x,y), a)
-	
-	for i in mesh.nh+1:mesh.ni-mesh.nh, j in mesh.nh+1:mesh.nj-mesh.nh
-		x = mesh.xc[i,j]
-		y = mesh.yc[i,j]
+	gaussian(r,a) = exp.(-r .^2 .* a^2)
 
-		state.p[i,j] = func(x,y)
-	end
+	x = mesh.xc
+	y = mesh.yc
+	r(x,y) = sqrt.((x .-Lx/2) .^2 .+(y .-Ly/2) .^2)
 
-	#Getting FV h
-	Base.invokelatest(h_from_p!,mesh,state)
+	func(x,y) = H .+ h0 .* gaussian(r(x,y), a)
+	state.p .= func(x,y)
+	hfromp!(mesh, state)
 
 	#TODO ugly ugly ugly	
 	um = get_Umax(mesh)
@@ -100,22 +114,6 @@ function get_model(mesh)
 	#Creating the Model
 	model = Model(rhs!, mesh, state, ["u_i", "u_j", "h"]; integratorstep! = rk4step!, cfl = 0.3, dtmax=0.15, Umax = Umax)
 end
-
-""" 
-        Quasi-discrete Hankel transform 
- 
-from https://doi.org/10.1364/OL.23.000409 
-""" 
-function hankel(f, r, R, N) 
-        res = zero(r) 
-
-        for n in 1:N 
-                print("$n\r") 
-                res += f(besselj_zero(0, n)/(2*pi*R)) /(besselj1(besselj_zero(0,n))^2) .* besselj0.(besselj_zero(0,n) .*r ./(2pi * R)) 
-        end 
-        return res ./ (2*pi^2*R^2) 
-end
-
 
 function get_analytical(mesh, t)
 	xs = mesh.xc
