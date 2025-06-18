@@ -21,16 +21,16 @@ function fvtofd4(q::Expression, msk::Expression, dir::String)
 		return TernaryOperator(msk[-1,0] > 0,
 				TernaryOperator(msk[+1,0] > 0,
 					(13/12) * q[0,0] - (1/24) * (q[-1,0] + q[+1,0]),
-				       (1/24) * (23*q[0,0] + q[-1,0])),
-			       (1/24) * (23*q[0,0] + q[+1,0]))
+					q),#(1/24) * (23*q[0,0] + q[-1,0])),
+				q)#(1/24) * (23*q[0,0] + q[+1,0]))
 		
 		#return vtd4(q[-1,0], q, q[+1,0])
 	elseif dir == "j"
 		return TernaryOperator(msk[0,-1] > 0,
 				TernaryOperator(msk[0,+1] > 0,
 					(13/12) * q[0,0] - (1/24) * (q[0,-1] + q[0,+1]),
-				       (1/24) * (23*q[0,0] + q[0,-1])),
-			       (1/24) * (23*q[0,0] + q[0,+1]))
+					q),#(1/24) * (23*q[0,0] + q[0,-1])),
+				q)#(1/24) * (23*q[0,0] + q[0,+1]))
 		
 		#return vtd4(q[0,-1], q, q[0,+1])
 	end
