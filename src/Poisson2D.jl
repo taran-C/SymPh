@@ -15,6 +15,7 @@ function solve_poisson(poisson::Poisson2D, mesh, out, b)
 	end
 	poisson.poisson_solver(out, b)
 end
+#=
 function ap_op!(A, q, mesh; out = zero(q), idx = nothing)
     #Only apply to inner points (desingularize)
     if idx == nothing
@@ -38,6 +39,7 @@ function ap_inv!(A, q, mesh; out = zero(q), idx = nothing)
 	#out[idx] .-= mean(out[idx])
 	return out
 end
+=#
 function desingularize_op(A)
     idx = findall(!=(0),diag(A))
     N = size(A)[1]
@@ -177,7 +179,6 @@ function get_poisson_solver(mesh, b, bc, form_type; o = 2)
 	end
 
 	A,idx = desingularize_op(laplacian(mesh, msk, bc, location; o))
-	display(Matrix(A))
 	A = -A#factorize(A)#lu(-A)
 	prob = LinearProblem(A, b[idx])
 	linsolve = init(prob, KrylovJL_CRAIGMR())

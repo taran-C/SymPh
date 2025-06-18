@@ -320,11 +320,11 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 		interp = form.interp
 	end
 
-	udec = Arrays.avg4pt(uexpr, 1, -1)
-	vdec = Arrays.avg4pt(vexpr, -1, 1)
+	#udec = Arrays.avg4pt(uexpr, 1, -1)
+	#vdec = Arrays.avg4pt(vexpr, -1, 1)
 
-	#udec = interp(vexpr, interp(uexpr, uexpr, Arrays.o1di, "right", "x"), Arrays.o1dj, "left", "y")
-	#vdec = interp(vexpr, interp(uexpr, vexpr, Arrays.o1di, "left", "x"), Arrays.o1dj, "right", "y")
+	udec = Arrays.centered4(vexpr, Arrays.centered4(uexpr, uexpr, Arrays.o1di, "right", "i"), Arrays.o1dj, "left", "j")
+	vdec = Arrays.centered4(vexpr, Arrays.centered4(uexpr, vexpr, Arrays.o1di, "left", "i"), Arrays.o1dj, "right", "j")
 
 	#TODO transp velocity dec or not
 	iout = -vdec * interp(vdec, fexpr, Arrays.o2dj, "right", "j") * Arrays.msk1di

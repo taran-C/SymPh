@@ -105,7 +105,7 @@ function get_model(mesh)
 
 	func(x,y) = H .+ h0 .* gaussian(r(x,y), a)
 	state.p .= func(x,y)
-	hfromp!(mesh, state)
+	Base.invokelatest(hfromp!,mesh, state)
 
 	#TODO ugly ugly ugly	
 	um = get_Umax(mesh)

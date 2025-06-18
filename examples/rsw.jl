@@ -25,7 +25,7 @@ g = 9.81
 @Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Defining the parameters needed to explicit 
-explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4)
+explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4, fdtofv = Arrays.fdtofv4)
 
 #Generating the RHS TODO change the way BCs are handled
 rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, bcs=[U, zeta, k, p, dtu, dth])
@@ -33,8 +33,8 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-ni = 50
-nj = 200
+ni = 75
+nj = 3*ni
 nh = 5
 
 #LoopManager
@@ -63,7 +63,7 @@ function get_Umax(model)
 	return U+V
 end
 
-config = "vortex"
+config = "straight_dam"
 
 #for i in nh+1:ni-nh, j in nh+1:nj-nh
 for i in 1:ni, j in 1:nj
@@ -77,7 +77,7 @@ for i in 1:ni, j in 1:nj
 		state.h[i,j] = (H + h0 * gaussian(x, y, 1, 0, sigma)) * mesh.A[i,j]
 		state.b[i,j] = 0 #(h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
 	elseif config == "straight_dam"
-		dh0 = h0 * tanh(100*(x-0.5))
+		dh0 = h0 * tanh(100*(x))
 		state.h[i,j] = (H+dh0) * mesh.A[i,j]
 	elseif config == "plateau"
 		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5, 0.5, sigma)>0.5)) * mesh.A[i,j]
@@ -94,4 +94,6 @@ println("first step")
 println("Done")
 
 #Running the simulation
-plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 2, maxite = 200)
+#plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 2, maxite = 200)
+run!(model; save_every=50, tend = 0.3, maxite=10000, writevars=(:p,))
+plotform(p, mesh, state)

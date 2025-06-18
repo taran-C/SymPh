@@ -37,7 +37,7 @@ function step!(model::Model; n=1, tend=-1)
 
 		#last step to arrive precisely at t
 		if (model.t + dt > tend) & (tend > 0)
-			#dt = tend - model.t
+			dt = tend - model.t
 		end
 
 		model.integratorstep!(model.rhs!, dt, model.mesh, model.state, model.prognostics)

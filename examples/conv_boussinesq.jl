@@ -24,7 +24,7 @@ using Statistics
 @Let dtb = -InteriorProduct(U, ExteriorDerivative(stratif)) #dtb = L(U,b) + forcing term #TODO there is a boundary problem here
 
 #Defining the parameters needed to explicit
-explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4, fdtofv = Arrays.fdtofv4, laporder=4)
+explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd2, fdtofv = Arrays.fdtofv2, laporder=2)
 
 N = 1 #Brunt Vaiasala Frequency, we set N,g, dphi etc to 1, easier
 
@@ -97,13 +97,13 @@ end
 
 
 #Testing the function
-pows = 3:3
+pows = 5:7
 h = 1 ./(2 .^collect(pows))
 errs = zero(h)
 
 for (i,pow) in enumerate(pows)
 	#Regenerate the kernel, lame, needs a way to just reset Poisson solver
-	rhs! = to_kernel(dtomega, dtb; save = ["U_X", "U_Y", "u_i", "u_j", "dhb_i", "dhb_j", "ι_U_omega_i", "ι_U_omega_j", "ι_U_db", "dhb_i", "dhb_j", "w_i", "w_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega, dtb, u])
+	rhs! = to_kernel(dtomega, dtb; save = ["U_X", "U_Y", "u_i", "u_j", "dhb_i", "dhb_j", "ι_U_omega_i", "ι_U_omega_j", "ι_U_db", "dhb_i", "dhb_j", "w_i", "w_j"], explparams, verbose = false, bcs=[U, psi, dtomega, dtb, u])
 		
 	#Defining the Mesh
 	nh = 5
