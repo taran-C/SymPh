@@ -11,7 +11,9 @@ import SymPh: plotform, plotform!, plotrun!
 
 Makie.@recipe(PlotForm, form, mesh, state) do scene
 	Makie.Theme(
-		    cmap = :balance
+		    cmap = :balance,
+		    vmin = nothing,
+		    vmax = nothing
 	)
 end
 
@@ -19,6 +21,9 @@ function Makie.plot!(plotform::PlotForm) #TODO handle vector ? Change name to sm
 	form = to_value(plotform[:form])
 	msh = to_value(plotform[:mesh])
 	state = to_value(plotform[:state])
+	cmap = to_value(plotform[:cmap])
+	vmin = to_value(plotform[:vmin])
+	vmax = to_value(plotform[:vmax])
 
 	deg = degree(form)
 	prim = primality(form)
@@ -54,24 +59,24 @@ function Makie.plot!(plotform::PlotForm) #TODO handle vector ? Change name to sm
 	else
 		arr = getproperty(state, Symbol(fname))
 		
-		max = maximum(arr)
-		min = minimum(arr)
+		max = vmax == nothing ? maximum(arr) : vmax
+		min = vmin == nothing ? minimum(arr) : vmin
 		
 		if ((deg == 0) & (prim == Dual)) || ((deg == 2) & (prim == Primal))
 			#Center of primal grid
-			cols = get(colorschemes[:balance], arr[1+nh:ni-nh, 1+nh:nj-nh], (min, max))
+			cols = get(colorschemes[cmap], arr[1+nh:ni-nh, 1+nh:nj-nh], (min, max))
 
-			out = curvilinear_grid_mesh(xv[nh:ni-nh, nh:nj-nh], yv[nh:ni-nh, nh:nj-nh], zero(xv[nh:ni-nh, nh:nj-nh]), arr[nh+1:ni-nh, nh+1:nj-nh])#$cols)
+			out = curvilinear_grid_mesh(xv[nh:ni-nh, nh:nj-nh], yv[nh:ni-nh, nh:nj-nh], zero(xv[nh:ni-nh, nh:nj-nh]), cols)
 		elseif (deg == 2) & (prim == Dual)
 			#Inner vertices of primal grid
-			cols = get(colorschemes[:balance], arr[2+nh:ni-nh, 2+nh:nj-nh], (min, max))
+			cols = get(colorschemes[cmap], arr[2+nh:ni-nh, 2+nh:nj-nh], (min, max))
 
-			out = curvilinear_grid_mesh(xc[1+nh:ni-nh, 1+nh:nj-nh], yc[1+nh:ni-nh, 1+nh:nj-nh], zero(xc[1+nh:ni-nh, 1+nh:nj-nh]), arr[nh+2:ni-nh, nh+2:nj-nh])#$cols)
+			out = curvilinear_grid_mesh(xc[1+nh:ni-nh, 1+nh:nj-nh], yc[1+nh:ni-nh, 1+nh:nj-nh], zero(xc[1+nh:ni-nh, 1+nh:nj-nh]), cols)
 		elseif (deg == 0) & (prim == Primal)
 			#Outer vertices
-			cols = get(colorschemes[:balance], arr[1+nh:ni-nh+1, 1+nh:nj-nh+1], (min, max))
-
-			out = curvilinear_grid_mesh(xc[nh:ni-nh+1, nh:nj-nh+1], yc[nh:ni-nh+1, nh:nj-nh+1], zero(xc[nh:ni-nh+1, nh:nj-nh+1]), arr[nh+1:ni-nh+1, nh+1:nj-nh+1])#$cols)
+			cols = get(colorschemes[cmap], arr[1+nh:ni-nh+1, 1+nh:nj-nh+1], (min, max))
+			#TODO PROBABLY WRONG
+			out = curvilinear_grid_mesh(xc[nh:ni-nh+1, nh:nj-nh+1], yc[nh:ni-nh+1, nh:nj-nh+1], zero(xc[nh:ni-nh+1, nh:nj-nh+1]), cols)
 		end
 		points = out[1]
 		faces = out[2]

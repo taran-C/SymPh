@@ -77,6 +77,9 @@ function get_model(explparams)
 	return model
 end
 
+centers(mesh) = (mesh.nh+1:mesh.ni-mesh.nh, mesh.nh+1:mesh.nj-mesh.nh) 
+vertices(mesh) = (mesh.nh+2:mesh.ni-mesh.nh, mesh.nh+2:mesh.nj-mesh.nh) 
+
 #Defining the parameters needed to explicit 
 explparams2 = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd2, fdtofv = Arrays.fdtofv2)
 explparams4 = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4, fdtofv = Arrays.fdtofv4)
@@ -85,20 +88,25 @@ explparams4 = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4, f
 theme = merge(theme_dark(), theme_latexfonts())
 theme = theme_latexfonts()
 with_theme(theme) do
-	fig = Figure()
+	fig = Figure(size = (1000,500), fontsize = 20)
 	
-	for (explparams, o) in zip((explparams2, explparams4), (2,4))
+	endpmods = []
+	for (i, explparams) in enumerate((explparams2, explparams4))
 		model = get_model(explparams)
 
-		Label(fig[0,o÷2], "order $o")#L"$\mathcal{O}($o)$")
-	
-		#First run
-		tend = 0.3
-		Base.invokelatest(run!,model; save_every=5, tend, maxite=10000, writevars=(:p,))
-
-		plotform(fig[1,o÷2], p, model.mesh, model.state)
-	
-		colsize!(fig.layout, o÷2, Aspect(1, 1.0))
-		display(fig)
+		Base.invokelatest(run!,model; tend=0.3, maxite=1)
+		push!(endpmods, model)
 	end
+
+	maxp = max(maximum(endpmods[1].state.p[centers(endpmods[1].mesh)...]), maximum(endpmods[2].state.p[centers(endpmods[2].mesh)...]))
+	minp = min(minimum(endpmods[1].state.p[centers(endpmods[1].mesh)...]), minimum(endpmods[2].state.p[centers(endpmods[2].mesh)...]))
+	for i in 1:2
+		Label(fig[0,i], "order $(2*i)")#L"$\mathcal{O}($o)$")
+		plotform(fig[1,i], p, endpmods[i].mesh, endpmods[i].state; cmap = :RdBu, vmax = maxp, vmin = minp)
+		colsize!(fig.layout, i, Aspect(1, 1.0))
+	end
+	Colorbar(fig[1,3], limits = (minp, maxp), colormap=:RdBu)
+
+	save("dambreak.png", fig)
+	display(fig)
 end
