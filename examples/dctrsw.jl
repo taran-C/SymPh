@@ -50,7 +50,7 @@ Lx = 2pi
 Ly = 2pi
 
 #mesh = Arrays.PolarMesh(ni, nj, nh, simd, msk)
-mesh = Arrays.CartesianMesh(ni,nj,nh, simd, msk, Lx, Ly)
+mesh = Arrays.CartesianMesh(ni,nj,nh, simd, Lx, Ly)
 
 #Initial Conditions
 state = State(mesh)

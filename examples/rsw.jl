@@ -11,7 +11,7 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 @Let u = FormVariable{1, Dual}() #Transported velocity
 @Let b = FormVariable{2, Primal}() #Topo
 
-g = 9.81
+g = 1
 
 @Let U = Sharp(u) # U = u#
 @Let k = 0.5 * InteriorProduct(U, u)#; interp = Arrays.avg2pt) #k = 1/2 InteriorProduct(U,u)
@@ -33,8 +33,8 @@ rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], expl
 #Testing the function
 
 #Defining the Mesh
-ni = 75
-nj = 3*ni
+ni = 2^6
+nj = ni#3*ni
 nh = 5
 
 #LoopManager
@@ -42,15 +42,15 @@ scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 
-mesh = Arrays.PolarMesh(ni, nj, nh, simd)#; xperio = true, yperio=true)
+mesh = Arrays.CartesianMesh(ni, nj, nh, simd, 1, 1)#; xperio = true, yperio=true)
 
 #Initial Conditions
 state = State(mesh)
 
 h0 = 0.05
 H = 1
-sigma = 0.05
-gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)/(2*sigma^2))
+a = 20
+gaussian(x,y,x0,y0,sigma) = exp(-((x-x0)^2 + (y-y0)^2)*(a^2))
 
 #TODO only call once
 function get_Umax(model)
@@ -63,7 +63,7 @@ function get_Umax(model)
 	return U+V
 end
 
-config = "straight_dam"
+config = "vortex"
 
 #for i in nh+1:ni-nh, j in nh+1:nj-nh
 for i in 1:ni, j in 1:nj
@@ -72,15 +72,15 @@ for i in 1:ni, j in 1:nj
 
 	if config == "dipole"
 		d=0.05
-		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, sigma) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[i,j]
+		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5+d/2, 0.5, a) - gaussian(x, y, 0.5-d/2, 0.5, sigma))) * mesh.A[i,j]
 	elseif config == "vortex"
-		state.h[i,j] = (H + h0 * gaussian(x, y, 1, 0, sigma)) * mesh.A[i,j]
+		state.h[i,j] = (H + h0 * gaussian(x, y, 0.75, 0.5, a)) * mesh.A[i,j]
 		state.b[i,j] = 0 #(h0 * gaussian(x, y, 0.7, 0.7, sigma)) * mesh.A[i,j]
 	elseif config == "straight_dam"
 		dh0 = h0 * tanh(100*(x))
 		state.h[i,j] = (H+dh0) * mesh.A[i,j]
 	elseif config == "plateau"
-		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5, 0.5, sigma)>0.5)) * mesh.A[i,j]
+		state.h[i,j] = (H + h0 * (gaussian(x, y, 0.5, 0.5, a)>0.5)) * mesh.A[i,j]
 	end
 end
 
@@ -94,6 +94,6 @@ println("first step")
 println("Done")
 
 #Running the simulation
-#plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 2, maxite = 200)
-run!(model; save_every=50, tend = 0.3, maxite=10000, writevars=(:p,))
-plotform(p, mesh, state)
+plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 20, maxite = 2000)
+#run!(model; save_every=50, tend = 1, maxite=10000, writevars=(:p,))
+#plotform(p, mesh, state)

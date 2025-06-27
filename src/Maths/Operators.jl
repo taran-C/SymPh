@@ -142,7 +142,7 @@ mutable struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
 	function InteriorProduct(name::String, vect::Vect{Pv}, form::Form{D,Pf}; interp = Nothing) where {Pv,D,Pf}
 		return new{D-1, Pv, Pf}(name, vect, form, interp)
 	end
-	InteriorProduct(vect::Vect, form::Form; interp = Nothing) = InteriorProduct("ι_"*vect.name*"_"*form.name, vect, form; interp=interp)
+	InteriorProduct(vect::Vect, form::Form; interp = nothing) = InteriorProduct("ι_"*vect.name*"_"*form.name, vect, form; interp=interp)
 end
 
 """
@@ -153,8 +153,11 @@ Corresponds to an application of the metric
 mutable struct Sharp{P} <: Vect{P}
 	name::String
 	form::Form{1, P}
+	fvtofd
+	fdtofv
 end
-Sharp(form::Form) = Sharp("#_"*form.name, form)
+Sharp(name::String, form::Form; fvtofd=nothing, fdtofv=nothing) = Sharp(name, form, fvtofd, fdtofv)
+Sharp(form::Form; fvtofd=nothing, fdtofv=nothing) = Sharp("#_"*form.name, form; fvtofd, fdtofv)
 
 """
 	Hodge{D, P}(name::String, form::Form) <: Form{D, P}

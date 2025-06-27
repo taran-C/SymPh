@@ -169,7 +169,7 @@ function explicit(form::Wedge{1, 0, 1, Dual}; param = ExplicitParam())
 	left = explicit(form.left; param = param)
 	righti, rightj = explicit(form.right; param = param)
 
-	if true #form.interp == Nothing
+	if true #form.interp == nothing
 		interp = param.interp
 	else
 		interp = form.interp
@@ -274,7 +274,7 @@ function explicit(form::InteriorProduct{0, Dual, Dual}; param = ExplicitParam())
 	fu = fx * U
 	fv = fy * V
 	
-	if form.interp == Nothing
+	if form.interp == nothing
 		interp = param.interp
 	else
 		interp = form.interp
@@ -294,7 +294,7 @@ function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam(
 	fexpr = explicit(form.form; param = param)
 	uexpr, vexpr = explicit(form.vect; param = param)
 
-	if form.interp == Nothing
+	if form.interp == nothing
 		interp = param.interp
 	else
 		interp = form.interp
@@ -314,7 +314,7 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 	uexpr, vexpr = explicit(form.vect; param = param)
 
-	if form.interp == Nothing
+	if form.interp == nothing
 		interp = param.interp
 	else
 		interp = form.interp
@@ -340,10 +340,20 @@ end
 
 function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate Primal and dual areas (could be very different, especially for non square grids)
 	iexpr, jexpr = explicit(vec.form; param = param)
+	if vec.fvtofd == nothing
+		fvtofd = param.fvtofd
+	else
+		fvtofd = vec.fvtofd
+	end
+	if vec.fdtofv == nothing
+		fdtofv = param.fdtofv
+	else
+		fdtofv = vec.fdtofv
+	end
 
 	#TODO per object configurable fvtofd function
-	xout = param.fdtofv(param.fvtofd(iexpr, Arrays.msk1di, "i"), Arrays.msk1di, "j") / Arrays.dx / Arrays.dx * Arrays.msk1di 
-	yout = param.fdtofv(param.fvtofd(jexpr, Arrays.msk1dj, "j"), Arrays.msk1dj, "i") / Arrays.dy / Arrays.dy * Arrays.msk1dj
+	xout = fdtofv(fvtofd(iexpr, Arrays.msk1di, "i"), Arrays.msk1di, "j") / Arrays.dx / Arrays.dx * Arrays.msk1di 
+	yout = fdtofv(fvtofd(jexpr, Arrays.msk1dj, "j"), Arrays.msk1dj, "i") / Arrays.dy / Arrays.dy * Arrays.msk1dj
 
 	xout.name = vec.name*"_X"
 	yout.name = vec.name*"_Y"
