@@ -39,7 +39,7 @@ Any operator of a single argument
 abstract type UnaryOperator <: Operator end
 getindex(expr::UnaryOperator, depi, depj) = typeof(expr)(expr.name, expr.expr, expr.depi+depi, expr.depj+depj)
 string(expr::UnaryOperator) = "($(symbol(expr))($(string(expr.expr[expr.depi, expr.depj]))))"
-eval(expr::UnaryOperator, vals::AbstractDict) = op(expr)(eval(expr.expr, vals))
+eval_expr(expr::UnaryOperator, vals::AbstractDict) = op(expr)(eval_expr(expr.expr, vals))
 
 """
 	Negative
@@ -81,7 +81,7 @@ Any operator on two expressions
 abstract type BinaryOperator <: Operator end
 getindex(expr::BinaryOperator, depi, depj) = typeof(expr)(expr.name, expr.left, expr.right, expr.depi+depi, expr.depj+depj)
 string(expr::BinaryOperator) = "($(string(expr.left[expr.depi, expr.depj])))$(symbol(expr))($(string(expr.right[expr.depi, expr.depj])))"
-eval(expr::BinaryOperator, vals::AbstractDict) = op(expr)(eval(expr.left, vals), eval(expr.right, vals))
+eval_expr(expr::BinaryOperator, vals::AbstractDict) = op(expr)(eval_expr(expr.left, vals), eval_expr(expr.right, vals))
 
 """
 	Addition
@@ -214,7 +214,7 @@ mutable struct TernaryOperator <: Operator
 	depj::Integer
 end
 #TODO check with true if else cause i can't seem to find a way to override the ternary operator ?
-eval(expr::TernaryOperator, vals::AbstractDict) = eval(expr.a, vals) ? eval(expr.b, vals) : eval(expr.c, vals)
+eval_expr(expr::TernaryOperator, vals::AbstractDict) = eval_expr(expr.a, vals) ? eval_expr(expr.b, vals) : eval_expr(expr.c, vals)
 string(expr::TernaryOperator) = "vifelse($(string(expr.a[expr.depi, expr.depj])), $(string(expr.b[expr.depi, expr.depj])), $(string(expr.c[expr.depi, expr.depj])))"
 prec(expr::TernaryOperator) = 10
 getindex(expr::TernaryOperator, depi, depj) = TernaryOperator(expr.name, expr.a, expr.b, expr.c, expr.depi+depi, expr.depj+depj)

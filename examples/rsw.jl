@@ -94,6 +94,6 @@ println("first step")
 println("Done")
 
 #Running the simulation
-plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 20, maxite = 2000)
-#run!(model; save_every=50, tend = 1, maxite=10000, writevars=(:p,))
+#plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 20, maxite = 2000)
+run!(model; save_every=50, tend = 1, maxite=10000, writevars=(:p,))
 #plotform(p, mesh, state)

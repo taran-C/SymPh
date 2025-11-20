@@ -9,7 +9,7 @@ Generic Expression
 abstract type Expression end
 
 getindex(A::Expression, depi, depj) = A
-eval(expr::Expression) = eval(expr, Dict())
+eval_expr(expr::Expression) = eval_expr(expr, Dict())
 
 """
 	Atom <: Expression
@@ -36,7 +36,7 @@ struct RealValue <: Literal
 	val::Real
 end
 string(expr::RealValue) = string(expr.val)
-eval(expr::RealValue, vals::AbstractDict) = expr.val
+eval_expr(expr::RealValue, vals::AbstractDict) = expr.val
 RealValue(val::Real) = RealValue(string(val), val)
 
 """
@@ -55,7 +55,7 @@ struct ScalarVariable <: Variable
 	name::String
 end
 string(expr::ScalarVariable) = expr.name
-function eval(expr::ScalarVariable, vals::AbstractDict)
+function eval_expr(expr::ScalarVariable, vals::AbstractDict)
 	if !haskey(vals, expr.name)
 		return expr
 	end
@@ -75,7 +75,7 @@ end
 string(expr::ArrayVariable) = "$(expr.name)[$(expr.depi)+i,$(expr.depj)+j]"
 ArrayVariable(name :: String) = ArrayVariable(name, 0, 0)
 getindex(A::ArrayVariable, depi, depj) = ArrayVariable(A.name, A.depi+depi, A.depj+depj)
-function eval(expr::ArrayVariable, vals::AbstractDict)
+function eval_expr(expr::ArrayVariable, vals::AbstractDict)
 	if !haskey(vals, expr.name)
 		return expr
 	end

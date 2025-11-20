@@ -1,10 +1,11 @@
 name = "SymPh"
 uuid = "c4776d07-9ba4-4798-9017-c0af6561b12b"
-authors = ["kazhdu "]
 version = "0.1.0"
+authors = ["kazhdu "]
 
 [deps]
 ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -28,6 +29,7 @@ SymPhMakieExt = ["Makie", "GeometryBasics", "ColorSchemes"]
 
 [compat]
 ColorSchemes = "3.29.0"
+GLMakie = "0.13.6"
 GeometryBasics = "0.5.9"
 Krylov = "0.10.1"
 LinearAlgebra = "1.11.0"
