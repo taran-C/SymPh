@@ -180,8 +180,9 @@ function get_poisson_solver(mesh, b, bc, form_type; o = 2)
 
 	A,idx = desingularize_op(laplacian(mesh, msk, bc, location; o))
 	A = -A#factorize(A)#lu(-A)
-	prob = LinearProblem(A, b[idx])
-	linsolve = init(prob, KrylovJL_CRAIGMR())
+	#prob = LinearProblem(A, b[idx])
+	#linsolve = init(prob, KrylovJL_CRAIGMR())
+	
 	#=
 	if bc=="dirichlet"
 		if location == "vertex"
