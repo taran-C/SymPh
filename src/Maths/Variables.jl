@@ -27,6 +27,7 @@ A variable representing a named vector field
 """
 struct VectorVariable{P} <: Vect{P}
 	name::String
+	save::Bool
 end
 
 """
@@ -45,6 +46,7 @@ A variable representing a named differential form
 """
 struct FormVariable{D,P} <: Form{D,P}
 	name::String
+	save::Bool
 end
 
 degree(f::Form{D,P}) where {D,P} = D

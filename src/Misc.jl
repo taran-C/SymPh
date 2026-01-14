@@ -22,6 +22,7 @@ macro Let(expr)
 	
 	#Inserting as first argument (right after kwargs)
 	insert!(expr.args[2].args, id, string(expr.args[1]))
+	insert!(expr.args[2].args, id+1, true)
 	
 	return :($(esc(expr.args[1])) = $(esc(expr)))
 end
