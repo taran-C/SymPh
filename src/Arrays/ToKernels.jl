@@ -8,7 +8,7 @@ export to_kernel
 
 Converts `seq` into a computing kernel, `fill` is the list of names of value that need their halo filled.
 """
-function to_kernel(seq::Sequence, fill; verbose = false)
+function to_kernel(seq::Sequence, fill; verbose = 0)
 	calls = []
 
 	vars = get_terms(seq)
@@ -16,12 +16,12 @@ function to_kernel(seq::Sequence, fill; verbose = false)
 	for b in seq.blocks
 		if b isa CallBlock
 			push!(calls, (b.expr.func,:call, [b.name]))
-			if verbose
+			if verbose >= 1
 				println("Function call to " * b.name)
 			end
 		elseif b isa LoopBlock
 			str, keys = generate_loop_call(seq, vars, b)
-			if verbose
+			if verbose >= 1
 				println(str)
 			end
 			push!(calls, (eval(Meta.parse(str)), :loop, keys))

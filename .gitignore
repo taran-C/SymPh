@@ -23,6 +23,9 @@ docs/site/
 # environment.
 Manifest.toml
 
+# Small experimentations that I can't be bothered to clean up
+exps/
+
 *.png
 *.gif
 *.mp4

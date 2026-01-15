@@ -82,48 +82,48 @@ end
 
 #-----------------------------Addition-----------------------------------------------------------------------------
 function explicit(form::Addition{0,P}; param = ExplicitParam()) where {P}
-	return Arrays.Addition(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
+	return Arrays.Addition(form.name, form.save, explicit(form.left; param = param), explicit(form.right; param = param))
 end
 
 function explicit(form::Addition{1,P}; param = ExplicitParam()) where {P}
 	ls = explicit(form.left; param = param)
 	rs = explicit(form.right; param = param)
 
-	return [Arrays.Addition(form.name*"_i", ls[1], rs[1]), Arrays.Addition(form.name*"_j", ls[2], rs[2])]
+	return [Arrays.Addition(form.name*"_i", form.save, ls[1], rs[1]), Arrays.Addition(form.name*"_j", form.save, ls[2], rs[2])]
 end
 
 function explicit(form::Addition{2,P}; param = ExplicitParam()) where {P}
-	return Arrays.Addition(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
+	return Arrays.Addition(form.name, form.save, explicit(form.left; param = param), explicit(form.right; param = param))
 end
 
 #-----------------------------Substraction---------------------------------------------------------------------------
 function explicit(form::Substraction{0,P}; param = ExplicitParam()) where {P}
-	return Arrays.Addition(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
+	return Arrays.Addition(form.name, form.save, explicit(form.left; param = param), explicit(form.right; param = param))
 end
 
 function explicit(form::Substraction{1,P}; param = ExplicitParam()) where {P}
 	ls = explicit(form.left; param = param)
 	rs = explicit(form.right; param = param)
 
-	return [Arrays.Substraction(form.name*"_i", ls[1], rs[1]), Arrays.Substraction(form.name*"_j", ls[2], rs[2])]
+	return [Arrays.Substraction(form.name*"_i", form.save, ls[1], rs[1]), Arrays.Substraction(form.name*"_j", form.save, ls[2], rs[2])]
 end
 
 function explicit(form::Substraction{2,P}; param = ExplicitParam()) where {P}
-	return Arrays.Substraction(form.name, explicit(form.left; param = param), explicit(form.right; param = param))
+	return Arrays.Substraction(form.name, form.save, explicit(form.left; param = param), explicit(form.right; param = param))
 end
 
 #----------------------Negative---------------------------------------------------------------------------------------
 function explicit(form::Negative{0,P}; param = ExplicitParam()) where {P}
-	return Arrays.Negative(form.name, explicit(form.form; param = param))
+	return Arrays.Negative(form.name, form.save, explicit(form.form; param = param))
 end
 
 function explicit(form::Negative{1,P}; param = ExplicitParam()) where {P}
 	fexpr = explicit(form.form; param = param)
-	return [Arrays.Negative(form.name*"_i", fexpr[1]), Arrays.Negative(form.name*"_j", fexpr[2])]
+	return [Arrays.Negative(form.name*"_i", form.save, fexpr[1]), Arrays.Negative(form.name*"_j", form.save, fexpr[2])]
 end
 
 function explicit(form::Negative{2,P}; param = ExplicitParam()) where {P}
-	return Arrays.Negative(form.name, explicit(form.form; param = param))
+	return Arrays.Negative(form.name, form.save, explicit(form.form; param = param))
 end
 
 #------------------------Division------------------------------------------------------------------------
@@ -133,6 +133,7 @@ function explicit(form::Division{2,Dual}; param = ExplicitParam())
 
 	res = left / Arrays.avg4pt(right, -1, -1) * Arrays.msk2d
 	res.name = form.name
+	res.save = form.save
 
 	return res
 end
@@ -141,6 +142,7 @@ end
 function explicit(form::RealProdForm{0,D}; param = ExplicitParam()) where {D}
 	res = form.real * explicit(form.form; param = param)
 	res.name = form.name
+	res.save = form.save
 
 	return res
 end
@@ -152,7 +154,9 @@ function explicit(form::RealProdForm{1,D}; param = ExplicitParam()) where {D}
 	r = form.real * exprs[2]
 
 	l.name = form.name*"_i"
+	l.save = form.save
 	r.name = form.name*"_j"
+	r.save = form.save
 
 	return [l, r]
 end
@@ -160,6 +164,7 @@ end
 function explicit(form::RealProdForm{2,D}; param = ExplicitParam()) where {D}
 	res = form.real * explicit(form.form; param = param)
 	res.name = form.name
+	res.save = form.save
 
 	return res
 end
@@ -185,7 +190,9 @@ function explicit(form::Wedge{1, 0, 1, Dual}; param = ExplicitParam())
 	resj = lj * rightj * Arrays.msk1dj
 	
 	resi.name = form.name*"_i"
+	resi.save = form.save
 	resj.name = form.name*"_j"
+	resj;save = form.save
 	
 	return [resi, resj]
 end
@@ -200,7 +207,9 @@ function explicit(form::ExteriorDerivative{1, Primal}; param = ExplicitParam())
 	
 	#Renaming
 	d_i.name = form.name * "_i"
+	d_i.save = form.save
 	d_j.name = form.name * "_j"
+	d_j.save = form.save
 
 	return [d_i, d_j]
 end
@@ -214,7 +223,9 @@ function explicit(form::ExteriorDerivative{1, Dual}; param = ExplicitParam())
 	
 	#Renaming
 	d_i.name = form.name * "_i"
+	d_i.save = form.save
 	d_j.name = form.name * "_j"
+	d_j.save = form.save
 
 	return [d_i, d_j]
 end
@@ -227,6 +238,7 @@ function explicit(form::ExteriorDerivative{2, Primal}; param = ExplicitParam())
 	
 	#Renaming
 	dq.name = form.name
+	dq.save = form.save
 
 	return dq
 end
@@ -239,6 +251,7 @@ function explicit(form::ExteriorDerivative{2, Dual}; param = ExplicitParam())
 	
 	#Renaming
 	dq.name = form.name
+	dq.save = form.save
 
 	return dq
 end
@@ -249,6 +262,7 @@ function explicit(form::Codifferential{0, Dual}; param = ExplicitParam())
 
 	dq = ((exprs[1][1,0]-exprs[1][0,0]) + (exprs[2][0,1]-exprs[2][0,0])) * Arrays.msk0d
 	dq.name = form.name
+	dq.save = form.save
 
 	return dq
 end
@@ -260,7 +274,9 @@ function explicit(form::Codifferential{1, Dual}; param = ExplicitParam())
 	dv = (expr[1,0] - expr[0,0]) * Arrays.msk1dj
 
 	du.name = form.name * "_i"
+	du.save = form.save
 	dv.name = form.name * "_j"
+	dv.save = form.save
 
 	return[du, dv]
 end
@@ -286,6 +302,7 @@ function explicit(form::InteriorProduct{0, Dual, Dual}; param = ExplicitParam())
 	qout = (Uint + Vint) * Arrays.msk0d
 	
 	qout.name = form.name
+	qout.save = form.save
 
 	return qout
 end
@@ -304,7 +321,9 @@ function explicit(form::InteriorProduct{1, Dual, Primal}; param = ExplicitParam(
 	vout = uexpr * interp(uexpr, fexpr, Arrays.o2pi, "left", "i") * Arrays.msk1pj
 
 	uout.name = form.name*"_i"
+	uout.save = form.save
 	vout.name = form.name*"_j"
+	vout.save = form.save
 
 	return [uout, vout]
 end
@@ -331,7 +350,9 @@ function explicit(form::InteriorProduct{1, Dual, Dual}; param = ExplicitParam())
 	jout = udec * interp(udec, fexpr, Arrays.o2di, "right", "i") * Arrays.msk1dj
 	
 	iout.name = form.name*"_i"
+	iout.save = form.save
 	jout.name = form.name*"_j"
+	iout.save = form.save
 
 	return [iout, jout]
 end
@@ -356,7 +377,10 @@ function explicit(vec::Sharp{D}; param = ExplicitParam()) where D #TODO separate
 	yout = fdtofv(fvtofd(jexpr, Arrays.msk1dj, "j"), Arrays.msk1dj, "i") / Arrays.dy / Arrays.dy * Arrays.msk1dj
 
 	xout.name = vec.name*"_X"
+	xout.save = vec.save
 	yout.name = vec.name*"_Y"
+	yout.save = vec.save
+
 	return [xout, yout]
 end
 
@@ -369,6 +393,8 @@ function explicit(form::Hodge{0, Primal}; param = ExplicitParam())
 	res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2d, "i"), Arrays.msk2d, "j") / Arrays.dx / Arrays.dy * Arrays.msk0p
 	
 	res.name = form.name
+	res.save = form.save
+
 	return res
 end
 
@@ -378,6 +404,8 @@ function explicit(form::Hodge{0, Dual}; param = ExplicitParam())
 	res = param.fvtofd(param.fvtofd(fexpr, Arrays.msk2p, "i"), Arrays.msk2p, "j") / Arrays.dx / Arrays.dy * Arrays.msk0d
 	
 	res.name = form.name
+	res.save = form.save
+
 	return res
 end
 
@@ -387,6 +415,8 @@ function explicit(form::Hodge{2, Primal}; param = ExplicitParam())
 	res = param.fdtofv(param.fdtofv(fexpr, Arrays.msk0d, "i"), Arrays.msk0d, "j") * Arrays.dx * Arrays.dy * Arrays.msk2p
 	
 	res.name = form.name
+	res.save = form.save
+
 	return res
 end
 
@@ -397,6 +427,8 @@ function explicit(form::Hodge{2, Dual}; param = ExplicitParam())
 	res = param.fdtofv(param.fdtofv(fexpr, Arrays.msk0p, "i"), Arrays.msk0p, "j") * Arrays.dx * Arrays.dy * Arrays.msk2d
 	
 	res.name = form.name
+	res.save = form.save
+
 	return res
 end
 

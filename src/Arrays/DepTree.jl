@@ -76,17 +76,18 @@ end
 #TODO fix bug where if the name of the result is present in node_names it is recalculated from its own value
 to_deptree!(node_names::Set{String}, expr::Expression) = to_deptree!(node_names, (expr,)) #unravel to allow flexibility
 
-function to_deptree!(node_names::Set{String}, exprs)
+function to_deptree!(exprs)
 	root = DepNode("root", nothing)
 	
 	for expr in exprs
-		expr_to_node!(expr, node_names, root)
+		expr.save = false
+		expr_to_node!(expr, root)
 	end
 
 	return root
 end	
 
-function expr_to_node!(expr::Expression, node_names::Set{String}, parent)
+function expr_to_node!(expr::Expression, parent)
 	if expr isa ArrayVariable
 		#This is ugly and this whole way of creating the tree is kinda terrible
 		n = DepNode(expr.name, expr[-expr.depi, -expr.depj])
@@ -95,7 +96,7 @@ function expr_to_node!(expr::Expression, node_names::Set{String}, parent)
 		return n
 	else 
 		n = DepNode(expr.name, nothing)
-		n.expr = go_deeper(expr, node_names, n)
+		n.expr = go_deeper(expr, n)
 		n.expr = n.expr[-n.expr.depi, -n.expr.depj]
 		addchild!(parent, n)
 
@@ -104,32 +105,32 @@ function expr_to_node!(expr::Expression, node_names::Set{String}, parent)
 end
 
 #TODO set depi/depj to 0 when creating a new node (so node isn't offset WRT itself)
-#Also WHY is there nondeterministic behavior ? -> Due to the way Sets are handled i guess, iteration on it seems to be chaotic
-function go_deeper(expr::Expression, node_names::Set{String}, parent)
-	if in(expr.name, node_names)
-		nnames = copy(node_names)
-		delete!(nnames, expr.name)	
-		expr_to_node!(expr, nnames, parent)
-		return ArrayVariable(expr.name, expr.depi, expr.depj)
+#TODO probably broke FuncCall (just put it before ?)
+function go_deeper(expr::Expression, parent)
+	if expr.save
+		expr = deepcopy(expr)
+		expr.save = false
+		expr_to_node!(expr, parent)
+		return ArrayVariable(expr.name, false, expr.depi, expr.depj)
 	elseif expr isa FuncCall
 		n = DepNode(expr.name, nothing)
 		n.expr = deepcopy(expr)
 		n.expr = n.expr[-n.expr.depi, -n.expr.depj]
 		addchild!(parent, n)
 		for (i, arg) in enumerate(n.expr.args)
-			expr_to_node!(arg, node_names, n)
-			n.expr.args[i] = ArrayVariable(arg.name, arg.depi, arg.depj)
+			expr_to_node!(arg, n)
+			n.expr.args[i] = ArrayVariable(arg.name, false, arg.depi, arg.depj)
 		end
 		return ArrayVariable(expr.name, expr.depi, expr.depj)
 	elseif expr isa BinaryOperator
-		return typeof(expr)(expr.name, go_deeper(expr.left, node_names, parent), go_deeper(expr.right, node_names, parent), expr.depi, expr.depj)
+		return typeof(expr)(expr.name, expr.save, go_deeper(expr.left, parent), go_deeper(expr.right, parent), expr.depi, expr.depj)
 	elseif expr isa UnaryOperator
-		return typeof(expr)(expr.name, go_deeper(expr.expr, node_names, parent), expr.depi, expr.depj)
+		return typeof(expr)(expr.name, expr.save, go_deeper(expr.expr, parent), expr.depi, expr.depj)
 	elseif expr isa TernaryOperator
-		return TernaryOperator(expr.name, go_deeper(expr.a, node_names, parent), go_deeper(expr.b, node_names, parent), go_deeper(expr.c, node_names, parent), expr.depi, expr.depj)
+		return TernaryOperator(expr.name, expr.save, go_deeper(expr.a, parent), go_deeper(expr.b, parent), go_deeper(expr.c, parent), expr.depi, expr.depj)
 	elseif expr isa ArrayVariable
-		expr_to_node!(expr, node_names, parent)
-		return ArrayVariable(expr.name, expr.depi, expr.depj)
+		expr_to_node!(expr, parent)
+		return ArrayVariable(expr.name, expr.save, expr.depi, expr.depj)
 	else
 		return expr
 	end

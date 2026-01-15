@@ -28,7 +28,7 @@ g = 1
 explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4, fdtofv = Arrays.fdtofv4)
 
 #Generating the RHS TODO change the way BCs are handled
-rsw_rhs! = to_kernel(dtu, dth, pv; save = ["zeta", "k", "U_X", "U_Y", "p"], explparams = explparams, bcs=[U, zeta, k, p, dtu, dth])
+rsw_rhs! = to_kernel(dtu, dth, pv; explparams = explparams, bcs=[U, zeta, k, p, dtu, dth])
 
 #Testing the function
 
@@ -89,11 +89,12 @@ state.f .= 0 .* ones((ni,nj)) .* mesh.A #.* mesh.msk2d
 #Creating the Model
 model = Model(rsw_rhs!, mesh, state, ["u_i", "u_j", "h"]; integratorstep! = rk4step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
 
+#first step
 println("first step")
-@time step!(model; n=1)
-println("Done")
+step!(model; n=1)
+println("done")
 
 #Running the simulation
 #plotrun!(model; plot_every = 10, plot_var = p, plot_vec = nothing, tend = 20, maxite = 2000)
-run!(model; save_every=50, tend = 1, maxite=10000, writevars=(:p,))
+run!(model; save_every=5, tend = 1, maxite=10000, writevars=(:p,))
 #plotform(p, mesh, state)

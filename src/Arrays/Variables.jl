@@ -33,11 +33,12 @@ A constant real value
 """
 struct RealValue <: Literal
 	name::String
+	save::Bool
 	val::Real
 end
 string(expr::RealValue) = string(expr.val)
 eval_expr(expr::RealValue, vals::AbstractDict) = expr.val
-RealValue(val::Real) = RealValue(string(val), val)
+RealValue(val::Real) = RealValue(string(val), false, val)
 
 """
 	Variable <: Atom
@@ -53,7 +54,9 @@ A variable holding a single scalar value
 """
 struct ScalarVariable <: Variable
 	name::String
+	save::Bool
 end
+ScalarVariable(name::String) = ScalarVariable(name, true)
 string(expr::ScalarVariable) = expr.name
 function eval_expr(expr::ScalarVariable, vals::AbstractDict)
 	if !haskey(vals, expr.name)
@@ -67,14 +70,15 @@ end
 
 Array object representing a variable name and a relative position
 """
-struct ArrayVariable <: Variable
-        name :: String
-        depi :: Integer
-        depj :: Integer
+mutable struct ArrayVariable <: Variable
+        name::String
+	save::Bool
+        depi::Integer
+        depj::Integer
 end
 string(expr::ArrayVariable) = "$(expr.name)[$(expr.depi)+i,$(expr.depj)+j]"
-ArrayVariable(name :: String) = ArrayVariable(name, 0, 0)
-getindex(A::ArrayVariable, depi, depj) = ArrayVariable(A.name, A.depi+depi, A.depj+depj)
+ArrayVariable(name :: String) = ArrayVariable(name, true, 0, 0)
+getindex(A::ArrayVariable, depi, depj) = ArrayVariable(A.name, A.save, A.depi+depi, A.depj+depj)
 function eval_expr(expr::ArrayVariable, vals::AbstractDict)
 	if !haskey(vals, expr.name)
 		return expr
