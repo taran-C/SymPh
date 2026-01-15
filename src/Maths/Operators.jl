@@ -24,6 +24,7 @@ mutable struct FuncCall{D, P} <: Form{D,P}
 	func
 	args::Vector{Form}
 end
+FuncCall{D,P}(func, args::Vector{Form}; name::String, save::Bool) where {D,P} = FuncCall{D,P}(name, save, func, args)
 
 """
 	Addition{D,P}(name::String, left::Form{D,P}, right::Form{D,P}) <: Form{D,P}
@@ -36,8 +37,7 @@ mutable struct Addition{D,P} <: Form{D,P}
 	left::Form{D,P}
 	right::Form{D,P}
 end
-+(name::String, save::Bool, left::Form, right::Form) = Addition(name, save, left, right)
-+(left::Form, right::Form) = Addition("P_"*left.name*"_"*right.name, false, left, right)
++(left::Form{D,P}, right::Form{D,P}; name="P_"*left.name*"_"*right.name, save=false) where {D,P} = Addition{D,P}(name, save, left, right)
 
 """
 	Substraction{D,P}(name::String, left::Form{D,P}, right::Form{D,P}) <: Form{D,P}
@@ -50,8 +50,7 @@ mutable struct Substraction{D,P} <: Form{D,P}
 	left::Form{D,P}
 	right::Form{D,P}
 end
--(name::String, save::Bool, left::Form, right::Form) = Substraction(name, save, left, right)
--(left::Form{D,P}, right::Form{D,P}) where {D,P} = Substraction{D,P}("P_"*left.name*"_"*right.name, false, left, right)
+-(left::Form{D,P}, right::Form{D,P}; name="M_"*left.name*"_"*right.name, save=false) where {D,P} = Substraction{D,P}(name, save, left, right)
 
 """
 	Negative{D,P}(name::String, form::Form{D,P}) <: Form{D,P}
@@ -63,8 +62,7 @@ mutable struct Negative{D,P} <: Form{D,P}
 	save::Bool
 	form::Form{D,P}
 end
--(name::String, save::Bool, form::Form) = Negative(name, save, form)
--(form::Form) = Negative("N_"*form.name, false, form)
+-(form::Form; name="N_"*form.name, save=false) = Negative(name, save, form)
 
 """
 	Division{D,P}(name::String, left::Form{D,P}, right::Form) <: Form{D,P}
@@ -78,8 +76,7 @@ mutable struct Division{D,P} <: Form{D,P}
 	left::Form{D,P}
 	right::Form
 end
-/(name::String, save::Bool, left::Form, right::Form) = Division(name, save, left, right)
-/(left::Form, right::Form) = Division("DIV_"*left.name*"_"*right.name, false, left, right)
+/(left::Form, right::Form; name="DIV_"*left.name*"_"*right.name, save=false) = Division(name, save, left, right)
 
 """
 	Wedge{Dl + Dr,P}(name::String, left::Form{Dl,P}, right::Form{Dr,P}) <: Form{Dl + Dr, P}
@@ -96,7 +93,7 @@ mutable struct Wedge{D, Dl, Dr, P} <: Form{D, P}
 		return new{Dl+Dr, Dl, Dr, P}(name, save, left, right)
 	end
 end
-Wedge(left, right) = Wedge("WEDGE_"*left.name*"_"*right.name, false, left, right)
+Wedge(left::Form, right::Form; name="WEDGE_"*left.name*"_"*right.name, save=false) = Wedge(name, save, left, right)
 
 """
 	ExteriorDerivative{D,P}(name::String, omega::Form{D-1,P}) <: Form{D,P}
@@ -113,8 +110,8 @@ mutable struct ExteriorDerivative{D,P} <: Form{D,P}
 	function ExteriorDerivative(name::String, save::Bool, expr::Form{D,P}) where {D,P}
 		return new{D+1, P}(name, save, expr)
 	end
-	ExteriorDerivative(expr::Form) = ExteriorDerivative("d"*expr.name, false, expr)
 end
+ExteriorDerivative(expr::Form; name="d"*expr.name, save=false) = ExteriorDerivative(name, save, expr)
 
 """
 	Codifferential{D,P}(name::String, omega::Form{D+1,P}) <: Form{D,P}
@@ -131,9 +128,8 @@ mutable struct Codifferential{D,P} <: Form{D,P}
 	function Codifferential(name::String, save::Bool, expr::Form{D,P}) where {D,P}
 		return new{D-1, P}(name, save, expr)
 	end
-	Codifferential(expr::Form) = Codifferential("CODIF_"*expr.name, false, expr)
 end
-
+Codifferential(expr::Form; name="CODIF_"*expr.name, save=false) = Codifferential(name, save, expr)
 
 """
 	InteriorProduct{D, Pv, Pf}(name::String, X::Vect, omega::Form, interp = Nothing) <: Form{D, Pf}
@@ -149,12 +145,11 @@ mutable struct InteriorProduct{D, Pv, Pf} <: Form{D,Pf}
 	form::Form
 	interp
 	
-	function InteriorProduct(name::String, save::Bool, vect::Vect{Pv}, form::Form{D,Pf}; interp = nothing) where {Pv,D,Pf}
+	function InteriorProduct(name::String, save::Bool, vect::Vect{Pv}, form::Form{D,Pf}, interp) where {Pv,D,Pf}
 		return new{D-1, Pv, Pf}(name, save, vect, form, interp)
 	end
-	InteriorProduct(vect::Vect, save::Bool, form::Form; interp = nothing) = InteriorProduct("ι_"*vect.name*"_"*form.name, save, vect, form; interp=interp)
-	InteriorProduct(vect::Vect, form::Form; interp = nothing) = InteriorProduct("ι_"*vect.name*"_"*form.name, false, vect, form; interp=interp)
 end
+InteriorProduct(vect::Vect, form::Form; interp = nothing, name="ι_"*vect.name*"_"*form.name, save=false) = InteriorProduct(name, save, vect, form, interp)
 
 """
 	Sharp{P}(name::String, form::Form{1, P}) <: Vect{P}
@@ -168,9 +163,7 @@ mutable struct Sharp{P} <: Vect{P}
 	fvtofd
 	fdtofv
 end
-Sharp(name::String, save::Bool, form::Form; fvtofd=nothing, fdtofv=nothing) = Sharp(name, save, form, fvtofd, fdtofv)
-Sharp(form::Form, save::Bool; fvtofd=nothing, fdtofv=nothing) = Sharp("#_"*form.name, save, form; fvtofd, fdtofv)
-Sharp(form::Form; fvtofd=nothing, fdtofv=nothing) = Sharp("#_"*form.name, false, form; fvtofd, fdtofv)
+Sharp(form::Form; name="#_"*form.name, save=false, fvtofd=nothing, fdtofv=nothing) = Sharp(name, save, form, fvtofd, fdtofv)
 
 """
 	Hodge{D, P}(name::String, form::Form) <: Form{D, P}
@@ -189,8 +182,8 @@ mutable struct Hodge{D, P} <: Form{D, P}
 			return new{2-D, Primal}(name, save, form)
 		end
 	end
-	Hodge(form) = Hodge("*_"*form.name, false, form)
 end
+Hodge(form::Form; name="*_"*form.name, save=false) = Hodge(name, save, form)
 
 #= TODO DO WE NEED IT ? DON'T THINK SO
 """
@@ -223,10 +216,8 @@ mutable struct RealProdForm{D, P} <: Form{D, P}
 	real::Real
 	form::Form{D, P}
 end
-*(name::String, save::Bool, real::Real, form::Form) = RealProdForm(name, save, real, form)
-*(name::String, save::Bool, form::Form, real::Real) = RealProdForm(name, save, real, form)
-*(real::Real, form::Form) = RealProdForm("T_"*string(real)*"_"*form.name, false, real, form)
-*(form::Form, real::Real) = RealProdForm("T_"*string(real)*"_"*form.name, false, real, form)
+*(real::Real, form::Form; name="T_"*string(real)*"_"*form.name, save=false) = RealProdForm(name, save, real, form)
+*(form::Form, real::Real; name="T_"*string(real)*"_"*form.name, save=false) = RealProdForm(name, save, real, form)
 
 """
 	InverseLaplacian
@@ -238,4 +229,4 @@ mutable struct InverseLaplacian{D,P} <: Form{D,P}
 	save::Bool
 	form::Form{D,P}
 end
-InverseLaplacian(form::Form) = InverseLaplacian("INVLAP_"*form.name, true, form)
+InverseLaplacian(form::Form; name="INVLAP_"*form.name, save=true) = InverseLaplacian(name, save, form)

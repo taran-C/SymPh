@@ -82,48 +82,48 @@ end
 
 #-----------------------------Addition-----------------------------------------------------------------------------
 function explicit(form::Addition{0,P}; param = ExplicitParam()) where {P}
-	return Arrays.Addition(form.name, form.save, explicit(form.left; param = param), explicit(form.right; param = param))
+	return Arrays.Addition(explicit(form.left; param = param), explicit(form.right; param = param); name=form.name, save=form.save)
 end
 
 function explicit(form::Addition{1,P}; param = ExplicitParam()) where {P}
 	ls = explicit(form.left; param = param)
 	rs = explicit(form.right; param = param)
 
-	return [Arrays.Addition(form.name*"_i", form.save, ls[1], rs[1]), Arrays.Addition(form.name*"_j", form.save, ls[2], rs[2])]
+	return [Arrays.Addition(ls[1], rs[1]; name=form.name*"_i", save=form.save), Arrays.Addition(ls[2], rs[2]; name=form.name*"_j", save=form.save)]
 end
 
 function explicit(form::Addition{2,P}; param = ExplicitParam()) where {P}
-	return Arrays.Addition(form.name, form.save, explicit(form.left; param = param), explicit(form.right; param = param))
+	return Arrays.Addition(explicit(form.left; param = param), explicit(form.right; param = param); name=form.name, save=form.save)
 end
 
 #-----------------------------Substraction---------------------------------------------------------------------------
 function explicit(form::Substraction{0,P}; param = ExplicitParam()) where {P}
-	return Arrays.Addition(form.name, form.save, explicit(form.left; param = param), explicit(form.right; param = param))
+	return Arrays.Addition(explicit(form.left; param = param), explicit(form.right; param = param); name=form.name, save=form.save)
 end
 
 function explicit(form::Substraction{1,P}; param = ExplicitParam()) where {P}
 	ls = explicit(form.left; param = param)
 	rs = explicit(form.right; param = param)
 
-	return [Arrays.Substraction(form.name*"_i", form.save, ls[1], rs[1]), Arrays.Substraction(form.name*"_j", form.save, ls[2], rs[2])]
+	return [Arrays.Substraction(ls[1], rs[1]; name=form.name*"_i", save=form.save), Arrays.Substraction(ls[2], rs[2]; name=form.name*"_j", save=form.save)]
 end
 
 function explicit(form::Substraction{2,P}; param = ExplicitParam()) where {P}
-	return Arrays.Substraction(form.name, form.save, explicit(form.left; param = param), explicit(form.right; param = param))
+	return Arrays.Substraction(explicit(form.left; param = param), explicit(form.right; param = param); name=form.name, save=form.save)
 end
 
 #----------------------Negative---------------------------------------------------------------------------------------
 function explicit(form::Negative{0,P}; param = ExplicitParam()) where {P}
-	return Arrays.Negative(form.name, form.save, explicit(form.form; param = param))
+	return Arrays.Negative(explicit(form.form; param = param); name=form.name, save=form.save)
 end
 
 function explicit(form::Negative{1,P}; param = ExplicitParam()) where {P}
 	fexpr = explicit(form.form; param = param)
-	return [Arrays.Negative(form.name*"_i", form.save, fexpr[1]), Arrays.Negative(form.name*"_j", form.save, fexpr[2])]
+	return [Arrays.Negative(fexpr[1]; name=form.name*"_i", save=form.save), Arrays.Negative(fexpr[2]; name=form.name*"_j", save=form.save)]
 end
 
 function explicit(form::Negative{2,P}; param = ExplicitParam()) where {P}
-	return Arrays.Negative(form.name, form.save, explicit(form.form; param = param))
+	return Arrays.Negative(explicit(form.form; param = param); name=form.name, save=form.save)
 end
 
 #------------------------Division------------------------------------------------------------------------

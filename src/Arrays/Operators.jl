@@ -57,8 +57,8 @@ end
 symbol(expr::Negative) = "-"
 op(expr::Negative) = -
 prec(expr::Negative) = 2
-Negative(name::String, save::Bool, expr::Expression) = Negative(name, save, expr, 0, 0)
--(expr::Expression) = Negative(expr.name*"_neg", false, expr)
+Negative(expr::Expression; name="neg_"*expr.name, save=false) = Negative(name, save, expr, 0, 0)
+-(expr::Expression) = Negative(expr)
 
 """
 	AbsoluteValue
@@ -73,8 +73,8 @@ end
 symbol(expr::AbsoluteValue) = "abs"
 op(expr::AbsoluteValue) = abs
 prec(expr::AbsoluteValue) = 10
-AbsoluteValue(name::String, save::Bool, expr::Expression) = AbsoluteValue(name, save, expr, 0, 0)
-abs(expr::Expression) = AbsoluteValue("abs_"*expr.name, false, expr)
+AbsoluteValue(expr::Expression; name="abs_"*expr.name, save=false) = AbsoluteValue(name, save, expr, 0, 0)
+abs(expr::Expression) = AbsoluteValue(expr)
 
 """
 	BinaryOperator
@@ -100,16 +100,10 @@ end
 symbol(expr::Addition) = "+"
 op(expr::Addition) = +
 prec(expr::Addition) = 1
-Addition(name::String, save::Bool, left::Expression, right::Expression) = Addition(name, save, left, right, 0,0)
-Addition(name::String, left::Expression, right::Expression) = Addition(name, false, left, right, 0,0)
-Addition(name::String, left::Real, right::Expression) = Addition(name, RealValue(left), right)
-Addition(name::String, left::Expression, right::Real) = Addition(name, left, RealValue(right))
-#+(name::String, left::Expression, right::Expression) = Addition(name, left, right)
-#+(name::String, left::Real, right::Expression) = Addition(name, left, right)
-#+(name::String, left::Expression, right::Real) = Addition(name, left, right)
-+(left::Expression, right::Expression) = Addition("p_"*left.name*"_"*right.name, left, right)
-+(left::Real, right::Expression) = Addition("p_"*string(left)*"_"*right.name, left, right)
-+(left::Expression, right::Real) = Addition("p_"*left.name*"_"*string(right), left, right)
+Addition(left::Expression, right::Expression; name="p_"*string(left)*"_"*right.name, save=false) = Addition(name, save, left, right, 0,0)
++(left::Expression, right::Expression) = Addition(left, right)
++(left::Real, right::Expression) = Addition(left, right)
++(left::Expression, right::Real) = Addition(left, right)
 
 """
 	Substraction
@@ -125,9 +119,8 @@ end
 symbol(expr::Substraction) = "-"
 op(expr::Substraction) = -
 prec(expr::Substraction) = 2
-Substraction(name, save, left, right) = Substraction(name, save, left, right, 0,0)
-Substraction(name, left, right) = Substraction(name, false, left, right, 0,0)
--(left::Expression, right::Expression) = Substraction("m_"*left.name*"_"*right.name, left, right)
+Substraction(left::Expression, right::Expression; name="m_"*left.name*"_"*right.name, save=false) = Substraction(name, save, left, right, 0,0)
+-(left::Expression, right::Expression) = Substraction(left, right)
 -(left::Expression, right::Real) = Substraction(left, RealValue(right))
 -(left::Real, right::Expression) = Substraction(RealValue(left), right)
 
@@ -145,15 +138,10 @@ end
 symbol(expr::Multiplication) = "*"
 op(expr::Multiplication) = *
 prec(expr::Multiplication) = 3
-Multiplication(name, left::Expression, right::Expression) = Multiplication(name, false, left, right, 0,0)
-Multiplication(name, left::Real, right::Expression) = Multiplication(name, RealValue(left), right)
-Multiplication(name, left::Expression, right::Real) = Multiplication(name, left, RealValue(right))
-*(name::String, left::Expression, right::Expression) = Multiplication(name, left, right)
-*(name::String, left::Real, right::Expression) = Multiplication(name, left, right)
-*(name::String, left::Expression, right::Real) = Multiplication(name, left, right)
-*(left::Expression, right::Expression) = Multiplication("t_"*left.name*"_"*right.name, left, right)
-*(left::Real, right::Expression) = Multiplication("t_"*string(left)*"_"*right.name, left, right)
-*(left::Expression, right::Real) = Multiplication("t_"*left.name*"_"*string(right), left, right)
+Multiplication(left::Expression, right::Expression; name="t_"*left.name*"_"*right.name, save=false) = Multiplication(name, save, left, right, 0,0)
+*(left::Expression, right::Expression) = Multiplication(left, right)
+*(left::Real, right::Expression) = Multiplication(RealValue(left), right)
+*(left::Expression, right::Real) = Multiplication(left, RealValue(right))
 
 """
 	Division
@@ -171,8 +159,8 @@ end
 symbol(expr::Division) = "/"
 op(expr::Division) = /
 prec(expr::Division) = 3
-Division(name::String, left::Expression, right::Expression) = Division(name, false, left, right, 0,0)
-/(left::Expression, right::Expression) = Division("d_"*left.name*"_"*right.name, left, right)
+Division(left::Expression, right::Expression; name = "d_"*left.name*"_"*right.name, save = false) = Division(name, save, left, right, 0,0)
+/(left::Expression, right::Expression) = Division(left, right)
 /(left::Expression, right::Real) = left / RealValue(right)
 /(left::Real, right::Expression) = RealValue(left) / right
 
@@ -190,8 +178,8 @@ end
 symbol(expr::Exponentiation) = "^"
 op(expr::Exponentiation) = ^
 prec(expr::Exponentiation) = 10
-Exponentiation(name, left, right) = Exponentiation(name, false, left, right, 0,0)
-^(left::Expression, right::Expression) = Exponentiation("pow_"*left.name*"_"*right.name, left, right)
+Exponentiation(left, right; name="pow_"*left.name*"_"*right.name, save=false) = Exponentiation(name, save, left, right, 0,0)
+^(left::Expression, right::Expression) = Exponentiation(left, right)
 ^(left::Expression, right::Real) = left ^ RealValue(right)
 ^(left::Real, right::Expression) = RealValue(left) ^ right
 
@@ -229,8 +217,7 @@ eval_expr(expr::TernaryOperator, vals::AbstractDict) = eval_expr(expr.a, vals) ?
 string(expr::TernaryOperator) = "vifelse($(string(expr.a[expr.depi, expr.depj])), $(string(expr.b[expr.depi, expr.depj])), $(string(expr.c[expr.depi, expr.depj])))"
 prec(expr::TernaryOperator) = 10
 getindex(expr::TernaryOperator, depi, depj) = TernaryOperator(expr.name, expr.save, expr.a, expr.b, expr.c, expr.depi+depi, expr.depj+depj)
-TernaryOperator(name, a, b, c) = TernaryOperator(name, false, a, b, c, 0, 0)
-TernaryOperator(a, b, c) = TernaryOperator("TA_" * a.name * "_" * b.name * "_" * c.name, a, b, c)
+TernaryOperator(a::BooleanExpression, b::Expression, c::Expression; name="TA_"*a.name*"_"*b.name*"_"*c.name, save=false) = TernaryOperator(name, save, a, b, c, 0, 0)
 
 #Conditionals
 """
@@ -249,8 +236,8 @@ end
 symbol(expr::GreaterThan) = ">"
 op(expr::GreaterThan) = >
 prec(expr::GreaterThan) = 10
-GreaterThan(name, left, right) = GreaterThan(name, false, left, right, 0, 0)
->(left::Expression, right::Expression) = GreaterThan(left.name*"_"*right.name*"_gt", left, right)
+GreaterThan(left, right; name="gt_"*left.name*"_"*right.name, save=false) = GreaterThan(name, save, left, right, 0, 0)
+>(left::Expression, right::Expression) = GreaterThan(left, right)
 >(left::Expression, right::Real) = left > RealValue(right)
 >(left::Real, right::Expression) = RealValue(left) > right
 

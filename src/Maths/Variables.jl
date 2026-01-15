@@ -29,6 +29,7 @@ struct VectorVariable{P} <: Vect{P}
 	name::String
 	save::Bool
 end
+VectorVariable{P}(; name = "", save=false) where {P} = VectorVariable{P}(name, save)
 
 """
 	Form{D,P<:Primality}
@@ -48,6 +49,7 @@ struct FormVariable{D,P} <: Form{D,P}
 	name::String
 	save::Bool
 end
+FormVariable{D,P}(; name = "", save=false) where {D,P} = FormVariable{D,P}(name, save)
 
 degree(f::Form{D,P}) where {D,P} = D
 primality(f::Form{D,P}) where {D,P} = P

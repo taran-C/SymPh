@@ -38,7 +38,7 @@ struct RealValue <: Literal
 end
 string(expr::RealValue) = string(expr.val)
 eval_expr(expr::RealValue, vals::AbstractDict) = expr.val
-RealValue(val::Real) = RealValue(string(val), false, val)
+RealValue(val::Real; name=string(val), save=false) = RealValue(name, save, val)
 
 """
 	Variable <: Atom
