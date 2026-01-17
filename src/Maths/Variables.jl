@@ -21,7 +21,7 @@ A vector field
 abstract type Vect{P<:Primality} end
 
 """
-	VectorVariable{P}(name::String) <: Vect{P}
+	VectorVariable{P}(name::String, save::Bool) <: Vect{P}
 
 A variable representing a named vector field
 """
@@ -41,7 +41,7 @@ VectorVariable{P}(; name = "", save=false) where {P} = VectorVariable{P}(name, s
 abstract type Form{D,P<:Primality} end
 
 """
-	FormVariable{D,P}(name::String) <: Form{D,P}
+	FormVariable{D,P}(name::String, save::Bool) <: Form{D,P}
 
 A variable representing a named differential form
 """

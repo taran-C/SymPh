@@ -105,14 +105,8 @@ function expr_to_node!(expr::Expression, parent)
 end
 
 #TODO set depi/depj to 0 when creating a new node (so node isn't offset WRT itself)
-#TODO probably broke FuncCall (just put it before ?)
 function go_deeper(expr::Expression, parent)
-	if expr.save
-		expr = deepcopy(expr)
-		expr.save = false
-		expr_to_node!(expr, parent)
-		return ArrayVariable(expr.name, false, expr.depi, expr.depj)
-	elseif expr isa FuncCall
+	if expr isa FuncCall
 		n = DepNode(expr.name, nothing)
 		n.expr = deepcopy(expr)
 		n.expr = n.expr[-n.expr.depi, -n.expr.depj]
@@ -121,7 +115,12 @@ function go_deeper(expr::Expression, parent)
 			expr_to_node!(arg, n)
 			n.expr.args[i] = ArrayVariable(arg.name, false, arg.depi, arg.depj)
 		end
-		return ArrayVariable(expr.name, expr.depi, expr.depj)
+		return ArrayVariable(expr.name, false, expr.depi, expr.depj)
+	elseif expr.save
+		expr = deepcopy(expr)
+		expr.save = false
+		expr_to_node!(expr, parent)
+		return ArrayVariable(expr.name, false, expr.depi, expr.depj)
 	elseif expr isa BinaryOperator
 		return typeof(expr)(expr.name, expr.save, go_deeper(expr.left, parent), go_deeper(expr.right, parent), expr.depi, expr.depj)
 	elseif expr isa UnaryOperator

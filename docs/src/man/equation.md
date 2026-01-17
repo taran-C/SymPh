@@ -17,7 +17,7 @@ $$\begin{cases}
 
 ## Representing it
 
-We use the `@Let` macro to avoid having to specify the name of each object we define. It will use the variable name as the object name.
+We use the `@Let` macro to avoid having to specify the name of each object we define. It will use the variable name as the object name. Each variable defined like this is also marked to be saved.
 
 We start by defining our prognostic variable :
 
@@ -51,7 +51,7 @@ explparams = ExplicitParam(; interp = Arrays.weno)
 We can now use those objects to finally generate the function that will perform our computations.
 
 ```julia
-euler_rhs! = to_kernel(dtomega; save = ["u_i", "u_j", "ι_U_omega_i", "ι_U_omega_j"], explparams = explparams)
+euler_rhs! = to_kernel(dtomega; explparams = explparams)
 ```
 
 We have to pass the objects that we want to be computed, for example in the case of a time integration, our time derivative, as well as a list of intermediary values that we want saved and our numerical methods.
@@ -79,10 +79,10 @@ simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 ```
 
-And we can finally build our mesh object
+And we can finally build our mesh object, here  for example a cartesian mesh.
 
 ```julia
-mesh = Arrays.Mesh(ni, nj, nh, thsimd, msk, Lx, Ly)
+mesh = Arrays.CartesianMesh(ni, nj, nh, thsimd, Lx, Ly)
 ```
 
 ## Defining the state and initial conditions
@@ -103,7 +103,7 @@ omega = state.omega
 for i in nh+1:nx-nh, j in nh+1:ny-nh
 	x = mesh.xc[i,j]
 	y = mesh.yc[i,j]
-	omega[i,j] = tripole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j]
+	omega[i,j] = dipole(x, y, 0.5,0.5,0.3,0.05) * mesh.msk2d[i,j]
 end
 ```
 

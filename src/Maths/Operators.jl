@@ -14,7 +14,7 @@ export Wedge
 #export Flat
 
 """
-	FuncCall{D, P}(name::String, func, args::Vector{Form}) <: Form{D,P}
+	FuncCall{D, P}(name::String, save::Bool, func, args::Vector{Form}) <: Form{D,P}
 
 Represents a call to `func` applied to the objects represented by `args`. Forces the computation of its arguments.
 """
@@ -27,7 +27,7 @@ end
 FuncCall{D,P}(func, args::Vector{Form}; name::String, save::Bool) where {D,P} = FuncCall{D,P}(name, save, func, args)
 
 """
-	Addition{D,P}(name::String, left::Form{D,P}, right::Form{D,P}) <: Form{D,P}
+	Addition{D,P}(name::String, save::Bool, left::Form{D,P}, right::Form{D,P}) <: Form{D,P}
 
 The element-wise sum ``left + right``.
 """
@@ -40,7 +40,7 @@ end
 +(left::Form{D,P}, right::Form{D,P}; name="P_"*left.name*"_"*right.name, save=false) where {D,P} = Addition{D,P}(name, save, left, right)
 
 """
-	Substraction{D,P}(name::String, left::Form{D,P}, right::Form{D,P}) <: Form{D,P}
+	Substraction{D,P}(name::String, save::Bool, left::Form{D,P}, right::Form{D,P}) <: Form{D,P}
 
 The substraction ``left - right``.
 """
@@ -53,7 +53,7 @@ end
 -(left::Form{D,P}, right::Form{D,P}; name="M_"*left.name*"_"*right.name, save=false) where {D,P} = Substraction{D,P}(name, save, left, right)
 
 """
-	Negative{D,P}(name::String, form::Form{D,P}) <: Form{D,P}
+	Negative{D,P}(name::String, save::Bool, form::Form{D,P}) <: Form{D,P}
 
 The inverse of a form.
 """
@@ -65,7 +65,7 @@ end
 -(form::Form; name="N_"*form.name, save=false) = Negative(name, save, form)
 
 """
-	Division{D,P}(name::String, left::Form{D,P}, right::Form) <: Form{D,P}
+	Division{D,P}(name::String, save::Bool, left::Form{D,P}, right::Form) <: Form{D,P}
 	
 TODO What is that actually in terms of FORMS ?
 Simple division by a scalar field proxied by a 0-form ?
@@ -79,7 +79,7 @@ end
 /(left::Form, right::Form; name="DIV_"*left.name*"_"*right.name, save=false) = Division(name, save, left, right)
 
 """
-	Wedge{Dl + Dr,P}(name::String, left::Form{Dl,P}, right::Form{Dr,P}) <: Form{Dl + Dr, P}
+	Wedge{Dl + Dr,P}(name::String, save::Bool, left::Form{Dl,P}, right::Form{Dr,P}) <: Form{Dl + Dr, P}
 
 Wedge product of two forms TODO Wedge between different primalities ?
 """
@@ -96,7 +96,7 @@ end
 Wedge(left::Form, right::Form; name="WEDGE_"*left.name*"_"*right.name, save=false) = Wedge(name, save, left, right)
 
 """
-	ExteriorDerivative{D,P}(name::String, omega::Form{D-1,P}) <: Form{D,P}
+	ExteriorDerivative{D,P}(name::String, save::Bool, omega::Form{D-1,P}) <: Form{D,P}
 
 The exterior derivative ``\\mathrm{d}\\omega``
 
@@ -114,7 +114,7 @@ end
 ExteriorDerivative(expr::Form; name="d"*expr.name, save=false) = ExteriorDerivative(name, save, expr)
 
 """
-	Codifferential{D,P}(name::String, omega::Form{D+1,P}) <: Form{D,P}
+	Codifferential{D,P}(name::String, save::Bool, omega::Form{D+1,P}) <: Form{D,P}
 
 The codifferential ``\\delta \\omega``
 
@@ -132,7 +132,7 @@ end
 Codifferential(expr::Form; name="CODIF_"*expr.name, save=false) = Codifferential(name, save, expr)
 
 """
-	InteriorProduct{D, Pv, Pf}(name::String, X::Vect, omega::Form, interp = Nothing) <: Form{D, Pf}
+	InteriorProduct{D, Pv, Pf}(name::String, save::Bool, X::Vect, omega::Form, interp = Nothing) <: Form{D, Pf}
 
 The contraction of a ``k``-form ``\\omega`` with a vector field ``\\mathbf{X}`` which gives us a ``k-1``-form ``\\iota_\\mathbf{X}\\omega``
 
@@ -152,7 +152,7 @@ end
 InteriorProduct(vect::Vect, form::Form; interp = nothing, name="ι_"*vect.name*"_"*form.name, save=false) = InteriorProduct(name, save, vect, form, interp)
 
 """
-	Sharp{P}(name::String, form::Form{1, P}) <: Vect{P}
+	Sharp{P}(name::String, save::Bool, form::Form{1, P}) <: Vect{P}
 
 Corresponds to an application of the metric
 """
@@ -166,7 +166,7 @@ end
 Sharp(form::Form; name="#_"*form.name, save=false, fvtofd=nothing, fdtofv=nothing) = Sharp(name, save, form, fvtofd, fdtofv)
 
 """
-	Hodge{D, P}(name::String, form::Form) <: Form{D, P}
+	Hodge{D, P}(name::String, save::Bool, form::Form) <: Form{D, P}
 
 Brings a  ``k``-form to a ``n-k`` form and goes from dual to primal and inversely
 """
@@ -206,7 +206,7 @@ end
 =#
 
 """
-	RealProdForm{D, P}(name::String, real::Real, form::Form) <: Form{D, P}
+	RealProdForm{D, P}(name::String, save::Bool, real::Real, form::Form{D, P}) <: Form{D, P}
 
 `real` time `form`
 """
@@ -220,7 +220,7 @@ end
 *(form::Form, real::Real; name="T_"*string(real)*"_"*form.name, save=false) = RealProdForm(name, save, real, form)
 
 """
-	InverseLaplacian
+	InverseLaplacian<D, P>(name::String, save::Bool, form::Form{D, P}) <: Form{D, P}
 
 Represents the solution to a Poisson problem
 """

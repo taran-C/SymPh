@@ -445,7 +445,7 @@ function explicit(form::InverseLaplacian{0, Dual}; param = ExplicitParam())
 		solve_poisson(poisson, mesh, kwargs[Symbol(form.name)], kwargs[Symbol(form.form.name)])
 	end
 
-	return Arrays.FuncCall(form.name, poiss_dirich_0d, [fexpr], 0, 0)
+	return Arrays.FuncCall(form.name, true, poiss_dirich_0d, [fexpr], 0, 0)
 end
 
 function explicit(form::InverseLaplacian{2, Dual}; param = ExplicitParam())
@@ -458,5 +458,5 @@ function explicit(form::InverseLaplacian{2, Dual}; param = ExplicitParam())
 		solve_poisson(poisson, mesh, kwargs[Symbol(form.name)], kwargs[Symbol(form.form.name)])
 	end
 
-	return Arrays.FuncCall(form.name, poiss_dirich_2d, [fexpr], 0, 0)
+	return Arrays.FuncCall(form.name, true, poiss_dirich_2d, [fexpr], 0, 0)
 end

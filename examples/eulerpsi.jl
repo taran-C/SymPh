@@ -14,13 +14,14 @@ using LoopManagers: PlainCPU, VectorizedCPU, MultiThread
 @Let U = Sharp(u)
 
 #Time derivative
-@Let dtomega = - ExteriorDerivative(InteriorProduct(U, omega)) #dtω = L(U,ω)
+@Let flux = InteriorProduct(U, omega)
+@Let dtomega = - ExteriorDerivative(flux) #dtω = L(U,ω)
 
 #Defining the parameters needed to explicit
 explparams = ExplicitParam(; interp = Arrays.upwind)
 
 #Generating the RHS
-euler_rhs! = to_kernel(dtomega; save = ["U_X", "U_Y", "u_i", "u_j", "ι_U_omega_i", "ι_U_omega_j"], explparams = explparams, verbose = false, bcs=[U, psi, dtomega])
+euler_rhs! = to_kernel(dtomega; explparams = explparams, verbose = false, bcs=[U, psi, dtomega])
 
 #Testing the function
 
