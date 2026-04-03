@@ -434,11 +434,12 @@ end
 
 #----------------------------------InverseLaplacian---------------------------------------------------------------
 #TODO have bcs influence that
+bc="neumann"
 
 function explicit(form::InverseLaplacian{0, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 
-	poisson = Poisson2D("dirichlet", "0d"; order = param.laporder)
+	poisson = Poisson2D(bc, "0d"; order = param.laporder)
 
 	function poiss_dirich_0d(mesh;kwargs...)
 		#args = Dict(kwargs)
@@ -451,7 +452,7 @@ end
 function explicit(form::InverseLaplacian{2, Dual}; param = ExplicitParam())
 	fexpr = explicit(form.form; param = param)
 	
-	poisson = Poisson2D("dirichlet", "2d"; order = param.laporder)
+	poisson = Poisson2D(bc, "2d"; order = param.laporder)
 
 	function poiss_dirich_2d(mesh;kwargs...)
 		#args = Dict(kwargs)

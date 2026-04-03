@@ -100,7 +100,7 @@ function to_kernel(seq::Sequence, fill; verbose = 0)
 		end
 	end
 
-	return kernel!, vars
+	return kernel!, vars, calls
 end
 
 #Boundary Conditions-------------------------------------------------------

@@ -13,46 +13,46 @@ struct Mesh
 	mgr #LoopManager
 
 	#Locations
-	xc::AbstractArray{Float64}
-	yc::AbstractArray{Float64}
+	xc::Matrix{Float64}
+	yc::Matrix{Float64}
 
-	xy#::AbstractArray{Float64}
-	yy#::AbstractArray{Float64}
+	xy#::Matrix{Float64}
+	yy#::Matrix{Float64}
 
-	xx#::AbstractArray{Float64}
-	yx#::AbstractArray{Float64}
+	xx#::Matrix{Float64}
+	yx#::Matrix{Float64}
 
-	xv::AbstractArray{Float64}
-	yv::AbstractArray{Float64}
+	xv::Matrix{Float64}
+	yv::Matrix{Float64}
 
 	#Metric TODO different edge length for primal/dual grids (and primal/dual grids at all anjway)
-	dx::AbstractArray{Float64}
-	dy::AbstractArray{Float64}
+	dx::Matrix{Float64}
+	dy::Matrix{Float64}
 	
-	A::AbstractArray{Float64}
+	A::Matrix{Float64}
 
 	#Masks
-	msk0p::AbstractArray{Float64}
-	msk0d::AbstractArray{Float64}
+	msk0p::Matrix{Float64}
+	msk0d::Matrix{Float64}
 	
-	msk1pi::AbstractArray{Float64}
-	msk1pj::AbstractArray{Float64}
-	msk1di::AbstractArray{Float64}
-	msk1dj::AbstractArray{Float64}
+	msk1pi::Matrix{Float64}
+	msk1pj::Matrix{Float64}
+	msk1di::Matrix{Float64}
+	msk1dj::Matrix{Float64}
 	
-	msk2p::AbstractArray{Float64}
-	msk2d::AbstractArray{Float64}
+	msk2p::Matrix{Float64}
+	msk2d::Matrix{Float64}
 
 	#Orders
-	o1pi::AbstractArray{Float64} #order two, primal, x along x
-	o1pj::AbstractArray{Float64}
-	o1di::AbstractArray{Float64}
-	o1dj::AbstractArray{Float64}
+	o1pi::Matrix{Float64} #order two, primal, x along x
+	o1pj::Matrix{Float64}
+	o1di::Matrix{Float64}
+	o1dj::Matrix{Float64}
 	
-	o2pi::AbstractArray{Float64} #order two, primal, along x
-	o2pj::AbstractArray{Float64}
-	o2di::AbstractArray{Float64}
-	o2dj::AbstractArray{Float64}
+	o2pi::Matrix{Float64} #order two, primal, along x
+	o2pj::Matrix{Float64}
+	o2di::Matrix{Float64}
+	o2dj::Matrix{Float64}
 	
 	iperio::Bool
 	jperio::Bool

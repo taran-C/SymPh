@@ -25,15 +25,15 @@ g = 1
 @Let dth = -ExteriorDerivative(InteriorProduct(U, h)) #dh = -Lx(U, h), Lie Derivative (can be implemented directly as Lx(U,h) = d(iota(U,h))
 
 #Defining the parameters needed to explicit 
-explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd4, fdtofv = Arrays.fdtofv4)
+explparams = ExplicitParam(; interp = Arrays.upwind, fvtofd = Arrays.fvtofd2, fdtofv = Arrays.fdtofv2)
 
 #Generating the RHS TODO change the way BCs are handled
-rsw_rhs! = to_kernel(dtu, dth, pv; explparams = explparams, bcs=[U, zeta, k, p, dtu, dth])
+rsw_rhs!, kerns = to_kernel(dtu, dth, pv; explparams = explparams, bcs=[U, zeta, k, p, dtu, dth], verbose = 0, get_kerns=true)
 
 #Testing the function
 
 #Defining the Mesh
-ni = 2^6
+ni = 2^8
 nj = ni#3*ni
 nh = 5
 
@@ -42,7 +42,8 @@ scalar = PlainCPU()
 simd = VectorizedCPU(16)
 threads = MultiThread(scalar)
 
-mesh = Arrays.CartesianMesh(ni, nj, nh, simd, 1, 1)#; xperio = true, yperio=true)
+mesh = Arrays.CartesianMesh(ni, nj, nh, simd, 1, 1; xperio = true, yperio=true)
+#mesh = Arrays.PolarMesh(ni, nj, nh, simd)
 
 #Initial Conditions
 state = State(mesh)
@@ -87,7 +88,7 @@ end
 state.f .= 0 .* ones((ni,nj)) .* mesh.A #.* mesh.msk2d
 
 #Creating the Model
-model = Model(rsw_rhs!, mesh, state, ["u_i", "u_j", "h"]; integratorstep! = rk4step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
+model = Model(rsw_rhs!, mesh, state, ["u_i", "u_j", "h"]; integratorstep! = rk3step!, cfl = 0.15, dtmax=0.15, Umax = get_Umax)
 
 #first step
 println("first step")

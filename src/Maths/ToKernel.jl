@@ -11,7 +11,7 @@ The kernel has signature `compute!(mesh::Mesh, state::State)`.
 - `verbose::Bool` : Wether or not to print the functions being generated, the dependency tree, etc...
 - `bcs` : A list of objects representing our boundary conditions (WIP)
 """
-function to_kernel(exprs...; explparams = ExplicitParam(), verbose=0, bcs = [])
+function to_kernel(exprs...; explparams = ExplicitParam(), verbose=0, bcs = [], get_kerns=false)
 	#Transforming the Forms expression into an Expression on arrays (TODO probably a more elegant way to do this)
 	math_exprs = []
 	for expr in exprs
@@ -71,7 +71,11 @@ function to_kernel(exprs...; explparams = ExplicitParam(), verbose=0, bcs = [])
 	if verbose >= 2
 		println("Generated functions :\n")
 	end
-	func!,  vars = Arrays.to_kernel(seq, fill; verbose = verbose)
+	func!, vars, kerns = Arrays.to_kernel(seq, fill; verbose = verbose)
 
-	return func!
+	if get_kerns == false
+		return func!
+	else 
+		return func!, kerns
+	end
 end

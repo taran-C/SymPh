@@ -90,7 +90,7 @@ function run!(model;
 	if plot
 		println("Carefull, you do not have a Makie backend loaded ! No plots will apear/be saved")
 	end
-
+ 
 	if write
 		if isfile(ncfname)
 		    rm(ncfname)
@@ -105,30 +105,45 @@ function run!(model;
 		for sym in writevars
 			defVar(ds, string(sym), Float64, ("x", "y", "time"))
 		end
+		
+		#Write initial state
+		for sym in writevars
+			ds[string(sym)][:,:, 1] = getproperty(state, sym)
+		end
 	end
 
 	#todo "borrowed" from fluids2d, check further
 	ite = 0
-	wi = 1 #write index
+	wi = 2 #write index
 	dt = model.dtmax
+
+	#Ctrl-C handling
+	Base.exit_on_sigint(false)
 
 	tstart = time()
 	for ite in 1:maxite
-		if model.t>=tend || dt<1e-10
-			break
-		end
-
-		#Actual step
-		dt = step!(model; tend = tend)
-
-		@printf "\rite : %i/%i, dt: %.2e, t : %.3f/%.3f            " ite maxite dt model.t tend
-		if (ite%save_every==0)
-			if write
-				for sym in writevars
-					ds[string(sym)][:,:, wi] = getproperty(state, sym)
-				end
-				wi += 1
+		try
+			if model.t>=tend || dt<1e-10
+				break
 			end
+
+			#Actual step
+			dt = step!(model; tend = tend)
+
+			@printf "\rite : %i/%i, dt: %.2e, t : %.3f/%.3f            " ite maxite dt model.t tend
+			if (ite%save_every==0)
+				if write
+					for sym in writevars
+						ds[string(sym)][:,:, wi] = getproperty(state, sym)
+					end
+					wi += 1
+				end
+			end
+		catch err
+			#stopping
+			println("")
+			@error "Interrupted or crashed" exception=(err)
+			break
 		end
 	end
 	
